@@ -71,20 +71,20 @@ US2（搶答計時，P2）、US3（提交時間提示，P3）。
 
 ### Tests for User Story 1
 
-- [ ] T010 [P] [US1] 在 `apps/server/tests/fixtures/guided-notes/` 新增 `no-prompt-header.json`：複製 `single-example.json`，把表頭列的「題目」改為空白、題目欄內容保留；既有的 `single-example.json`、`group-example.json` 已含各題與各子題敘述，直接用於測試、不修改
-- [ ] T011 [P] [US1] 測試 `apps/server/tests/unit/prompts.test.ts`（依 `contracts/guided-notes-format.md` §A 的預期表）：單題範例 6 題各有 `prompt`（與 fixture 文字相同）且 `blanks[0].prompt` 為 `null`；題組範例第 1、2 題 `prompt` 為 `null`、兩個子題各有 `prompt`，第 3、4 題有 `prompt`；`no-prompt-header.json` 匯入成功且所有敘述為 `null`；敘述跨兩列合併時只取一次；題組區塊內不屬於子題列的敘述成為 `Question.prompt`（以小型 inline grid 測試）；題數、題型與填空格位置與 001 相同
+- [X] T010 [P] [US1] 在 `apps/server/tests/fixtures/guided-notes/` 新增 `no-prompt-header.json`：複製 `single-example.json`，把表頭列的「題目」改為空白、題目欄內容保留；既有的 `single-example.json`、`group-example.json` 已含各題與各子題敘述，直接用於測試、不修改
+- [X] T011 [P] [US1] 測試 `apps/server/tests/unit/prompts.test.ts`（依 `contracts/guided-notes-format.md` §A 的預期表）：單題範例 6 題各有 `prompt`（與 fixture 文字相同）且 `blanks[0].prompt` 為 `null`；題組範例第 1、2 題 `prompt` 為 `null`、兩個子題各有 `prompt`，第 3、4 題有 `prompt`；`no-prompt-header.json` 匯入成功且所有敘述為 `null`；敘述跨兩列合併時只取一次；題組區塊內不屬於子題列的敘述成為 `Question.prompt`（以小型 inline grid 測試）；題數、題型與填空格位置與 001 相同
 
 ### Implementation for User Story 1
 
-- [ ] T012 [US1] 在 `apps/server/src/domain/guidedNotes/prompts.ts` 實作題目欄定位與敘述讀取（research R1）：`findPromptColumn(grid, headerRowIndex)`（表頭列內容恰為「題目」的儲存格，合併取左上角所在欄，沒有回傳 `null`）、`promptAt(grid, row, column)`（以 `effectiveValue` 取值、去除前後空白、空字串為 `null`）、`readQuestionPrompts(grid, promptColumn, blockRows, blanks, kind)`（單題：區塊各列敘述去重後以換行合併；題組：子題作答格所在列 → `Blank.prompt`，其他列 → 題組說明）；加註解說明業務規則
-- [ ] T013 [US1] 在 `apps/server/src/domain/guidedNotes/parser.ts` 組成題目時呼叫 `prompts.ts` 填入 `Question.prompt` 與 `Blank.prompt`；不改變任何 001 的錯誤判定與題目結構。讓 T011 與既有 `guidedNotesParser.test.ts` 全部通過
-- [ ] T014 [US1] 整合測試 `apps/server/tests/integration/visibility.test.ts` 新增案例：匯入題組範例後，老師 socket 的 `session:state` 含敘述；學生 socket（`group:1`）與未登入 socket 收到的 `session:state`、`GET /api/session` 回應中，序列化後不含任何一句題目或子題敘述（SC-009）
-- [ ] T015 [P] [US1] 整合測試 `apps/server/tests/integration/restart.test.ts` 新增兩個案例：(1) 以 001 格式（題目與子題沒有 `prompt` 欄位）的 `session.json` 啟動，可正常恢復，老師檢視的 `prompt` 皆為 `null`（research R2）；(2) 搶答進行中重啟伺服器後，老師檢視的 `openedAt` 與重啟前相同、`serverNow` 為重啟後的時間（FR-012，前端據此接續計時；此案例支援 US2，與案例 (1) 同檔故放在此任務）
-- [ ] T016 [P] [US1] 在 `apps/web/src/components/QuestionPreview.tsx` 實作預覽內容（FR-006）：題號、題型（「單題」或「題組（n 子題）」）；單題顯示 `prompt`；題組依序顯示題組說明（若有）與每個子題「標記（沒有則「（序號）」）＋子題敘述」；沒有敘述顯示「文件未提供題目敘述」；以 `whitespace-pre-wrap` 保留換行、完整顯示不截斷
-- [ ] T017 [US1] 在 `apps/web/src/components/QuestionList.tsx` 實作預覽切換（research R4）：匯出純函式 `togglePreview(current: number | null, clicked: number): number | null`；每個題號改為 `<button type="button" aria-pressed>`；預覽中按鈕加醒目外框與「預覽中」文字標籤（不只靠顏色，FR-005）；`previewNumber` 對應題號不存在時視為 `null`；預覽區（`aria-live="polite"`）放在按鈕清單正下方，沒有預覽時不渲染（FR-006，Clarification Q2）
-- [ ] T018 [US1] 在 `apps/web/src/pages/teacher/TeacherDashboard.tsx` 以 `key={view.activityId ?? 'none'}` 掛載 `QuestionList`，重新匯入後預覽自動清除（FR-008）
-- [ ] T019 [US1] 測試 `apps/web/tests/QuestionList.test.tsx`：`togglePreview` 的四種組合；點第 1 題 → 顯示兩個子題敘述且只有第 1 題 `aria-pressed="true"`；點第 3 題 → 切換；再點第 3 題 → 預覽區消失、全部 `aria-pressed="false"`；鍵盤 Enter／Space 可切換；沒有敘述顯示「文件未提供題目敘述」；題組無標記時以「（1）」「（2）」呈現；在 `READY`、`OPEN`、`CLOSED` 三種狀態下預覽行為相同（FR-007）；`activityId` 改變（重新渲染 Dashboard）後預覽清除；預覽不呼叫任何 API（mock `fetch` 未被呼叫）
-- [ ] T020 [US1] 品質關卡：`npm run typecheck`、`npm run lint`、`npm test` 全部通過，回報指令與結果
+- [X] T012 [US1] 在 `apps/server/src/domain/guidedNotes/prompts.ts` 實作題目欄定位與敘述讀取（research R1）：`findPromptColumn(grid, headerRowIndex)`（表頭列內容恰為「題目」的儲存格，合併取左上角所在欄，沒有回傳 `null`）、`promptAt(grid, row, column)`（以 `effectiveValue` 取值、去除前後空白、空字串為 `null`）、`readQuestionPrompts(grid, promptColumn, blockRows, blanks, kind)`（單題：區塊各列敘述去重後以換行合併；題組：子題作答格所在列 → `Blank.prompt`，其他列 → 題組說明）；加註解說明業務規則
+- [X] T013 [US1] 在 `apps/server/src/domain/guidedNotes/parser.ts` 組成題目時呼叫 `prompts.ts` 填入 `Question.prompt` 與 `Blank.prompt`；不改變任何 001 的錯誤判定與題目結構。讓 T011 與既有 `guidedNotesParser.test.ts` 全部通過
+- [X] T014 [US1] 整合測試 `apps/server/tests/integration/visibility.test.ts` 新增案例：匯入題組範例後，老師 socket 的 `session:state` 含敘述；學生 socket（`group:1`）與未登入 socket 收到的 `session:state`、`GET /api/session` 回應中，序列化後不含任何一句題目或子題敘述（SC-009）
+- [X] T015 [P] [US1] 整合測試 `apps/server/tests/integration/restart.test.ts` 新增兩個案例：(1) 以 001 格式（題目與子題沒有 `prompt` 欄位）的 `session.json` 啟動，可正常恢復，老師檢視的 `prompt` 皆為 `null`（research R2）；(2) 搶答進行中重啟伺服器後，老師檢視的 `openedAt` 與重啟前相同、`serverNow` 為重啟後的時間（FR-012，前端據此接續計時；此案例支援 US2，與案例 (1) 同檔故放在此任務）
+- [X] T016 [P] [US1] 在 `apps/web/src/components/QuestionPreview.tsx` 實作預覽內容（FR-006）：題號、題型（「單題」或「題組（n 子題）」）；單題顯示 `prompt`；題組依序顯示題組說明（若有）與每個子題「標記（沒有則「（序號）」）＋子題敘述」；沒有敘述顯示「文件未提供題目敘述」；以 `whitespace-pre-wrap` 保留換行、完整顯示不截斷
+- [X] T017 [US1] 在 `apps/web/src/components/QuestionList.tsx` 實作預覽切換（research R4）：匯出純函式 `togglePreview(current: number | null, clicked: number): number | null`；每個題號改為 `<button type="button" aria-pressed>`；預覽中按鈕加醒目外框與「預覽中」文字標籤（不只靠顏色，FR-005）；`previewNumber` 對應題號不存在時視為 `null`；預覽區（`aria-live="polite"`）放在按鈕清單正下方，沒有預覽時不渲染（FR-006，Clarification Q2）
+- [X] T018 [US1] 在 `apps/web/src/pages/teacher/TeacherDashboard.tsx` 以 `key={view.activityId ?? 'none'}` 掛載 `QuestionList`，重新匯入後預覽自動清除（FR-008）
+- [X] T019 [US1] 測試 `apps/web/tests/QuestionList.test.tsx`：`togglePreview` 的四種組合；點第 1 題 → 顯示兩個子題敘述且只有第 1 題 `aria-pressed="true"`；點第 3 題 → 切換；再點第 3 題 → 預覽區消失、全部 `aria-pressed="false"`；鍵盤 Enter／Space 可切換；沒有敘述顯示「文件未提供題目敘述」；題組無標記時以「（1）」「（2）」呈現；在 `READY`、`OPEN`、`CLOSED` 三種狀態下預覽行為相同（FR-007）；`activityId` 改變（重新渲染 Dashboard）後預覽清除；預覽不呼叫任何 API（mock `fetch` 未被呼叫）
+- [X] T020 [US1] 品質關卡：`npm run typecheck`、`npm run lint`、`npm test` 全部通過，回報指令與結果
 
 **Checkpoint**: 題目預覽可獨立展示；敘述只出現在老師端
 

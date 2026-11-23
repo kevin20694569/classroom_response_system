@@ -9,6 +9,7 @@ import {
   type TestApp,
   type TestSocket,
 } from '../helpers/testApp.js';
+import { loadFixture } from '../helpers/fixtures.js';
 
 /**
  * 資料可見性的專門測試（FR-020、SC-006、constitution 原則 I、VII）：
@@ -84,5 +85,50 @@ describe('可見性', () => {
     await call(app, 'POST', '/api/session/close', teacher);
     await anon.nextState((p) => p.view.status === 'CLOSED');
     expect(anon.states.map((p) => JSON.stringify(p)).join('')).not.toContain(SECRET_1);
+  });
+
+  it('題目敘述只出現在老師端資料，學生與未登入分頁收不到（002 FR-007、SC-009）', async () => {
+    app = await startTestApp();
+    const fixture = loadFixture('group-example');
+    const prompts = (fixture.sheets[0]?.cells ?? [])
+      .slice(4)
+      .map((row) => row[2] ?? '')
+      .filter((text) => text !== '');
+    expect(prompts.length).toBeGreaterThan(0);
+
+    const teacher = await teacherWithImport(app, 'group-example', 2);
+    const student = await joinStudent(app, 1);
+    const [teacherSocket, studentSocket, anonSocket] = await Promise.all([
+      connectSocket(app.url, teacher),
+      connectSocket(app.url, student),
+      connectSocket(app.url),
+    ]);
+    sockets.push(teacherSocket, studentSocket, anonSocket);
+
+    const opened = [teacherSocket, studentSocket, anonSocket].map((s) =>
+      s.nextState((p) => p.view.status === 'OPEN', 1000),
+    );
+    await call(app, 'POST', '/api/session/open', teacher);
+    await Promise.all(opened);
+    const closed = [studentSocket, anonSocket].map((s) =>
+      s.nextState((p) => p.view.status === 'CLOSED', 1000),
+    );
+    await call(app, 'POST', '/api/session/close', teacher);
+    await Promise.all(closed);
+
+    const teacherData = [
+      (await call(app, 'GET', '/api/session', teacher)).body,
+      ...teacherSocket.states.map((p) => JSON.stringify(p)),
+    ].join('\n');
+    for (const text of prompts) expect(teacherData).toContain(text);
+
+    const others = [
+      (await call(app, 'GET', '/api/session', student)).body,
+      (await call(app, 'GET', '/api/session', null)).body,
+      ...studentSocket.states.map((p) => JSON.stringify(p)),
+      ...anonSocket.states.map((p) => JSON.stringify(p)),
+    ].join('\n');
+    for (const text of prompts) expect(others).not.toContain(text);
+    expect(others).not.toContain('prompt');
   });
 });

@@ -27,7 +27,8 @@ export function TeacherDashboard({ token, onLogout }: { token: string; onLogout:
           <ImportPanel view={view} />
           <section aria-label="題目" className="rounded-xl bg-white p-5 shadow">
             <h2 className="mb-3 text-lg font-semibold">題目</h2>
-            <QuestionList view={view} />
+            {/* 重新匯入（activityId 改變）時重新掛載，預覽自動清除（002 FR-008） */}
+            <QuestionList key={view.activityId ?? 'none'} view={view} />
           </section>
           <SessionControls view={view} />
           <SubmissionBoard view={view} />
