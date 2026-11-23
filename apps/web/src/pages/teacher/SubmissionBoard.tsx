@@ -20,7 +20,8 @@ function AnswerText({ answers, isGroup }: { answers: readonly BlankAnswer[]; isG
 
 /**
  * 作答狀況與搶答結果（US3，FR-018、FR-019）：
- * 搶答進行中顯示每題送出紀錄與順位（順位第一為搶答成功）；結束後顯示每題結果，無人作答標示「無人搶答」。
+ * 搶答進行中與結束後都依順位顯示每題所有組別的送出紀錄，搶答成功者有標示；結束後無人作答標示「無人搶答」
+ * （002 FR-026：結束後保留所有組別的答案，只有匯出才只輸出搶答成功的答案）。
  * 002：每筆答案後面有時間圖示，可查看提交時間（FR-014）。
  */
 export function SubmissionBoard({ view }: { view: TeacherView }) {
@@ -53,34 +54,26 @@ export function SubmissionBoard({ view }: { view: TeacherView }) {
               <h3 className="font-medium">
                 第 {question.number} 題{isGroup && <span className="ml-1 text-xs">（題組）</span>}
               </h3>
-              {closed ? (
-                result?.winnerGroupId != null && result.answers !== null ? (
-                  <p className="mt-2 text-sm">
-                    <span className="font-semibold text-green-700">
-                      {groupLabel(view, result.winnerGroupId)}
-                    </span>
-                    ：<AnswerText answers={result.answers} isGroup={isGroup} />
-                    {result.receivedAt !== null && (
-                      <TimeHint receivedAt={result.receivedAt} openedAt={view.openedAt} />
-                    )}
-                  </p>
-                ) : (
-                  <p className="mt-2 text-sm text-slate-500">無人搶答</p>
-                )
-              ) : records.length === 0 ? (
-                <p className="mt-2 text-sm text-slate-500">尚無組別作答</p>
+              {records.length === 0 ? (
+                <p className="mt-2 text-sm text-slate-500">
+                  {closed ? '無人搶答' : '尚無組別作答'}
+                </p>
               ) : (
                 <ol className="mt-2 space-y-1 text-sm">
-                  {records.map((record, i) => (
-                    <li key={record.id} className={i === 0 ? 'font-semibold text-green-700' : ''}>
-                      第 {i + 1} 位・{groupLabel(view, record.groupId)}：
-                      <AnswerText answers={record.answers} isGroup={isGroup} />
-                      <TimeHint receivedAt={record.receivedAt} openedAt={view.openedAt} />
-                      {i === 0 && (
-                        <span className="ml-2 rounded bg-green-100 px-1.5 text-xs">搶答成功</span>
-                      )}
-                    </li>
-                  ))}
+                  {records.map((record, i) => {
+                    // 搶答成功組別以伺服器的結果為準（RankingStrategy）；結束後其他組別的答案仍保留顯示（FR-026）
+                    const won = record.groupId === result?.winnerGroupId;
+                    return (
+                      <li key={record.id} className={won ? 'font-semibold text-green-700' : ''}>
+                        第 {i + 1} 位・{groupLabel(view, record.groupId)}：
+                        <AnswerText answers={record.answers} isGroup={isGroup} />
+                        <TimeHint receivedAt={record.receivedAt} openedAt={view.openedAt} />
+                        {won && (
+                          <span className="ml-2 rounded bg-green-100 px-1.5 text-xs">搶答成功</span>
+                        )}
+                      </li>
+                    );
+                  })}
                 </ol>
               )}
             </article>

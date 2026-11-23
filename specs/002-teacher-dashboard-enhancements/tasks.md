@@ -297,3 +297,16 @@ G 欄、H 欄沒有被填寫；測試 fixtures 也沒有重現真實版面（作
 - [X] T063 MEDIUM 更新 `specs/002-teacher-dashboard-enhancements/quickstart.md` §4 與 `checklists/manual-verification.md` 的預期結果：題組答案寫在 H 欄、G 欄標記不變；附註行出現在第 1 題第 2 個子題的 H 欄；結果欄新增在 I、J 欄；並註明 001 manual-verification 步驟 19「題組作答格寫成（1）答案」已由此規則取代 per SC-005、FR-021 (partial)
 - [X] T064 品質關卡：`npm run typecheck`、`npm run lint`、`npm run format:check`、`npm test` 全部通過，回報指令與結果；並以真實 Google Sheets 副本（題組範例）重跑匯出確認 H 欄被填寫、G 欄標記不變 per Constitution VII (missing)
   - 執行結果：品質關卡全部通過（315 個測試）。以服務帳號唯讀讀取真實「題組範例 的副本」並計算三種模式的寫入計畫：題組填答格為 H5、H6、H8、H9（G 欄標記不寫入），單題為 G11、G13，結果欄為 I、J；未實際寫入文件，實際寫入由 T056 人工驗證步驟 16～19 確認。
+
+---
+
+## Phase 9: Convergence
+
+依使用者回饋：按下結束搶答後，搶答結果只顯示每題第一名的答案，其他組別送出的答案在畫面上消失；使用者要求結束後
+仍保留並顯示所有組別的答案（含順位），只有匯出時才只輸出第一名。目前 `SubmissionBoard.tsx` 在 `CLOSED` 狀態只渲染
+`result` 的搶答成功組別。
+
+- [X] T065 HIGH 先更新需求文件：在 `specs/002-teacher-dashboard-enhancements/spec.md` 的 Clarifications 記錄「結束搶答後，搶答結果 MUST 保留並顯示每題所有組別的送出紀錄與順位（標示搶答成功者），無人作答標示『無人搶答』；匯出仍只輸出搶答成功（第一名）的答案」，新增對應 FR 並更新 US3 驗收情境（FR-014 的時間圖示涵蓋結束後的每一筆紀錄）per user feedback、FR-014、001 FR-019 (contradicts)
+- [X] T066 HIGH 修改 `apps/web/src/pages/teacher/SubmissionBoard.tsx`：`CLOSED` 時每題依 `sequence` 列出所有組別的送出紀錄（第 N 位・組別：答案），第一位標示「搶答成功」，每筆後面都有 `TimeHint`；無人作答顯示「無人搶答」；標題維持「搶答結果」。更新 `apps/web/tests/SubmissionBoard.test.tsx`：結束後非第一名的答案仍顯示、第一名標示搶答成功、每筆都有時間圖示 per FR-014、US3 (contradicts)
+- [X] T067 MEDIUM 確認匯出仍只輸出搶答成功（第一名）的答案：在 `apps/server/tests/integration/export.test.ts` 加上多組作答同一題時只寫入第一名答案的斷言；更新 `quickstart.md` §4 與 `checklists/manual-verification.md` 步驟 14（結束後各題仍列出所有組別答案）per FR-017、SC-005 (partial)
+- [X] T068 品質關卡：`npm run typecheck`、`npm run lint`、`npm run format:check`、`npm test` 全部通過，回報指令與結果 per Constitution VII (missing)
