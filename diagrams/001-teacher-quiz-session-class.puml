@@ -15,11 +15,14 @@ package "使用者與角色" {
   }
   class TabIdentity {
     +token: string
-    +userId: UserId
     +role: Role
+    +groupId: GroupId | null
+    +activityId: string | null
+    +expiresAt: DateTime
   }
   class AuthService {
     +loginAsTeacher(password: string): TabIdentity
+    +joinAsStudent(groupId: GroupId): TabIdentity
     +resolve(token: string): User | null
   }
   TabIdentity --> User
@@ -47,7 +50,9 @@ package "搶答活動" {
     CLOSED
   }
   class QuizSession {
+    +activityId: string | null
     +status: SessionStatus
+    +nextSequence: number
     +source: GuidedNotesRef
     +groups: Group[]
     +questions: Question[]
@@ -59,6 +64,7 @@ package "搶答活動" {
   class Question {
     +number: number
     +order: number
+    +kind: single | group
     +blanks: Blank[]
     +isQuestionGroup(): boolean
   }
