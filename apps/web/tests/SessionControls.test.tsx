@@ -27,6 +27,8 @@ describe('SessionControls（US2）', () => {
     render(<SessionControls view={teacherView({ status })} />);
     expect(buttons().open.disabled).toBe(!canOpen);
     expect(buttons().close.disabled).toBe(!canClose);
+    // 002：每種狀態都有搶答計時
+    expect(screen.getByLabelText('搶答計時')).toBeTruthy();
   });
 
   it('開啟時呼叫 /api/session/open', async () => {

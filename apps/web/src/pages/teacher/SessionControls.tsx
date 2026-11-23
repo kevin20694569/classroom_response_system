@@ -2,6 +2,7 @@ import { TeacherViewResponseSchema, type TeacherView } from '@crs/shared';
 import { useState } from 'react';
 import { ApiError, apiRequest } from '../../api/http';
 import { ErrorBanner, type DisplayError } from '../../components/ErrorBanner';
+import { SessionTimer } from './SessionTimer';
 
 export const CLOSE_CONFIRM_MESSAGE = '結束後各組無法再作答，也不能重新開啟。確定要結束搶答嗎？';
 export const CLOSED_HINT = '搶答已結束。要再進行搶答請重新匯入，開始新的一場。';
@@ -31,7 +32,15 @@ export function SessionControls({ view }: { view: TeacherView }) {
 
   return (
     <section aria-label="活動控制" className="space-y-3 rounded-xl bg-white p-5 shadow">
-      <h2 className="text-lg font-semibold">活動控制</h2>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-lg font-semibold">活動控制</h2>
+        <SessionTimer
+          status={view.status}
+          openedAt={view.openedAt}
+          closedAt={view.closedAt}
+          serverNow={view.serverNow}
+        />
+      </div>
       <div className="flex flex-wrap items-center gap-3">
         <button
           type="button"
