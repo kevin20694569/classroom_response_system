@@ -17,7 +17,7 @@ node "學生分頁（瀏覽器，每組可多個）" as StudentBrowser {
     component "StudentResultBoard\n每題結果與本組成績" as ResultBoard
     component "AnswerDraftStore\n未送出輸入（只存在該分頁）" as DraftStore
     component "useStudentAuth\n加入 / 離開 / 身分失效" as StudentAuth
-    component "useSessionState\n訂閱 session:state" as SessionHook #EEEEEE
+    component "useSessionState\n訂閱 session:state\n（回報失效原因）" as SessionHook
   }
 }
 
