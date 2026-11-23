@@ -14,7 +14,7 @@ import { viewFor } from '../../views.js';
 /** 活動狀態與老師專屬操作 API（contracts/http-api.md）。 */
 export function registerSessionRoutes(app: FastifyInstance, service: QuizSessionService): void {
   const teacherView = (): TeacherViewResponse => ({
-    view: toTeacherView(service.getSession(), service.deps.ranking),
+    view: toTeacherView(service.getSession(), service.deps.ranking, service.deps.now()),
   });
 
   app.get('/api/session', (request, reply) => {

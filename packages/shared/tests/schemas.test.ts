@@ -2,8 +2,12 @@ import { describe, expect, it } from 'vitest';
 import {
   BlankAnswerSchema,
   GroupIdSchema,
+  PersistedStateSchema,
+  PublicViewSchema,
   QuestionSchema,
+  StudentViewSchema,
   SubmitRequestSchema,
+  TeacherViewSchema,
   unicodeLength,
 } from '../src/index.js';
 
@@ -113,5 +117,70 @@ describe('SubmitRequestSchema（原則 I：不接受客戶端指定組別或時�
         answers: [{ blankIndex: 1, text: 'CPU' }],
       }).success,
     ).toBe(true);
+  });
+});
+
+describe('002：題目敘述與老師檢視（research R2、R3）', () => {
+  const session001 = {
+    activityId: '7c1d7a8e-6f3b-4c2a-9a63-6b2b1f1d0c11',
+    status: 'READY',
+    source: { spreadsheetId: 'doc', sheetTitle: '學習單' },
+    groups: [
+      { id: 1, name: '第 1 組' },
+      { id: 2, name: '第 2 組' },
+    ],
+    questions: [
+      { number: 1, order: 1, kind: 'single', blanks: [{ index: 1, label: null, location }] },
+    ],
+    submissions: [],
+    nextSequence: 1,
+    openedAt: null,
+    closedAt: null,
+    lastExport: null,
+  };
+
+  it('001 格式的保存檔（沒有 prompt）可以載入，prompt 預設為 null', () => {
+    const parsed = PersistedStateSchema.parse({ schemaVersion: 1, session: session001 });
+    const question = parsed.session.questions[0];
+    expect(question?.prompt).toBeNull();
+    expect(question?.blanks[0]?.prompt).toBeNull();
+  });
+
+  it('TeacherView 接受題目敘述、子題、結果提交時間與 serverNow', () => {
+    const view = {
+      viewer: 'teacher',
+      status: 'CLOSED',
+      groups: session001.groups,
+      questions: [
+        {
+          number: 1,
+          kind: 'group',
+          blankCount: 2,
+          prompt: null,
+          blanks: [
+            { index: 1, label: '（1）', prompt: '子題一' },
+            { index: 2, label: '（2）', prompt: '子題二' },
+          ],
+        },
+      ],
+      activityId: session001.activityId,
+      source: session001.source,
+      submissions: [],
+      results: [{ questionNumber: 1, winnerGroupId: null, answers: null, receivedAt: null }],
+      openedAt: '2026-11-23T02:00:00.000Z',
+      closedAt: '2026-11-23T02:05:00.000Z',
+      lastExport: null,
+      serverNow: '2026-11-23T02:06:00.000Z',
+    };
+    expect(TeacherViewSchema.safeParse(view).success).toBe(true);
+  });
+
+  it('學生與公開檢視的題目資料不含 prompt 或 blanks 欄位（SC-009）', () => {
+    const questionShape = (schema: typeof StudentViewSchema | typeof PublicViewSchema) =>
+      Object.keys(schema.shape.questions.element.shape);
+    for (const keys of [questionShape(StudentViewSchema), questionShape(PublicViewSchema)]) {
+      expect(keys).not.toContain('prompt');
+      expect(keys).not.toContain('blanks');
+    }
   });
 });

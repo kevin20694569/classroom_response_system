@@ -24,6 +24,7 @@ describe('課程範例（contracts/guided-notes-format.md §8 驗收基準）', 
       index: 1,
       label: null,
       location: { sheetTitle: '學習單', rowIndex: 4, columnIndex: 6 },
+      prompt: null,
     });
     expect(questions.map((q) => q.blanks[0]?.location.rowIndex)).toEqual([4, 6, 8, 10, 12, 14]);
     expect(questions.map((q) => q.order)).toEqual([1, 2, 3, 4, 5, 6]);

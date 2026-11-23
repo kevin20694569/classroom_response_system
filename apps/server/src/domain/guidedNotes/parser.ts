@@ -185,7 +185,7 @@ function buildBlanks(
 ): Blank[] {
   const location = (cell: CellPosition) => ({ sheetTitle: grid.sheetTitle, ...cell });
   if (cells.length === 1 && cells[0] !== undefined) {
-    return [{ index: 1, label: null, location: location(cells[0]) }];
+    return [{ index: 1, label: null, location: location(cells[0]), prompt: null }];
   }
   const markers = cells.map((c) => readBlankMarker(rawValue(grid, c.rowIndex, c.columnIndex)));
   const marked = markers.filter((m) => m !== null).length;
@@ -210,6 +210,7 @@ function buildBlanks(
     index: i + 1,
     label: markers[i]?.label ?? null,
     location: location(cell),
+    prompt: null,
   }));
 }
 
@@ -231,6 +232,7 @@ export function parseGuidedNotes(snapshot: SpreadsheetSnapshot): ParsedGuidedNot
       order: questions.length + 1,
       kind: blanks.length === 1 ? 'single' : 'group',
       blanks,
+      prompt: null,
     });
   }
   if (blocks.length === 0) {

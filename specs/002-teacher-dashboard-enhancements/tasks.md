@@ -38,8 +38,8 @@ US2（搶答計時，P2）、US3（提交時間提示，P3）。
 
 **Purpose**: 確認基準並設定可重現的時區
 
-- [ ] T001 在 `002-teacher-dashboard-enhancements` branch 執行 `npm run typecheck`、`npm run lint`、`npm test`，確認 001 的基準全部通過並回報結果（作為後續回歸比對）
-- [ ] T002 在 `vitest.config.ts` 的 `server` 與 `web` project 加上 `env: { TZ: 'Asia/Taipei' }`，讓時間格式測試可重現（research R11）；確認既有測試仍全部通過
+- [X] T001 在 `002-teacher-dashboard-enhancements` branch 執行 `npm run typecheck`、`npm run lint`、`npm test`，確認 001 的基準全部通過並回報結果（作為後續回歸比對）
+- [X] T002 在 `vitest.config.ts` 的 `server` 與 `web` project 加上 `env: { TZ: 'Asia/Taipei' }`，讓時間格式測試可重現（research R11）；確認既有測試仍全部通過
 
 **Checkpoint**: 基準綠燈，時間相關測試結果與執行電腦的時區無關
 
@@ -51,13 +51,13 @@ US2（搶答計時，P2）、US3（提交時間提示，P3）。
 
 **⚠️ CRITICAL**: 本 Phase 完成前不得開始任何 user story
 
-- [ ] T003 [P] 在 `packages/shared/src/domain.ts` 為 `QuestionSchema` 新增 `prompt: z.string().nullable().default(null)`、`BlankSchema` 新增 `prompt: z.string().nullable().default(null)`，加註解說明「單題為題目敘述、題組為題組說明；子題敘述放在 Blank；預設 null 以相容 001 存檔（research R2）」；`PersistedState.schemaVersion` 維持 `1`
-- [ ] T004 [P] 在 `packages/shared/src/views.ts` 新增 `TeacherBlankViewSchema`（`index`、`label: string | null`、`prompt: string | null`）、`TeacherQuestionViewSchema`（`QuestionSummary` 欄位＋`prompt: string | null`＋`blanks: TeacherBlankView[]`）、`TeacherResultViewSchema`（`ResultView` 欄位＋`receivedAt: string | null`）；`TeacherViewSchema.questions` 改為 `TeacherQuestionView[]`、`results` 改為 `TeacherResultView[]`，並新增 `serverNow: z.string()`；`PublicView`、`StudentView` **不變**（data-model §2）；從 `index.ts` 匯出新型別
-- [ ] T005 在 `packages/shared/tests/schemas.test.ts` 新增測試：不含 `prompt` 的 001 存檔格式可通過 `PersistedStateSchema` 且 `prompt` 為 `null`；`TeacherViewSchema` 接受新欄位；`StudentViewSchema`／`PublicViewSchema` 的 `questions` 不含 `prompt` 或 `blanks` 欄位（以 schema 的 shape 檢查）
-- [ ] T006 在 `apps/server/src/domain/visibility/visibilityPolicy.ts` 將 `toTeacherView(session, strategy)` 改為 `toTeacherView(session, strategy, now: Date)`：`questions` 依 `Question` 產生 `TeacherQuestionView`（含 `prompt` 與 `blanks[].{index,label,prompt}`，不含儲存格位置）、`results` 加上搶答成功作答的 `receivedAt`（無人搶答為 `null`）、`serverNow = now.toISOString()`；`toPublicView`、`toStudentView` 不變。同步更新 `apps/server/src/transport/views.ts` 與所有呼叫端，`now` 取自 `QuizSessionService` 的 `deps.now`（必要時在 service 公開 `now()`）
-- [ ] T007 更新 `apps/server/tests/unit/visibilityPolicy.test.ts`：老師檢視含 `prompt`、`blanks`、`receivedAt`、`serverNow`；結束後無人搶答的題目 `receivedAt` 為 `null`；學生與公開檢視的 JSON 字串化結果不含任何題目敘述文字（以含敘述的題目資料測試，SC-009）
-- [ ] T008 [P] 更新 `apps/web/tests/viewBuilders.ts` 的 `teacherView()` 預設值（`questions[].prompt`、`blanks`、`results[].receivedAt`、`serverNow`），並修正既有前端元件與測試的型別錯誤，使行為維持 001 原樣
-- [ ] T009 品質關卡：`npm run typecheck`、`npm run lint`、`npm test` 全部通過，回報指令與結果
+- [X] T003 [P] 在 `packages/shared/src/domain.ts` 為 `QuestionSchema` 新增 `prompt: z.string().nullable().default(null)`、`BlankSchema` 新增 `prompt: z.string().nullable().default(null)`，加註解說明「單題為題目敘述、題組為題組說明；子題敘述放在 Blank；預設 null 以相容 001 存檔（research R2）」；`PersistedState.schemaVersion` 維持 `1`
+- [X] T004 [P] 在 `packages/shared/src/views.ts` 新增 `TeacherBlankViewSchema`（`index`、`label: string | null`、`prompt: string | null`）、`TeacherQuestionViewSchema`（`QuestionSummary` 欄位＋`prompt: string | null`＋`blanks: TeacherBlankView[]`）、`TeacherResultViewSchema`（`ResultView` 欄位＋`receivedAt: string | null`）；`TeacherViewSchema.questions` 改為 `TeacherQuestionView[]`、`results` 改為 `TeacherResultView[]`，並新增 `serverNow: z.string()`；`PublicView`、`StudentView` **不變**（data-model §2）；從 `index.ts` 匯出新型別
+- [X] T005 在 `packages/shared/tests/schemas.test.ts` 新增測試：不含 `prompt` 的 001 存檔格式可通過 `PersistedStateSchema` 且 `prompt` 為 `null`；`TeacherViewSchema` 接受新欄位；`StudentViewSchema`／`PublicViewSchema` 的 `questions` 不含 `prompt` 或 `blanks` 欄位（以 schema 的 shape 檢查）
+- [X] T006 在 `apps/server/src/domain/visibility/visibilityPolicy.ts` 將 `toTeacherView(session, strategy)` 改為 `toTeacherView(session, strategy, now: Date)`：`questions` 依 `Question` 產生 `TeacherQuestionView`（含 `prompt` 與 `blanks[].{index,label,prompt}`，不含儲存格位置）、`results` 加上搶答成功作答的 `receivedAt`（無人搶答為 `null`）、`serverNow = now.toISOString()`；`toPublicView`、`toStudentView` 不變。同步更新 `apps/server/src/transport/views.ts` 與所有呼叫端，`now` 取自 `QuizSessionService` 的 `deps.now`（必要時在 service 公開 `now()`）
+- [X] T007 更新 `apps/server/tests/unit/visibilityPolicy.test.ts`：老師檢視含 `prompt`、`blanks`、`receivedAt`、`serverNow`；結束後無人搶答的題目 `receivedAt` 為 `null`；學生與公開檢視的 JSON 字串化結果不含任何題目敘述文字（以含敘述的題目資料測試，SC-009）
+- [X] T008 [P] 更新 `apps/web/tests/viewBuilders.ts` 的 `teacherView()` 預設值（`questions[].prompt`、`blanks`、`results[].receivedAt`、`serverNow`），並修正既有前端元件與測試的型別錯誤，使行為維持 001 原樣
+- [X] T009 品質關卡：`npm run typecheck`、`npm run lint`、`npm test` 全部通過，回報指令與結果
 
 **Checkpoint**: 老師端收到的資料已有新欄位；學生與公開資料不變；001 行為不變
 

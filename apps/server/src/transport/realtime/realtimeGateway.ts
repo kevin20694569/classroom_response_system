@@ -106,9 +106,10 @@ export class RealtimeGateway {
           break;
         case 'state':
           this.io.to(PUBLIC_ROOM).emit(SESSION_STATE, { view: toPublicView(session), version });
-          this.io
-            .to(TEACHERS_ROOM)
-            .emit(SESSION_STATE, { view: toTeacherView(session, ranking), version });
+          this.io.to(TEACHERS_ROOM).emit(SESSION_STATE, {
+            view: toTeacherView(session, ranking, this.service.deps.now()),
+            version,
+          });
           for (const group of session.groups) {
             this.io
               .to(groupRoom(group.id))
@@ -117,9 +118,10 @@ export class RealtimeGateway {
           break;
         case 'submission':
           // 只送給老師與送出的那一組；其他組別不會收到任何事件，避免透露作答狀況
-          this.io
-            .to(TEACHERS_ROOM)
-            .emit(SESSION_STATE, { view: toTeacherView(session, ranking), version });
+          this.io.to(TEACHERS_ROOM).emit(SESSION_STATE, {
+            view: toTeacherView(session, ranking, this.service.deps.now()),
+            version,
+          });
           if (change.groupId !== undefined) {
             this.io.to(groupRoom(change.groupId)).emit(SESSION_STATE, {
               view: toStudentView(session, change.groupId, ranking),
@@ -128,9 +130,10 @@ export class RealtimeGateway {
           }
           break;
         case 'export':
-          this.io
-            .to(TEACHERS_ROOM)
-            .emit(SESSION_STATE, { view: toTeacherView(session, ranking), version });
+          this.io.to(TEACHERS_ROOM).emit(SESSION_STATE, {
+            view: toTeacherView(session, ranking, this.service.deps.now()),
+            version,
+          });
           break;
       }
     }

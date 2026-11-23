@@ -26,10 +26,10 @@ describe('SubmissionBoard（US3）', () => {
       status: 'OPEN',
       submissions: [record(1, 2, 2, ['GPU', 'Linux']), record(1, 1, 1, ['CPU', '作業系統'])],
       results: [
-        { questionNumber: 1, winnerGroupId: 1, answers: [] },
-        { questionNumber: 2, winnerGroupId: null, answers: null },
-        { questionNumber: 3, winnerGroupId: null, answers: null },
-        { questionNumber: 4, winnerGroupId: null, answers: null },
+        { questionNumber: 1, winnerGroupId: 1, answers: [], receivedAt: null },
+        { questionNumber: 2, winnerGroupId: null, answers: null, receivedAt: null },
+        { questionNumber: 3, winnerGroupId: null, answers: null, receivedAt: null },
+        { questionNumber: 4, winnerGroupId: null, answers: null, receivedAt: null },
       ],
     });
     render(<SubmissionBoard view={view} />);
@@ -49,10 +49,15 @@ describe('SubmissionBoard（US3）', () => {
       status: 'CLOSED',
       submissions: [record(3, 2, 1, ['0'])],
       results: [
-        { questionNumber: 1, winnerGroupId: null, answers: null },
-        { questionNumber: 2, winnerGroupId: null, answers: null },
-        { questionNumber: 3, winnerGroupId: 2, answers: [{ blankIndex: 1, text: '0' }] },
-        { questionNumber: 4, winnerGroupId: null, answers: null },
+        { questionNumber: 1, winnerGroupId: null, answers: null, receivedAt: null },
+        { questionNumber: 2, winnerGroupId: null, answers: null, receivedAt: null },
+        {
+          questionNumber: 3,
+          winnerGroupId: 2,
+          answers: [{ blankIndex: 1, text: '0' }],
+          receivedAt: '2026-11-23T02:00:12.340Z',
+        },
+        { questionNumber: 4, winnerGroupId: null, answers: null, receivedAt: null },
       ],
     });
     render(<SubmissionBoard view={view} />);
