@@ -1,4 +1,5 @@
 import { existsSync } from 'node:fs';
+import type { ApiErrorBody } from '@crs/shared';
 import fastifyStatic from '@fastify/static';
 import Fastify, { LogController, type FastifyBaseLogger, type FastifyInstance } from 'fastify';
 import type { Logger } from 'pino';
@@ -66,19 +67,25 @@ export async function buildApp(options: BuildAppOptions): Promise<BuiltApp> {
   registerSubmissionRoutes(app, new SubmissionService(service));
 
   const webDistDir = options.webDistDir;
-  if (webDistDir !== undefined && existsSync(webDistDir)) {
+  const serveWeb = webDistDir !== undefined && existsSync(webDistDir);
+  if (serveWeb) {
     await app.register(fastifyStatic, { root: webDistDir, wildcard: false });
-    app.setNotFoundHandler((request, reply) => {
-      const isPage =
-        request.method === 'GET' &&
-        !request.url.startsWith('/api') &&
-        !request.url.startsWith('/socket.io');
-      if (isPage) return reply.sendFile('index.html');
-      return reply
-        .status(404)
-        .send({ error: { code: 'VALIDATION_FAILED', message: '找不到這個 API。' } });
-    });
   }
+  // 找不到的路徑一律回契約的錯誤格式（contracts/http-api.md）；前端已建置時，頁面路徑交給前端路由
+  app.setNotFoundHandler((request, reply) => {
+    const isPage =
+      request.method === 'GET' &&
+      !request.url.startsWith('/api') &&
+      !request.url.startsWith('/socket.io');
+    if (serveWeb && isPage) return reply.sendFile('index.html');
+    const body: ApiErrorBody = {
+      error: {
+        code: 'VALIDATION_FAILED',
+        message: isPage ? '找不到這個頁面。' : '找不到這個 API。',
+      },
+    };
+    return reply.status(404).send(body);
+  });
 
   const realtime = new RealtimeGateway(app.server, service, auth, options.logger);
   app.addHook('preClose', async () => {

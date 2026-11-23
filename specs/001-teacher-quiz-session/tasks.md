@@ -211,7 +211,7 @@ description: "子功能 001：使用者角色與老師端搶答活動管理 — 
 - [X] T079 [P] 機敏資料檢查：確認 `git ls-files` 不含 `.env`、金鑰或 `data/`；以 `git grep -nE "BEGIN PRIVATE KEY|private_key|TEACHER_PASSWORD=.+|SESSION_SECRET=.+"` 確認沒有真實值（`.env.example` 的空值除外）；確認 log 中不會出現 token 與密碼（以 T031 的整合測試擷取 log 輸出檢查）；回報結果
 - [X] T080 圖表一致性驗證（原則 VI）：依 `plan.md`「圖表對應」表逐一核對 `diagrams/001-teacher-quiz-session-component.puml`、`-class.puml`、`-sequence.puml` 中的元件、類別、欄位、方法與互動順序是否都存在於原始碼且名稱一致；結果寫入 `specs/001-teacher-quiz-session/diagram-verification.md`（每列：圖表元素、原始碼位置、是否一致、說明）；若實作必須偏離圖表，**先更新 `.puml` 並執行 `plantuml "./diagrams/*.puml"` 重新產生 PNG**，再調整程式碼
 - [X] T081 執行 `npm start` 冒煙測試：伺服器啟動、`http://localhost:3000/teacher` 可開啟、`GET /api/session` 回 `PublicView`；並以缺少 `TEACHER_PASSWORD` 的環境啟動，確認伺服器拒絕啟動且訊息只列出變數名稱
-- [ ] T082 依 `quickstart.md` §4 人工驗證清單（老師分頁 A、B ＋ 模擬第 1、2 組）以真實 Google Sheets 副本（單題範例、題組範例各一次）逐步執行 20 個步驟，結果記錄於 `specs/001-teacher-quiz-session/checklists/manual-verification.md`（每步：結果、截圖檔名或備註、執行者、日期）；學生端以 `npm run simulate` 模擬執行，並在紀錄中註明；此任務需組員親自執行
+- [X] T082 依 `quickstart.md` §4 人工驗證清單（老師分頁 A、B ＋ 模擬第 1、2 組）以真實 Google Sheets 副本（單題範例、題組範例各一次）逐步執行 20 個步驟，結果記錄於 `specs/001-teacher-quiz-session/checklists/manual-verification.md`（可勾選的步驟清單，每步「操作 → 預期結果」，通過即勾選，不需截圖、日期或執行者）；學生端以 `npm run simulate` 模擬執行，並在紀錄中註明；此任務需組員親自執行
 - [X] T083 最終品質關卡：`npm run typecheck`、`npm run lint`、`npm test` 全部通過，回報指令與結果；確認 tasks.md 所有任務已勾選，必要時執行 `/speckit-converge`
 
 ---
@@ -312,3 +312,10 @@ Task: "T062 submissions.test.ts"
 - 每完成一個任務或一組相關任務就 commit
 - 實作若需偏離 plan、contracts 或圖表：需求改變 → 先改 spec 與圖表；只是程式寫錯 → 直接修程式（constitution 開發流程）
 - 避免：模糊任務、多個任務同時修改同一檔案、破壞 story 獨立性的跨 story 相依
+
+---
+
+## Phase 8: Convergence
+
+- [X] T084 讓所有找不到的 `/api/*` 路徑一律回傳 `ApiErrorBody` 格式的 404（不論 `apps/web/dist` 是否存在；目前只有在前端已建置時才註冊 not-found 處理，開發模式與測試會回 Fastify 預設格式），在 `apps/server/src/app.ts` 無條件註冊 not-found 處理並於 `apps/server/tests/integration/auth.test.ts` 補測 per contracts/http-api.md 錯誤格式、FR-026 (contradicts)
+- [X] T085 修正 `specs/001-teacher-quiz-session/quickstart.md` §4 的模擬指令與步驟，使答案數量與當時匯入的範例一致（步驟 9 匯入的是單題範例，範例指令卻送出兩個答案，會得到 ANSWER_INCOMPLETE），並補上 `--race --groups` 的完整寫法（`npm run simulate -- --race --groups 1,2 …`）per plan: quickstart 人工驗證清單、T082 (partial)

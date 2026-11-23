@@ -108,6 +108,18 @@ describe('Socket.IO 連線身分（contracts/realtime-events.md）', () => {
 });
 
 describe('錯誤不洩漏內部細節（FR-026、原則 VIII）', () => {
+  it('找不到的 API 一律回契約格式的 404（不論前端是否已建置）', async () => {
+    app = await startTestApp();
+    for (const method of ['GET', 'POST'] as const) {
+      const res = await app.app.inject({ method, url: '/api/does-not-exist' });
+      expect(res.statusCode).toBe(404);
+      const body = res.json<{ error: { code: string; message: string } }>();
+      expect(body.error.message).toBe('找不到這個 API。');
+      expect(Object.keys(body)).toEqual(['error']);
+      expect(res.body).not.toContain('Route');
+    }
+  });
+
   it('未預期錯誤回 500 通用訊息，不含堆疊、路徑或例外原文', async () => {
     app = await startTestApp({
       beforeListen: ({ app: fastify }) => {
