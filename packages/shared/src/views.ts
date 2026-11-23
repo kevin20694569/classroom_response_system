@@ -15,11 +15,25 @@ import {
  * `viewer` 欄位標示資料是給哪一種身分，前端據此決定畫面。
  */
 
-export const QuestionSummarySchema = z.object({
+const QuestionSummaryShape = {
   number: z.number().int().positive(),
   kind: QuestionKindSchema,
   blankCount: z.number().int().positive(),
-});
+  /**
+   * 子題標記原文（如「（1）」），依子題序號排列；沒有標記為 null（003 FR-012、research R5）。
+   * 只含標記、不含任何題目或子題敘述（003 FR-022）；長度必須等於 blankCount。
+   */
+  blankLabels: z.array(z.string().nullable()),
+};
+
+/** blankLabels 必須與子題數一致，否則學生端無法對應輸入欄。 */
+const labelsMatchBlankCount = (q: { blankCount: number; blankLabels: unknown[] }): boolean =>
+  q.blankLabels.length === q.blankCount;
+const LABELS_MISMATCH = { message: 'blankLabels 的數量必須等於 blankCount' };
+
+export const QuestionSummarySchema = z
+  .object(QuestionSummaryShape)
+  .refine(labelsMatchBlankCount, LABELS_MISMATCH);
 export type QuestionSummary = z.infer<typeof QuestionSummarySchema>;
 
 /** 每題結果的顯示資料：搶答成功組別與答案；無人搶答時皆為 null。 */
@@ -39,10 +53,13 @@ export const TeacherBlankViewSchema = z.object({
 export type TeacherBlankView = z.infer<typeof TeacherBlankViewSchema>;
 
 /** 老師端的題目資料：比 QuestionSummary 多了題目敘述與子題（只出現在 TeacherView，002 FR-007）。 */
-export const TeacherQuestionViewSchema = QuestionSummarySchema.extend({
-  prompt: z.string().nullable(),
-  blanks: z.array(TeacherBlankViewSchema),
-});
+export const TeacherQuestionViewSchema = z
+  .object({
+    ...QuestionSummaryShape,
+    prompt: z.string().nullable(),
+    blanks: z.array(TeacherBlankViewSchema),
+  })
+  .refine(labelsMatchBlankCount, LABELS_MISMATCH);
 export type TeacherQuestionView = z.infer<typeof TeacherQuestionViewSchema>;
 
 /** 老師端的每題結果：多了搶答成功作答的伺服器收件時間（002 FR-014）。 */

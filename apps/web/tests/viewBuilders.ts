@@ -1,4 +1,11 @@
-import { groupName, type SessionStatus, type TeacherView } from '@crs/shared';
+import {
+  groupName,
+  type PublicView,
+  type QuestionSummary,
+  type SessionStatus,
+  type StudentView,
+  type TeacherView,
+} from '@crs/shared';
 
 /** 前端測試用的老師檢視資料。 */
 export function teacherView(overrides: Partial<TeacherView> = {}): TeacherView {
@@ -14,6 +21,7 @@ export function teacherView(overrides: Partial<TeacherView> = {}): TeacherView {
             number: 1,
             kind: 'group',
             blankCount: 2,
+            blankLabels: ['（1）', '（2）'],
             prompt: null,
             blanks: [
               { index: 1, label: '（1）', prompt: '電腦的「大腦」英文簡稱是什麼？' },
@@ -24,6 +32,7 @@ export function teacherView(overrides: Partial<TeacherView> = {}): TeacherView {
             number: 2,
             kind: 'group',
             blankCount: 2,
+            blankLabels: [null, null],
             prompt: null,
             blanks: [
               { index: 1, label: null, prompt: '步驟明確的邏輯稱為什麼？' },
@@ -34,6 +43,7 @@ export function teacherView(overrides: Partial<TeacherView> = {}): TeacherView {
             number: 3,
             kind: 'single',
             blankCount: 1,
+            blankLabels: [null],
             prompt: '二進位由數字 1 和哪一個數字構成？',
             blanks: [{ index: 1, label: null, prompt: null }],
           },
@@ -41,6 +51,7 @@ export function teacherView(overrides: Partial<TeacherView> = {}): TeacherView {
             number: 4,
             kind: 'single',
             blankCount: 1,
+            blankLabels: [null],
             prompt: null,
             blanks: [{ index: 1, label: null, prompt: null }],
           },
@@ -61,6 +72,43 @@ export function teacherView(overrides: Partial<TeacherView> = {}): TeacherView {
     closedAt: null,
     lastExport: null,
     serverNow: '2026-11-23T02:00:00.000Z',
+    ...overrides,
+  };
+}
+
+/** 學生與公開檢視用的題目摘要：與 teacherView() 的 4 題相同，但不含敘述（003 FR-022）。 */
+function questionSummaries(): QuestionSummary[] {
+  return teacherView().questions.map(({ number, kind, blankCount, blankLabels }) => ({
+    number,
+    kind,
+    blankCount,
+    blankLabels,
+  }));
+}
+
+/** 前端測試用的公開檢視（沒有身分的分頁）。 */
+export function publicView(overrides: Partial<PublicView> = {}): PublicView {
+  const status: SessionStatus = overrides.status ?? 'READY';
+  const imported = status !== 'NOT_IMPORTED';
+  return {
+    viewer: 'public',
+    status,
+    groups: imported ? [1, 2, 3].map((id) => ({ id, name: groupName(id) })) : [],
+    questions: imported ? questionSummaries() : [],
+    ...overrides,
+  };
+}
+
+/** 前端測試用的學生檢視（預設第 2 組、待開始）。 */
+export function studentView(overrides: Partial<StudentView> = {}): StudentView {
+  return {
+    viewer: 'student',
+    status: 'READY',
+    groups: [1, 2, 3].map((id) => ({ id, name: groupName(id) })),
+    questions: questionSummaries(),
+    groupId: 2,
+    ownSubmissions: [],
+    results: null,
     ...overrides,
   };
 }
