@@ -13,6 +13,8 @@ import type {
 export class FakeGuidedNotesGateway implements GuidedNotesGateway {
   private readonly docs = new Map<string, SpreadsheetSnapshot>();
   readonly writeLog: { spreadsheetId: string; writes: CellWrite[] }[] = [];
+  /** 每格目前的淡化樣式起點（`工作表!列:欄` → mutedFrom），模擬 Google Sheets 的局部文字樣式 */
+  readonly formats = new Map<string, number | null>();
   readCount = 0;
   failNext = false;
 
@@ -47,6 +49,12 @@ export class FakeGuidedNotesGateway implements GuidedNotesGateway {
     return Promise.resolve(structuredClone(doc));
   }
 
+  /** 讀取某格目前的淡化樣式起點；從未寫入過為 undefined。 */
+  formatAt(sheetTitle: string, rowIndex: number, columnIndex: number): number | null | undefined {
+    return this.formats.get(`${sheetTitle}!${String(rowIndex)}:${String(columnIndex)}`);
+  }
+
+  /** 與 Google 的單一 batchUpdate 相同：任何一格無法寫入時整批都不套用（全有或全無）。 */
   writeCells(ref: SpreadsheetRef, writes: CellWrite[]): Promise<void> {
     const failure = this.takeFailure();
     if (failure !== null) return Promise.reject(failure);
@@ -54,15 +62,20 @@ export class FakeGuidedNotesGateway implements GuidedNotesGateway {
     if (doc === undefined) {
       return Promise.reject(new DomainError('SHEETS_UNAVAILABLE', '無法存取這份文件。'));
     }
+    if (writes.some((w) => !doc.sheets.some((sheet) => sheet.sheetTitle === w.sheetTitle))) {
+      return Promise.reject(new DomainError('SHEETS_UNAVAILABLE', '找不到工作表。'));
+    }
     for (const write of writes) {
       const sheet = doc.sheets.find((s) => s.sheetTitle === write.sheetTitle);
-      if (sheet === undefined) {
-        return Promise.reject(new DomainError('SHEETS_UNAVAILABLE', '找不到工作表。'));
-      }
+      if (sheet === undefined) continue;
       while (sheet.cells.length <= write.rowIndex) sheet.cells.push([]);
       const row = sheet.cells[write.rowIndex] ?? [];
       while (row.length <= write.columnIndex) row.push('');
-      row[write.columnIndex] = write.value;
+      row[write.columnIndex] = write.text;
+      this.formats.set(
+        `${write.sheetTitle}!${String(write.rowIndex)}:${String(write.columnIndex)}`,
+        write.mutedFrom,
+      );
       sheet.cells[write.rowIndex] = row;
     }
     this.writeLog.push({ spreadsheetId: ref.spreadsheetId, writes: structuredClone(writes) });

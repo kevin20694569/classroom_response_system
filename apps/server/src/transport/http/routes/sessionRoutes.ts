@@ -1,5 +1,6 @@
 import {
   EmptyRequestSchema,
+  ExportRequestSchema,
   ImportRequestSchema,
   type ExportResponse,
   type SessionViewResponse,
@@ -7,6 +8,7 @@ import {
 } from '@crs/shared';
 import type { FastifyInstance } from 'fastify';
 import { requireTeacher } from '../../../auth/roleGuard.js';
+import { DomainError } from '../../../domain/errors.js';
 import type { QuizSessionService } from '../../../domain/session/quizSessionService.js';
 import { toTeacherView } from '../../../domain/visibility/visibilityPolicy.js';
 import { viewFor } from '../../views.js';
@@ -45,8 +47,10 @@ export function registerSessionRoutes(app: FastifyInstance, service: QuizSession
 
   app.post('/api/session/export', async (request, reply) => {
     requireTeacher(request.identity);
-    EmptyRequestSchema.parse(request.body ?? {});
-    const response: ExportResponse = await service.exportResults();
+    // 匯出模式由伺服器驗證（002 FR-017）；不正確時回 VALIDATION_FAILED，不讀寫文件
+    const body = ExportRequestSchema.safeParse(request.body ?? {});
+    if (!body.success) throw new DomainError('VALIDATION_FAILED', '匯出模式不正確。');
+    const response: ExportResponse = await service.exportResults(body.data.mode);
     return reply.send(response);
   });
 }

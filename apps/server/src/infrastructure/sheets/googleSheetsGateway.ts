@@ -3,7 +3,7 @@ import { sheets as createSheetsClient, type sheets_v4 } from '@googleapis/sheets
 import { JWT } from 'google-auth-library';
 import { z } from 'zod';
 import { DomainError } from '../../domain/errors.js';
-import { columnName } from '../../domain/guidedNotes/grid.js';
+import { buildBatchUpdateRequests, type SheetProperties } from './batchRequests.js';
 import type {
   CellWrite,
   GuidedNotesGateway,
@@ -137,28 +137,53 @@ export class GoogleSheetsGateway implements GuidedNotesGateway {
     return parsed.data;
   }
 
-  /**
-   * 以一次 batchUpdate 寫入所有目標儲存格（減少只寫了一半的機會）。
-   * valueInputOption = RAW：答案以純文字寫入，以「=」開頭的答案也不會被當成公式執行。
-   */
+  /** 以單一 spreadsheets.batchUpdate 寫入（002 research R8），細節見 writeCellsWith。 */
   async writeCells(ref: SpreadsheetRef, writes: CellWrite[]): Promise<void> {
-    try {
-      await this.client.spreadsheets.values.batchUpdate({
-        spreadsheetId: ref.spreadsheetId,
-        requestBody: {
-          valueInputOption: 'RAW',
-          data: writes.map((w) => ({
-            range: a1Range(w.sheetTitle, w.rowIndex, columnName(w.columnIndex)),
-            values: [[w.value]],
-          })),
-        },
-      });
-    } catch (error) {
-      this.onError(error, 'write');
-      throw new DomainError(
-        'SHEETS_UNAVAILABLE',
-        '寫入文件失敗，請確認文件已分享給系統的服務帳號（編輯者）後再匯出一次。',
-      );
-    }
+    await writeCellsWith(this.client, ref, writes, this.onError);
+  }
+}
+
+const WRITE_FAILED_MESSAGE =
+  '寫入文件失敗，請確認文件已分享給系統的服務帳號（編輯者）後再匯出一次。';
+
+/** 寫入時需要的工作表屬性（工作表 ID 與目前欄數）。 */
+const PROPERTIES_FIELDS = 'sheets.properties(sheetId,title,gridProperties.columnCount)';
+
+/**
+ * 先讀取工作表屬性，再以**單一** spreadsheets.batchUpdate 寫入所有儲存格（必要時先補足欄數）。
+ * batchUpdate 任一請求失敗時整批都不套用，因此不會只寫了一半（002 FR-022）。
+ * Google 端的任何錯誤都轉成 SHEETS_UNAVAILABLE，回應不含原始錯誤或金鑰路徑。
+ */
+export async function writeCellsWith(
+  client: Pick<sheets_v4.Sheets, 'spreadsheets'>,
+  ref: SpreadsheetRef,
+  writes: readonly CellWrite[],
+  onError: (error: unknown, operation: string) => void = () => undefined,
+): Promise<void> {
+  if (writes.length === 0) return;
+  let properties: SheetProperties[];
+  try {
+    const response = await client.spreadsheets.get({
+      spreadsheetId: ref.spreadsheetId,
+      fields: PROPERTIES_FIELDS,
+    });
+    properties = (response.data.sheets ?? []).map((sheet) => ({
+      sheetId: sheet.properties?.sheetId ?? 0,
+      title: sheet.properties?.title ?? '',
+      columnCount: sheet.properties?.gridProperties?.columnCount ?? 0,
+    }));
+  } catch (error) {
+    onError(error, 'write');
+    throw new DomainError('SHEETS_UNAVAILABLE', WRITE_FAILED_MESSAGE);
+  }
+  const requests = buildBatchUpdateRequests(properties, writes);
+  try {
+    await client.spreadsheets.batchUpdate({
+      spreadsheetId: ref.spreadsheetId,
+      requestBody: { requests },
+    });
+  } catch (error) {
+    onError(error, 'write');
+    throw new DomainError('SHEETS_UNAVAILABLE', WRITE_FAILED_MESSAGE);
   }
 }

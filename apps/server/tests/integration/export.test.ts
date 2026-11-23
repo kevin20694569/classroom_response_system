@@ -182,3 +182,153 @@ describe('匯出至原 Guided Notes（US4，SC-007）', () => {
     expect(again.json()).toMatchObject({ writtenQuestionCount: 1 });
   });
 });
+
+const TIME_PATTERN = /^\d{4}\/\d{2}\/\d{2} \d{2}:\d{2}:\d{2}\.\d{3}$/;
+
+describe('匯出模式（002 US4）', () => {
+  async function groupActivity(a: TestApp): Promise<string> {
+    return runActivity(a, 'group-example', [
+      { group: 2, question: 1, answers: ['CPU', '作業系統'] },
+      { group: 1, question: 3, answers: ['0'] },
+    ]);
+  }
+  const exportWith = (a: TestApp, teacher: string, payload: object) =>
+    call(a, 'POST', '/api/session/export', teacher, payload);
+  const cells = (a: TestApp) => a.gateway.get('group-example')?.sheets[0]?.cells ?? [];
+
+  it('{} 等同「只有答案」，結果與 001 相同', async () => {
+    app = await startTestApp();
+    const teacher = await groupActivity(app);
+    const before = app.gateway.get('group-example');
+    if (before === undefined) throw new Error('缺少文件');
+    const res = await exportWith(app, teacher, {});
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toMatchObject({ mode: 'answers-only', writtenQuestionCount: 2 });
+    const after = app.gateway.get('group-example');
+    if (after === undefined) throw new Error('缺少文件');
+    expect(diffCells(before, after)).toEqual({
+      '4,6': ['（1）', '（1）CPU'],
+      '5,6': ['（2）', '（2）作業系統'],
+      '10,6': ['', '0'],
+    });
+  });
+
+  it('mode 不正確或含多餘欄位時回 400「匯出模式不正確」，且沒有讀寫文件', async () => {
+    app = await startTestApp();
+    const teacher = await groupActivity(app);
+    const reads = app.gateway.readCount;
+    for (const payload of [{ mode: 'unknown' }, { mode: 'answers-only', extra: true }]) {
+      const res = await exportWith(app, teacher, payload);
+      expect(res.statusCode).toBe(400);
+      expect(res.json()).toEqual({
+        error: { code: 'VALIDATION_FAILED', message: '匯出模式不正確。' },
+      });
+    }
+    expect(app.gateway.readCount).toBe(reads);
+    expect(app.gateway.writeLog).toHaveLength(0);
+  });
+
+  it('答案＋組別時間欄：新增兩欄、題目區塊第一列寫入結果；重複匯出文件不變', async () => {
+    app = await startTestApp();
+    const teacher = await groupActivity(app);
+    const res = await exportWith(app, teacher, { mode: 'answers-with-columns' });
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toMatchObject({ mode: 'answers-with-columns', writtenQuestionCount: 2 });
+    const doc = cells(app);
+    expect([doc[3]?.[7], doc[3]?.[8]]).toEqual(['搶答組別', '提交時間']);
+    expect(doc[4]?.[7]).toBe('第 2 組');
+    expect(doc[4]?.[8]).toMatch(TIME_PATTERN);
+    expect(doc[10]?.[7]).toBe('第 1 組');
+    expect([doc[7]?.[7], doc[12]?.[7]]).toEqual(['', '']);
+    expect([doc[4]?.[6], doc[10]?.[6]]).toEqual(['（1）CPU', '0']);
+
+    const snapshot = app.gateway.get('group-example');
+    expect((await exportWith(app, teacher, { mode: 'answers-with-columns' })).statusCode).toBe(200);
+    expect(app.gateway.get('group-example')).toEqual(snapshot);
+  });
+
+  it('答案＋格內附註行：附註行為淡化樣式；重複匯出不累加；改回只有答案時附註行與樣式消失', async () => {
+    app = await startTestApp();
+    const teacher = await groupActivity(app);
+    expect((await exportWith(app, teacher, { mode: 'answers-with-note-line' })).statusCode).toBe(
+      200,
+    );
+    let doc = cells(app);
+    expect(doc[4]?.[6]).toBe('（1）CPU');
+    expect(doc[5]?.[6]).toMatch(/^（2）作業系統\n〔第 2 組｜.+〕$/);
+    expect(doc[10]?.[6]).toMatch(/^0\n〔第 1 組｜.+〕$/);
+    expect(app.gateway.formatAt('學習單', 5, 6)).toBe('（2）作業系統'.length);
+    expect(app.gateway.formatAt('學習單', 4, 6)).toBeNull();
+
+    const snapshot = app.gateway.get('group-example');
+    expect((await exportWith(app, teacher, { mode: 'answers-with-note-line' })).statusCode).toBe(
+      200,
+    );
+    expect(app.gateway.get('group-example')).toEqual(snapshot);
+
+    expect((await exportWith(app, teacher, { mode: 'answers-only' })).statusCode).toBe(200);
+    doc = cells(app);
+    expect([doc[5]?.[6], doc[10]?.[6]]).toEqual(['（2）作業系統', '0']);
+    expect(app.gateway.formatAt('學習單', 5, 6)).toBeNull();
+  });
+
+  it('欄位模式後改用其他模式：結果欄保留不動', async () => {
+    app = await startTestApp();
+    const teacher = await groupActivity(app);
+    await exportWith(app, teacher, { mode: 'answers-with-columns' });
+    const groupCell = cells(app)[4]?.[7];
+    await exportWith(app, teacher, { mode: 'answers-with-note-line' });
+    expect(cells(app)[3]?.[7]).toBe('搶答組別');
+    expect(cells(app)[4]?.[7]).toBe(groupCell);
+  });
+
+  it('匯出後的文件重新匯入成功，題數與題組判斷不變（FR-023）', async () => {
+    app = await startTestApp();
+    const teacher = await groupActivity(app);
+    await exportWith(app, teacher, { mode: 'answers-with-columns' });
+    await exportWith(app, teacher, { mode: 'answers-with-note-line' });
+    const res = await call(app, 'POST', '/api/session/import', teacher, {
+      spreadsheetUrl: 'https://docs.google.com/spreadsheets/d/group-example/edit',
+      groupCount: 2,
+      confirmDiscard: true,
+    });
+    expect(res.statusCode).toBe(200);
+    expect(
+      res
+        .json<{ view: { questions: { kind: string; blankCount: number }[] } }>()
+        .view.questions.map((q) => [q.kind, q.blankCount]),
+    ).toEqual([
+      ['group', 2],
+      ['group', 2],
+      ['single', 1],
+      ['single', 1],
+    ]);
+  });
+
+  it('刪除題目列後以欄位模式匯出：EXPORT_LOCATE_FAILED，文件沒有任何寫入（含表頭）', async () => {
+    app = await startTestApp();
+    const teacher = await groupActivity(app);
+    const doc = app.gateway.get('group-example');
+    if (doc === undefined) throw new Error('缺少文件');
+    doc.sheets[0]?.cells.splice(10, 1);
+    app.gateway.set('group-example', doc);
+    const res = await exportWith(app, teacher, { mode: 'answers-with-columns' });
+    expect(res.statusCode).toBe(422);
+    expect(res.json()).toMatchObject({ error: { code: 'EXPORT_LOCATE_FAILED' } });
+    expect(app.gateway.writeLog).toHaveLength(0);
+    expect(app.gateway.get('group-example')).toEqual(doc);
+  });
+
+  it('lastExport.mode 經 session:state 推播給老師', async () => {
+    app = await startTestApp();
+    const teacher = await groupActivity(app);
+    const socket = await connectSocket(app.url, teacher);
+    sockets.push(socket);
+    const pushed = socket.nextState(
+      (p) => p.view.viewer === 'teacher' && p.view.lastExport?.mode === 'answers-with-note-line',
+      1000,
+    );
+    await exportWith(app, teacher, { mode: 'answers-with-note-line' });
+    await pushed;
+  });
+});

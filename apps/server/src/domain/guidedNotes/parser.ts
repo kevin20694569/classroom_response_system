@@ -17,9 +17,48 @@ import { parseQuestionNumber } from './questionNumber.js';
 const HEADER_NUMBER = '題號';
 const HEADER_ANSWER = '作答';
 
+const HEADER_RESULT_GROUP = '搶答組別';
+const HEADER_RESULT_TIME = '提交時間';
+
+/** 「答案＋組別時間欄」匯出模式使用的結果欄（002 contracts §B.3）；沒有對應表頭時為 null。 */
+export interface ResultColumns {
+  groupColumn: number | null;
+  timeColumn: number | null;
+}
+
 export interface ParsedGuidedNotes {
   sheetTitle: string;
   questions: Question[];
+  /** 表頭列（0 起算） */
+  headerRowIndex: number;
+  /** 工作表使用範圍的欄數：最後一個非空白儲存格或合併範圍的欄號 + 1（新增結果欄的起點） */
+  usedColumnCount: number;
+  resultColumns: ResultColumns;
+}
+
+/** 使用範圍的欄數：新增的結果欄放在這之後，保證不覆蓋任何既有內容（002 research R9）。 */
+function usedColumnCountOf(grid: SheetGrid): number {
+  let count = 0;
+  for (const row of grid.cells) {
+    for (let col = row.length - 1; col >= 0; col -= 1) {
+      if ((row[col] ?? '').trim() !== '') {
+        count = Math.max(count, col + 1);
+        break;
+      }
+    }
+  }
+  for (const merge of grid.merges) count = Math.max(count, merge.endColumn);
+  return count;
+}
+
+/** 表頭列中先前匯出時新增的「搶答組別」「提交時間」欄；這兩欄不參與題目辨識（002 FR-023）。 */
+function resultColumnsOf(grid: SheetGrid, headerRowIndex: number): ResultColumns {
+  const cells = grid.cells[headerRowIndex] ?? [];
+  const find = (text: string) => {
+    const index = cells.findIndex((c) => c.trim() === text);
+    return index >= 0 ? index : null;
+  };
+  return { groupColumn: find(HEADER_RESULT_GROUP), timeColumn: find(HEADER_RESULT_TIME) };
 }
 
 interface HeaderRow {
@@ -244,7 +283,13 @@ export function parseGuidedNotes(snapshot: SpreadsheetSnapshot): ParsedGuidedNot
     collector.add('NO_QUESTIONS', '表頭以下沒有任何題目。', { sheetTitle: grid.sheetTitle });
   }
   if (collector.issues.length > 0) throw invalid(collector);
-  return { sheetTitle: grid.sheetTitle, questions };
+  return {
+    sheetTitle: grid.sheetTitle,
+    questions,
+    headerRowIndex: header.rowIndex,
+    usedColumnCount: usedColumnCountOf(grid),
+    resultColumns: resultColumnsOf(grid, header.rowIndex),
+  };
 }
 
 function invalid(collector: IssueCollector): DomainError {

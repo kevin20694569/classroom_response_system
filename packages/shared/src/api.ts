@@ -1,5 +1,11 @@
 import { z } from 'zod';
-import { GroupIdSchema, MAX_GROUPS, MIN_GROUPS } from './domain.js';
+import {
+  DEFAULT_EXPORT_MODE,
+  ExportModeSchema,
+  GroupIdSchema,
+  MAX_GROUPS,
+  MIN_GROUPS,
+} from './domain.js';
 import { SessionViewSchema, TeacherViewSchema } from './views.js';
 
 /**
@@ -52,7 +58,14 @@ export type ImportRequest = z.infer<typeof ImportRequestSchema>;
 /** 開啟、結束、匯出等不需要參數的請求。 */
 export const EmptyRequestSchema = z.strictObject({});
 
+/** 匯出請求（002 FR-017）：省略 mode 等同「只有答案」，與 001 的 `{}` 相容；其他欄位一律拒絕。 */
+export const ExportRequestSchema = z.strictObject({
+  mode: ExportModeSchema.default(DEFAULT_EXPORT_MODE),
+});
+export type ExportRequest = z.input<typeof ExportRequestSchema>;
+
 export const ExportResponseSchema = z.object({
+  mode: ExportModeSchema,
   writtenQuestionCount: z.number().int().nonnegative(),
   writtenCellCount: z.number().int().nonnegative(),
   exportedAt: z.string(),
