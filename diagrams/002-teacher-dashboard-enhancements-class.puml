@@ -87,8 +87,13 @@ package "server：領域層" {
   }
   class GuidedNotesParser <<functions>> {
     +parseGuidedNotes(snapshot): ParsedGuidedNotes
-    -readPrompts(grid, header, block): 敘述
   }
+  class GuidedNotesPrompts <<functions>> {
+    +findPromptColumn(grid, headerRowIndex): number | null
+    +promptAt(grid, row, column): string | null
+    +readQuestionPrompts(grid, promptColumn, blockRows, blanks, kind): 敘述
+  }
+  GuidedNotesParser ..> GuidedNotesPrompts : 讀取題目敘述
   class ExportPlanner <<functions>> {
     +planExport(session, results, fresh, mode): ExportPlan
     -answerValue(question, blank, answer): string
@@ -153,7 +158,7 @@ package "server：外部服務存取層" {
 package "web：老師端" {
   class QuestionList {
     -previewNumber: number | null
-    +onToggle(number): void
+    +togglePreview(current: number | null, clicked: number): number | null
   }
   class QuestionPreview {
     +question: TeacherQuestionView
@@ -165,6 +170,7 @@ package "web：老師端" {
   class TimeHint {
     +receivedAt: string
     +openedAt: string
+    +computeTooltipPosition(anchorRect, tooltipSize, viewport): 座標
   }
   class TimeFormat <<functions>> {
     +formatElapsed(ms): string
