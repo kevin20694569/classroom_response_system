@@ -74,4 +74,23 @@ describe('VisibilityPolicy', () => {
       }
     }
   });
+
+  it('三種檢視的題目都有子題標記原文，學生資料不含敘述（003 FR-012、FR-022、SC-004）', () => {
+    const closed = { ...openSession, status: 'CLOSED' as const };
+    const views = [
+      toPublicView(closed),
+      toStudentView(closed, 1, strategy),
+      toTeacherView(closed, strategy, new Date()),
+    ];
+    for (const view of views) {
+      expect(view.questions.map((q) => q.blankLabels)).toEqual([
+        [null],
+        [null],
+        ['（1）', '（2）'],
+      ]);
+    }
+    for (const view of views.slice(0, 2)) {
+      expect(JSON.stringify(view)).not.toContain('敘述');
+    }
+  });
 });

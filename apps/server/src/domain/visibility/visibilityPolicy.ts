@@ -26,6 +26,8 @@ function base(session: QuizSession): Pick<PublicView, 'status' | 'groups' | 'que
       number: q.number,
       kind: q.kind,
       blankCount: q.blanks.length,
+      // 只取子題標記原文，敘述（prompt）不會進入學生與公開資料（003 FR-022、research R5）
+      blankLabels: q.blanks.map((b) => b.label),
     })),
   };
 }
@@ -70,6 +72,7 @@ function toTeacherQuestion(question: QuizSession['questions'][number]): TeacherQ
     number: question.number,
     kind: question.kind,
     blankCount: question.blanks.length,
+    blankLabels: question.blanks.map((b) => b.label),
     prompt: question.prompt,
     blanks: question.blanks.map((b) => ({ index: b.index, label: b.label, prompt: b.prompt })),
   };

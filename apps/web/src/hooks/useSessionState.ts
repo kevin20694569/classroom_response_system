@@ -2,6 +2,9 @@ import { SessionStatePayloadSchema, UNAUTHORIZED_MESSAGE, type SessionView } fro
 import { useEffect, useRef, useState } from 'react';
 import { createSessionSocket } from '../api/socket';
 
+/** 身分失效原因（003 research R4）：老師開始新的活動，或身分逾時／屬於舊活動。 */
+export type InvalidationReason = 'NEW_ACTIVITY' | 'EXPIRED';
+
 export interface SessionState {
   view: SessionView | null;
   connected: boolean;
@@ -9,9 +12,12 @@ export interface SessionState {
 
 /**
  * 訂閱伺服器推播的活動狀態：保存最新 view，忽略比目前更舊的 version；
- * 收到 UNAUTHORIZED 或 session:reset 時通知呼叫端（清除 token 並回到登入／加入畫面）。
+ * 收到 UNAUTHORIZED 或 session:reset 時通知呼叫端並附上原因（清除 token 並回到登入／加入畫面）。
  */
-export function useSessionState(token: string | null, onUnauthorized: () => void): SessionState {
+export function useSessionState(
+  token: string | null,
+  onUnauthorized: (reason: InvalidationReason) => void,
+): SessionState {
   const [state, setState] = useState<SessionState>({ view: null, connected: false });
   const versionRef = useRef(-1);
   const onUnauthorizedRef = useRef(onUnauthorized);
@@ -30,10 +36,10 @@ export function useSessionState(token: string | null, onUnauthorized: () => void
       setState((s) => ({ ...s, connected: false }));
     });
     socket.on('connect_error', (error) => {
-      if (error.message === UNAUTHORIZED_MESSAGE) onUnauthorizedRef.current();
+      if (error.message === UNAUTHORIZED_MESSAGE) onUnauthorizedRef.current('EXPIRED');
     });
     socket.on('session:reset', () => {
-      onUnauthorizedRef.current();
+      onUnauthorizedRef.current('NEW_ACTIVITY');
     });
     socket.on('session:state', (payload) => {
       const parsed = SessionStatePayloadSchema.safeParse(payload);

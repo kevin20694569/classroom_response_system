@@ -42,7 +42,7 @@ US3（檢視結果，P2）。
 
 **Purpose**: 確認基準
 
-- [ ] T001 在 `003-student-quiz-participation` branch 執行 `npm run typecheck`、`npm run lint`、`npm run format:check`、`npm test`，確認 001、002 的基準全部通過並回報結果（作為後續回歸比對）
+- [X] T001 在 `003-student-quiz-participation` branch 執行 `npm run typecheck`、`npm run lint`、`npm run format:check`、`npm test`，確認 001、002 的基準全部通過並回報結果（作為後續回歸比對）
 
 **Checkpoint**: 基準綠燈
 
@@ -54,14 +54,14 @@ US3（檢視結果，P2）。
 
 **⚠️ CRITICAL**: 本 Phase 完成前不得開始任何 user story
 
-- [ ] T002 在 `packages/shared/src/views.ts` 的 `QuestionSummarySchema` 新增 `blankLabels: z.array(z.string().nullable())`，並以 `refine` 檢查 `blankLabels.length === blankCount`（data-model §1）；加註解「子題標記原文（如『（1）』），只含標記、不含任何敘述（FR-022）」；`TeacherQuestionViewSchema` 由 `.extend` 繼承，確認仍可正常 extend（若 `refine` 造成無法 extend，改為以 `superRefine` 套在使用處或改寫成不影響 extend 的寫法，並加註解說明）
-- [ ] T003 在 `packages/shared/tests/schemas.test.ts` 新增測試：`blankLabels` 長度等於 `blankCount` 時通過；長度不符時失敗；元素可為 `null`；`StudentViewSchema`、`PublicViewSchema`、`TeacherViewSchema` 的題目都接受 `blankLabels`
-- [ ] T004 在 `apps/server/src/domain/visibility/visibilityPolicy.ts` 的 `base()` 與 `toTeacherQuestion()` 產生 `blankLabels: question.blanks.map((b) => b.label)`（依子題序號排列）；加註解說明只取標記原文（research R5）
-- [ ] T005 更新 `apps/server/tests/unit/visibilityPolicy.test.ts`：三種檢視的題目都有 `blankLabels`，題組為 `['（1）', '（2）']`、單題為 `[null]`；以含題目與子題敘述的題目資料測試，學生與公開檢視 `JSON.stringify` 後不含任何敘述文字（FR-022、SC-004）
-- [ ] T006 [P] 在 `apps/web/src/api/identity.ts` 新增學生身分保存：`getStudentIdentity(): StudentIdentity | null`（讀 `sessionStorage` 鍵 `crs.identity`，以 `IdentitySummarySchema` 驗證且 `role === 'student'`，失敗回 `null`）、`setStudentIdentity(identity)`、`clearIdentity()`（同時清除 `crs.token` 與 `crs.identity`）；加註解說明只用 `sessionStorage` 的理由（research R2、data-model §2）；新增 `apps/web/tests/identity.test.ts`（正常讀寫、內容壞掉回 `null`、老師身分回 `null`、清除）
-- [ ] T007 在 `apps/web/src/hooks/useSessionState.ts` 將 `onUnauthorized: () => void` 改為 `onUnauthorized: (reason: InvalidationReason) => void`（`InvalidationReason = 'NEW_ACTIVITY' | 'EXPIRED'`，定義並匯出於 `useSessionState.ts`）：`session:reset` 傳 `'NEW_ACTIVITY'`、`connect_error: UNAUTHORIZED` 傳 `'EXPIRED'`（research R4）；老師端呼叫處（`apps/web/src/pages/teacher/TeacherDashboard.tsx` 等）忽略參數、行為不變
-- [ ] T008 [P] 新增 `apps/web/tests/fakeSocket.ts`：可被 `vi.mock('../src/api/socket')` 使用的假 socket，記錄建立時的 token，提供 `emitServer(event, payload)`、`connect()`、`disconnect()`、`connectError(message)` 等觸發方法；並在 `apps/web/tests/viewBuilders.ts` 新增 `studentView(overrides)` 與 `publicView(overrides)`（題目沿用 `teacherView()` 的 4 題：第 1、2 題題組、第 3、4 題單題，含 `blankLabels`；第 2 題標記為 `[null, null]`），`teacherView()` 的題目補上 `blankLabels`
-- [ ] T009 品質關卡：`npm run typecheck`、`npm run lint`、`npm run format:check`、`npm test` 全部通過，回報指令與結果
+- [X] T002 在 `packages/shared/src/views.ts` 的 `QuestionSummarySchema` 新增 `blankLabels: z.array(z.string().nullable())`，並以 `refine` 檢查 `blankLabels.length === blankCount`（data-model §1）；加註解「子題標記原文（如『（1）』），只含標記、不含任何敘述（FR-022）」；`TeacherQuestionViewSchema` 由 `.extend` 繼承，確認仍可正常 extend（若 `refine` 造成無法 extend，改為以 `superRefine` 套在使用處或改寫成不影響 extend 的寫法，並加註解說明）
+- [X] T003 在 `packages/shared/tests/schemas.test.ts` 新增測試：`blankLabels` 長度等於 `blankCount` 時通過；長度不符時失敗；元素可為 `null`；`StudentViewSchema`、`PublicViewSchema`、`TeacherViewSchema` 的題目都接受 `blankLabels`
+- [X] T004 在 `apps/server/src/domain/visibility/visibilityPolicy.ts` 的 `base()` 與 `toTeacherQuestion()` 產生 `blankLabels: question.blanks.map((b) => b.label)`（依子題序號排列）；加註解說明只取標記原文（research R5）
+- [X] T005 更新 `apps/server/tests/unit/visibilityPolicy.test.ts`：三種檢視的題目都有 `blankLabels`，題組為 `['（1）', '（2）']`、單題為 `[null]`；以含題目與子題敘述的題目資料測試，學生與公開檢視 `JSON.stringify` 後不含任何敘述文字（FR-022、SC-004）
+- [X] T006 [P] 在 `apps/web/src/api/identity.ts` 新增學生身分保存：`getStudentIdentity(): StudentIdentity | null`（讀 `sessionStorage` 鍵 `crs.identity`，以 `IdentitySummarySchema` 驗證且 `role === 'student'`，失敗回 `null`）、`setStudentIdentity(identity)`、`clearIdentity()`（同時清除 `crs.token` 與 `crs.identity`）；加註解說明只用 `sessionStorage` 的理由（research R2、data-model §2）；新增 `apps/web/tests/identity.test.ts`（正常讀寫、內容壞掉回 `null`、老師身分回 `null`、清除）
+- [X] T007 在 `apps/web/src/hooks/useSessionState.ts` 將 `onUnauthorized: () => void` 改為 `onUnauthorized: (reason: InvalidationReason) => void`（`InvalidationReason = 'NEW_ACTIVITY' | 'EXPIRED'`，定義並匯出於 `useSessionState.ts`）：`session:reset` 傳 `'NEW_ACTIVITY'`、`connect_error: UNAUTHORIZED` 傳 `'EXPIRED'`（research R4）；老師端呼叫處（`apps/web/src/pages/teacher/TeacherDashboard.tsx` 等）忽略參數、行為不變
+- [X] T008 [P] 新增 `apps/web/tests/fakeSocket.ts`：可被 `vi.mock('../src/api/socket')` 使用的假 socket，記錄建立時的 token，提供 `emitServer(event, payload)`、`connect()`、`disconnect()`、`connectError(message)` 等觸發方法；並在 `apps/web/tests/viewBuilders.ts` 新增 `studentView(overrides)` 與 `publicView(overrides)`（題目沿用 `teacherView()` 的 4 題：第 1、2 題題組、第 3、4 題單題，含 `blankLabels`；第 2 題標記為 `[null, null]`），`teacherView()` 的題目補上 `blankLabels`
+- [X] T009 品質關卡：`npm run typecheck`、`npm run lint`、`npm run format:check`、`npm test` 全部通過，回報指令與結果
 
 **Checkpoint**: 三種檢視都有子題標記且不含敘述；學生身分可保存；失效原因可區分；老師端行為不變
 

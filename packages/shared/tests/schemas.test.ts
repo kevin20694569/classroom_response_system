@@ -5,6 +5,7 @@ import {
   PersistedStateSchema,
   PublicViewSchema,
   QuestionSchema,
+  QuestionSummarySchema,
   StudentViewSchema,
   SubmitRequestSchema,
   TeacherViewSchema,
@@ -156,6 +157,7 @@ describe('002：題目敘述與老師檢視（research R2、R3）', () => {
           number: 1,
           kind: 'group',
           blankCount: 2,
+          blankLabels: ['（1）', '（2）'],
           prompt: null,
           blanks: [
             { index: 1, label: '（1）', prompt: '子題一' },
@@ -182,5 +184,50 @@ describe('002：題目敘述與老師檢視（research R2、R3）', () => {
       expect(keys).not.toContain('prompt');
       expect(keys).not.toContain('blanks');
     }
+  });
+});
+
+describe('QuestionSummary.blankLabels（003 FR-012、data-model §1）', () => {
+  const group = { number: 1, kind: 'group' as const, blankCount: 2 };
+
+  it('長度等於 blankCount 時通過，元素可為 null', () => {
+    expect(
+      QuestionSummarySchema.safeParse({ ...group, blankLabels: ['（1）', '（2）'] }).success,
+    ).toBe(true);
+    expect(QuestionSummarySchema.safeParse({ ...group, blankLabels: [null, null] }).success).toBe(
+      true,
+    );
+  });
+
+  it('長度不符或缺少欄位時失敗', () => {
+    expect(QuestionSummarySchema.safeParse({ ...group, blankLabels: ['（1）'] }).success).toBe(
+      false,
+    );
+    expect(QuestionSummarySchema.safeParse(group).success).toBe(false);
+  });
+
+  it('學生、公開、老師檢視的題目都接受 blankLabels', () => {
+    const base = { status: 'READY' as const, groups: [{ id: 1, name: '第 1 組' }] };
+    const question = { ...group, blankLabels: ['（1）', '（2）'] };
+    expect(
+      PublicViewSchema.safeParse({ viewer: 'public', ...base, questions: [question] }).success,
+    ).toBe(true);
+    expect(
+      StudentViewSchema.safeParse({
+        viewer: 'student',
+        ...base,
+        questions: [question],
+        groupId: 1,
+        ownSubmissions: [],
+        results: null,
+      }).success,
+    ).toBe(true);
+    expect(
+      PublicViewSchema.safeParse({
+        viewer: 'public',
+        ...base,
+        questions: [{ ...group, blankLabels: [null] }],
+      }).success,
+    ).toBe(false);
   });
 });
