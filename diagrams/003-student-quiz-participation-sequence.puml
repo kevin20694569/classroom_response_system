@@ -1,0 +1,73 @@
+@startuml 003-student-quiz-participation-sequence
+' 子功能 003：學生端搶答作答與結果檢視 — 時序圖
+skinparam defaultFontName "PingFang TC"
+skinparam sequenceMessageAlign left
+autonumber
+title 003 學生端搶答作答與結果檢視 — 時序圖 (Sequence Diagram)
+
+actor "老師" as Teacher
+actor "第 2 組學生\n（分頁 A）" as StudentA
+participant "學生端 A\nStudentPage" as PageA
+participant "學生端 B\n（第 2 組另一分頁）" as PageB
+participant "HttpApi" as Http
+participant "RealtimeGateway" as RT
+participant "VisibilityPolicy" as Vis
+participant "QuizSessionService /\nSubmissionService" as Domain
+database "本機存檔" as Repo
+
+== 加入組別 ==
+StudentA -> PageA : 打開學生端
+PageA -> RT : 連線（無 token）
+RT --> PageA : PublicView（階段、組別清單、題號）
+StudentA -> PageA : 選擇「第 2 組」
+PageA -> Http : POST /api/auth/student { groupId: 2 }
+Http -> Domain : 檢查已匯入、組別有效
+Http --> PageA : token（綁定此分頁）
+PageA -> RT : 以 token 重新連線，加入第 2 組房間
+RT -> Vis : toStudentView(session, 2)
+RT --> PageA : StudentView（只有本組資料）
+
+== 開啟搶答（階段同步） ==
+Teacher -> Http : POST /api/session/open
+Http -> Domain : READY → OPEN
+Domain -> Repo : 保存
+Domain -> RT : 狀態改變
+RT --> PageA : StudentView（status = OPEN）
+RT --> PageB : StudentView（status = OPEN）
+PageA -> PageA : 開放作答
+
+== 作答與送出 ==
+StudentA -> PageA : 選第 1 題（題組），填寫（1）（2）
+PageA -> PageA : 保存草稿（只在分頁內）
+StudentA -> PageA : 按「送出」
+PageA -> PageA : validateDraft：每個子題 1～200 字
+PageA -> Http : POST /api/submissions { questionNumber: 1, answers }
+Http -> Domain : 驗證、判定順位（組別取自 token）
+Domain -> Repo : 先保存再回覆
+Http --> PageA : { submissionId, receivedAt }（不含順位）
+PageA -> PageA : 第 1 題「已送出」、清除草稿
+Domain -> RT : 第 2 組送出成功
+RT --> PageA : StudentView（ownSubmissions 含第 1 題）
+RT --> PageB : StudentView（ownSubmissions 含第 1 題）
+note over RT : 其他組別的房間不推送本組的作答資料（FR-021）
+PageB -> Http : POST /api/submissions { questionNumber: 1, ... }（同時送出）
+Http --> PageB : 409 ALREADY_SUBMITTED
+PageB -> PageB : 顯示「本組已送出此題」與本組答案
+
+== 結束搶答與檢視結果 ==
+Teacher -> Http : POST /api/session/close
+Http -> Domain : OPEN → CLOSED
+Domain -> Repo : 保存
+Domain -> RT : 狀態改變
+RT -> Vis : toStudentView（CLOSED：加入每題搶答成功答案）
+RT --> PageA : StudentView（results）
+RT --> PageB : StudentView（results）
+PageA -> PageA : 停用作答，groupOutcomes 計算本組成績，\n顯示結果與「本組搶答成功 N 題」
+
+== 開始新的活動 ==
+Teacher -> Http : POST /api/session/import { confirmDiscard: true }
+Http -> Domain : CLOSED → READY（新 activityId）
+Domain -> RT : 重置
+RT --> PageA : session:reset
+PageA -> PageA : 清除身分與草稿，回到選組畫面\n「老師已開始新的活動，請重新選擇組別」
+@enduml
