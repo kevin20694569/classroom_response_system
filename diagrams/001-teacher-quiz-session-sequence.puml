@@ -71,8 +71,8 @@ Sub -> Session : 確認狀態為 OPEN
 alt 狀態為 OPEN、子題齊全、每格 1～200 字
   Sub -> Sub : 依伺服器收到順序給 sequence\n由 RankingStrategy 判定順位
   Sub -> Repo : save（保存完成才回覆）
-  Sub --> API : 收件成功（順位）
-  API -> SC : 只回覆送出的組別本身
+  Sub --> API : 收件成功
+  API -> SC : 只回覆送出的組別本身（不含順位，FR-020）
   API -> TC : 推播：第 n 題送出紀錄與目前搶答成功組別
 else 已結束、缺子題或答案空白／過長
   Sub --> API : 拒絕

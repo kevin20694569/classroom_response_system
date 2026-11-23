@@ -1,0 +1,29 @@
+# ── 機敏資料（constitution 原則 VIII：不得進入 Git 歷史）──
+# 環境變數：只 commit 不含真實值的 .env.example
+.env
+.env.*
+!.env.example
+
+# Google 服務帳號金鑰與其他憑證（金鑰應放在 repo 以外，這裡是防呆）
+service-account*.json
+*-service-account*.json
+*.key.json
+credentials*.json
+*.pem
+*.p12
+
+# ── 本機執行資料（活動狀態保存檔，FR-028）──
+data/
+
+# ── 相依套件與建置產物 ──
+node_modules/
+dist/
+build/
+coverage/
+*.tsbuildinfo
+.vite/
+
+# ── log 與系統檔 ──
+*.log
+npm-debug.log*
+.DS_Store
