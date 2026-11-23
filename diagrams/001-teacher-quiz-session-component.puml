@@ -1,0 +1,103 @@
+@startuml 001-teacher-quiz-session-component
+' 子功能 001：使用者角色與老師端搶答活動管理 — 組件圖
+skinparam defaultFontName "PingFang TC"
+skinparam componentStyle uml2
+title 001 老師端搶答活動管理 — 組件圖 (Component Diagram)
+
+actor "老師" as TeacherActor
+actor "學生（各組）" as StudentActor
+
+node "同一台電腦的瀏覽器（多分頁，各分頁身分獨立）" as Browser {
+  component "TeacherClient\n老師端畫面" as TeacherClient
+  component "StudentClient\n學生端畫面\n<<子功能 002>>" as StudentClient #EEEEEE
+}
+
+package "shared（前後端共用契約）" as Shared {
+  component "Contracts\nAPI / 即時事件 / 領域模型\n型別與執行期驗證規則" as Contracts
+}
+
+node "本機伺服器（單一指令啟動）" as Server {
+  package "傳輸層 (Transport)" {
+    component "HttpApi\n老師操作 / 狀態查詢" as HttpApi
+    component "RealtimeGateway\n狀態推播 / 作答推播" as Realtime
+  }
+  package "存取控制" {
+    component "AuthService\n老師密碼驗證 / 分頁身分憑證" as Auth
+    component "RoleGuard\n角色權限檢查" as RoleGuard
+    component "VisibilityPolicy\n依角色過濾傳送資料" as Visibility
+  }
+  package "領域層 (Domain，不依賴網路與外部服務)" {
+    component "QuizSessionService\n活動狀態機" as SessionService
+    component "SubmissionService\n收件 / 順位判定" as SubmissionService
+    component "RankingStrategy\n<<interface>>\n預設：最先送出者成功" as Ranking
+    component "GuidedNotesParser\n依表頭與題號動態定位" as Parser
+    component "ResultExporter\n<<interface>>\n預設：寫回 Guided Notes" as Exporter
+  }
+  package "外部服務存取層 (Infrastructure)" {
+    component "GuidedNotesGateway\n<<interface>>" as Gateway
+    component "GoogleSheetsGateway\n讀寫線上 Google Sheets" as SheetsGateway
+    component "FakeGuidedNotesGateway\n自動化測試替身" as FakeGateway #EEEEEE
+    component "SessionRepository\n<<interface>>\n活動狀態 / 題目 / 作答紀錄" as Repo
+    component "LocalSessionRepository\n存到本機，重啟後恢復" as LocalRepo
+    component "ConfigLoader\n啟動時讀取並驗證環境變數" as Config
+    component "StructuredLogger\n關鍵事件紀錄（不含機敏資訊）" as Logger
+  }
+}
+
+database "本機資料儲存\n（不含密碼與憑證）" as LocalStore
+
+cloud "Google 雲端" {
+  database "Guided Notes\n（老師自己的 Google Sheets）" as Sheets
+}
+
+TeacherActor --> TeacherClient
+StudentActor --> StudentClient
+TeacherClient ..> Contracts : 使用
+StudentClient ..> Contracts : 使用
+HttpApi ..> Contracts : 驗證輸入
+Realtime ..> Contracts : 驗證事件
+
+TeacherClient --> HttpApi : 登入 / 匯入 / 開啟 / 結束 / 匯出
+TeacherClient <--> Realtime : 活動狀態、作答狀況
+StudentClient <--> Realtime : 活動狀態、送出作答
+
+HttpApi --> RoleGuard
+Realtime --> RoleGuard
+RoleGuard --> Auth
+HttpApi --> SessionService
+Realtime --> SubmissionService
+Realtime --> Visibility
+SessionService --> Parser
+SessionService --> Exporter
+SubmissionService --> SessionService : 確認狀態為搶答進行中
+SubmissionService --> Ranking
+Parser --> Gateway : 讀取文件
+Exporter --> Gateway : 寫入填空格
+Gateway <|.. SheetsGateway
+Gateway <|.. FakeGateway
+SheetsGateway --> Sheets : 讀寫（憑證來自設定）
+Auth ..> Config : 老師密碼
+SheetsGateway ..> Config : 服務帳號憑證
+SessionService ..> Logger
+SubmissionService ..> Logger
+SessionService --> Repo : 先保存再回覆
+SubmissionService --> Repo : 先保存再回覆
+Repo <|.. LocalRepo
+LocalRepo --> LocalStore
+
+note bottom of Auth
+  老師身分只綁定在輸入密碼的分頁；
+  重新整理或伺服器重啟後仍有效，
+  其他分頁不共用（FR-003a）
+end note
+
+note bottom of Parser
+  掃描文件所有工作表，只使用唯一含
+  「題號」與「作答」表頭的那一張（FR-006a、FR-007）
+end note
+
+note right of Visibility
+  活動結束前，學生端只會收到
+  自己組別的資料（原則 I）
+end note
+@enduml

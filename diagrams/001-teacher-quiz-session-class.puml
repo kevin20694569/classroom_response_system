@@ -1,0 +1,206 @@
+@startuml 001-teacher-quiz-session-class
+' 子功能 001：使用者角色與老師端搶答活動管理 — 類別圖
+skinparam defaultFontName "PingFang TC"
+hide empty members
+title 001 老師端搶答活動管理 — 類別圖 (Class Diagram)
+
+package "使用者與角色" {
+  enum Role {
+    TEACHER
+    STUDENT
+  }
+  abstract class User {
+    +id: UserId
+    +role: Role
+  }
+  class TabIdentity {
+    +token: string
+    +userId: UserId
+    +role: Role
+  }
+  class AuthService {
+    +loginAsTeacher(password: string): TabIdentity
+    +resolve(token: string): User | null
+  }
+  TabIdentity --> User
+  AuthService ..> TabIdentity : 簽發 / 驗證
+  class Teacher {
+  }
+  class Student {
+    +groupId: GroupId
+  }
+  class Group {
+    +id: GroupId
+    +name: string
+  }
+  User <|-- Teacher
+  User <|-- Student
+  User --> Role
+  Student "*" --> "1" Group : 隸屬
+}
+
+package "搶答活動" {
+  enum SessionStatus {
+    NOT_IMPORTED
+    READY
+    OPEN
+    CLOSED
+  }
+  class QuizSession {
+    +status: SessionStatus
+    +source: GuidedNotesRef
+    +groups: Group[]
+    +questions: Question[]
+    +importQuestions(parsed: ParsedGuidedNotes): void
+    +open(): void
+    +close(): void
+    +canTransition(to: SessionStatus): boolean
+  }
+  class Question {
+    +number: number
+    +order: number
+    +blanks: Blank[]
+    +isQuestionGroup(): boolean
+  }
+  class Blank {
+    +index: number
+    +label: string | null
+    +location: CellLocation
+  }
+  class CellLocation {
+    +sheetName: string
+    +row: number
+    +column: number
+  }
+  class Submission {
+    +groupId: GroupId
+    +questionNumber: number
+    +answers: BlankAnswer[]
+    +receivedAt: ServerTimestamp
+    +sequence: number
+  }
+  class BlankAnswer {
+    +blankIndex: number
+    +text: string
+  }
+  note bottom of BlankAnswer
+    去除前後空白後 1～200 字；
+    任一格不符則整筆拒絕（FR-017a）
+  end note
+  class QuestionResult {
+    +questionNumber: number
+    +winner: Submission | null
+    +isUnanswered(): boolean
+  }
+  QuizSession --> SessionStatus
+  QuizSession "1" *-- "*" Question
+  QuizSession "1" o-- "2..20" Group
+  Question "1" *-- "1..*" Blank
+  Blank --> CellLocation
+  Submission "1" *-- "1..*" BlankAnswer
+  Submission "*" --> "1" Question
+  Submission "*" --> "1" Group
+  QuestionResult --> Question
+  QuestionResult --> "0..1" Submission : 搶答成功
+}
+
+package "Guided Notes 處理" {
+  class GuidedNotesRef {
+    +spreadsheetId: string
+  }
+  class SpreadsheetSnapshot {
+    +sheets: SheetGrid[]
+  }
+  class SheetGrid {
+    +sheetName: string
+    +cells: string[][]
+    +mergedRanges: CellRange[]
+  }
+  class GuidedNotesParser {
+    +selectSheet(snapshot: SpreadsheetSnapshot): SheetGrid
+    +parse(grid: SheetGrid): ParsedGuidedNotes
+  }
+  SpreadsheetSnapshot "1" *-- "*" SheetGrid
+  class ParsedGuidedNotes {
+    +questions: Question[]
+  }
+  class ImportError {
+    +message: string
+    +location: string
+  }
+  interface GuidedNotesGateway {
+    +read(ref: GuidedNotesRef): SpreadsheetSnapshot
+    +writeCells(ref: GuidedNotesRef, writes: CellWrite[]): void
+  }
+  class GoogleSheetsGateway
+  class FakeGuidedNotesGateway
+  GuidedNotesGateway <|.. GoogleSheetsGateway
+  GuidedNotesGateway <|.. FakeGuidedNotesGateway
+  GuidedNotesParser ..> SheetGrid : 讀取
+  GuidedNotesParser ..> ParsedGuidedNotes : 產生
+  GuidedNotesParser ..> ImportError : 驗證失敗時
+}
+
+package "擴充點（核心只實作預設）" {
+  interface RankingStrategy {
+    +rank(submissions: Submission[]): Submission[]
+  }
+  class FirstSubmissionStrategy
+  RankingStrategy <|.. FirstSubmissionStrategy
+  interface ResultExporter {
+    +export(session: QuizSession, results: QuestionResult[]): ExportReport
+  }
+  class GuidedNotesExporter
+  ResultExporter <|.. GuidedNotesExporter
+  GuidedNotesExporter --> GuidedNotesGateway
+  GuidedNotesExporter ..> GuidedNotesParser : 匯出前重新定位
+}
+
+package "資料保存" {
+  interface SessionRepository {
+    +load(): QuizSession | null
+    +save(session: QuizSession, submissions: Submission[]): void
+  }
+  class LocalSessionRepository
+  SessionRepository <|.. LocalSessionRepository
+}
+SessionRepository ..> QuizSession
+SessionRepository ..> Submission
+
+note bottom of LocalSessionRepository
+  每次狀態轉換或收件成功後先保存再回覆；
+  伺服器重啟後載入恢復（FR-028）
+end note
+
+class VisibilityPolicy {
+  +filterFor(viewer: User, session: QuizSession): SessionView
+}
+VisibilityPolicy ..> User
+VisibilityPolicy ..> QuizSession
+
+QuizSession --> GuidedNotesRef
+
+note bottom of QuizSession
+  狀態轉換（其餘一律拒絕）：
+  NOT_IMPORTED -> READY（匯入）
+  READY -> READY（重新匯入）
+  READY -> OPEN（開啟，全部題目同時開放）
+  OPEN -> CLOSED（結束）
+  CLOSED -> READY（老師確認後匯入新文件）
+  不允許 CLOSED -> OPEN（不可重新開啟）
+end note
+
+note right of Question
+  依版面結構判斷（FR-009a）：
+  單題：同一題號只涵蓋 1 個作答格
+  題組：同一題號（合併或相鄰列重複）涵蓋多個作答格，
+  為一個搶答單位，送出須包含全部子題
+  label：原有「（n）」標記，沒有則為 null
+  題號接受 1 / 1. / 1、/ Q1 / 第1題 / 全形（FR-007a）
+end note
+
+note bottom of FirstSubmissionStrategy
+  順位依伺服器收到的 sequence，
+  不採用客戶端時間
+end note
+@enduml
