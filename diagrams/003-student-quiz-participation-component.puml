@@ -12,7 +12,7 @@ node "學生分頁（瀏覽器，每組可多個）" as StudentBrowser {
     component "StudentPage\n依身分與階段切換畫面" as StudentPage
     component "JoinGroupPanel\n選擇組別加入" as JoinPanel
     component "PhaseBanner\n組別 / 活動階段 / 連線狀態" as PhaseBanner
-    component "AnswerSheet\n題號清單與本組作答狀態" as AnswerSheet
+    component "AnswerSheet\n一次列出所有題目、題號跳轉" as AnswerSheet
     component "QuestionAnswerForm\n單題 / 題組子題輸入與送出" as AnswerForm
     component "StudentResultBoard\n每題結果與本組成績" as ResultBoard
     component "AnswerDraftStore\n未送出輸入（只存在該分頁）" as DraftStore
@@ -56,7 +56,7 @@ StudentPage --> JoinPanel
 StudentPage --> PhaseBanner
 StudentPage --> AnswerSheet
 StudentPage --> ResultBoard
-AnswerSheet --> AnswerForm : 選中的題號
+AnswerSheet --> AnswerForm : 每題一個
 AnswerForm --> DraftStore : 保存 / 清除草稿
 AnswerForm ..> AnswerRules : 送出前檢查
 StudentPage --> StudentAuth
