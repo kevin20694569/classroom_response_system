@@ -315,4 +315,4 @@ G 欄、H 欄沒有被填寫；測試 fixtures 也沒有重現真實版面（作
 
 ## Phase 10: Convergence
 
-- [ ] T069 LOW 同步設計文件與 Phase 9 後的實作：搶答結果的時間提示現在每筆都使用 `submissions[].receivedAt`（FR-026），`TeacherResultView.receivedAt` 已不被畫面使用。更新 `research.md` R6、`data-model.md` 的 TeacherResultView 說明與 `contracts/realtime-events.md`，註明結果欄位保留為搶答成功作答的收件時間（供契約與測試使用），畫面提示改以作答紀錄為準 per plan: research R6、FR-026 (partial)
+- [X] T069 LOW 同步設計文件與 Phase 9 後的實作：搶答結果的時間提示現在每筆都使用 `submissions[].receivedAt`（FR-026），`TeacherResultView.receivedAt` 已不被畫面使用。更新 `research.md` R6、`data-model.md` 的 TeacherResultView 說明與 `contracts/realtime-events.md`，註明結果欄位保留為搶答成功作答的收件時間（供契約與測試使用），畫面提示改以作答紀錄為準 per plan: research R6、FR-026 (partial)

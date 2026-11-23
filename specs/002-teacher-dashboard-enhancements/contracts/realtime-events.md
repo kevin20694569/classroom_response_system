@@ -8,7 +8,8 @@
 
 - 送往 `teachers` room 的 `TeacherView` 依 [data-model.md](../data-model.md) §2 擴充：
   - `questions[].prompt`、`questions[].blanks[].{index,label,prompt}`：題目預覽用（FR-006）。
-  - `results[].receivedAt`：搶答結果的提交時間提示用（FR-014）。
+  - `results[].receivedAt`：搶答成功作答的收件時間（保留於契約；畫面每筆的提交時間提示改用
+    `submissions[].receivedAt`，結束後仍列出所有組別，FR-014、FR-026）。
   - `serverNow`：每次產生 TeacherView 時填入伺服器當下時間，前端據此校正計時（FR-012）。
   - `lastExport.mode`：顯示上次匯出的模式（FR-024）。
 - 送往 `public` 與 `group:N` 的 `PublicView`／`StudentView` **不變**，不含上述任何新欄位。

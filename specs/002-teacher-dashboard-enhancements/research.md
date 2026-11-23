@@ -70,7 +70,8 @@
   超出視窗時改放下方並把水平位置夾在可視範圍內（FR-016）。內容：`提交時間 HH:mm:ss.SSS` 與
   `開始後 formatElapsed(receivedAt − openedAt)`。
   - 搶答進行中：每筆送出紀錄都有提示（資料來自 `TeacherView.submissions[].receivedAt`）。
-  - 已結束：結果資料 `TeacherResultView` 新增 `receivedAt`（搶答成功作答的收件時間），無人搶答為 null、不顯示圖示。
+  - 已結束：依 FR-026 仍列出所有送出紀錄，每筆提示同樣使用 `submissions[].receivedAt`；無人搶答的題目沒有紀錄、不顯示圖示。
+    結果資料 `TeacherResultView.receivedAt`（搶答成功作答的收件時間）保留在契約中，畫面提示不再使用它（Phase 9、T069）。
 - **Rationale**：需求單純（一行兩個時間），引入浮動定位套件不符 YAGNI；Portal + fixed 可確保不推擠版面。
 - **Alternatives considered**：原生 `title` 屬性（無法鍵盤觸發、樣式不可控、顯示延遲）；Floating UI 套件（多一個相依）。
 
