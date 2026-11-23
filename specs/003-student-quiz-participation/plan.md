@@ -121,7 +121,8 @@ apps/server/src/
 └── transport/http/routes/authRoutes.ts    ～ 學生加入成功的結構化 log（不含 token，FR-028）
 apps/server/tests/
 ├── unit/visibilityPolicy.test.ts          ～ blankLabels、學生資料不含敘述
-└── integration/visibility.test.ts         ～ 各階段學生推播與回應只含允許的欄位（SC-004）
+├── integration/visibility.test.ts         ～ 各階段學生推播與回應只含允許的欄位（SC-004）
+└── integration/concurrency.test.ts        ～ 同組兩個身分同時送出（SC-005）
 
 apps/web/src/
 ├── App.tsx                       ～ /student 路徑；首頁學生端連結
@@ -140,7 +141,11 @@ apps/web/src/
     ├── AnswerSheet.tsx           ＋ 題號清單與所有題目
     ├── QuestionAnswerForm.tsx    ＋ 單題／題組作答與送出
     └── StudentResultBoard.tsx    ＋ 結果與本組成績
-apps/web/tests/                   ＋ 上述模組與元件的測試；viewBuilders.ts ～ 學生檢視與 blankLabels
+apps/web/tests/
+├── fakeSocket.ts                 ＋ 可手動觸發事件的假即時連線
+├── identity.test.ts              ＋ 學生身分保存
+├── viewBuilders.ts               ～ 學生、公開檢視與 blankLabels
+└── …                             ＋ 上述模組與元件的測試
 
 README.md                         ～ 子功能表加入 003、學生端網址
 ```

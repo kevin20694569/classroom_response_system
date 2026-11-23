@@ -64,12 +64,20 @@ package "web（學生端）" {
   }
   class useStudentAuth <<hook>> {
     +identity: StudentIdentity | null
+    +token: string | null
+    +notice: string | null（身分失效的說明）
     +join(groupId): Promise<void>
     +leave(): void
-    +onInvalidated(reason): void
+    +onInvalidated(reason: InvalidationReason): void
+  }
+  enum InvalidationReason {
+    NEW_ACTIVITY
+    EXPIRED
   }
   class JoinGroupPanel {
+    +status: SessionStatus
     +groups: Group[]
+    +notice: string | null
     +onJoin(groupId): void
   }
   class PhaseBanner {
@@ -81,31 +89,42 @@ package "web（學生端）" {
   class AnswerSheet {
     +questions: QuestionSummary[]
     +ownSubmissions: OwnSubmission[]
+    +status: SessionStatus
+    +connected: boolean
+    +identity: StudentIdentity
+    +onInvalidated(reason): void
     +jumpTo(number): void（題號清單跳到該題）
   }
   class QuestionAnswerForm {
     +question: QuestionSummary
     +submitted: OwnSubmission | null
     +enabled: boolean
+    +canSubmit: boolean（連線中才可送出）
+    +status: SessionStatus
+    +identity: StudentIdentity
+    +onInvalidated(reason): void
     -submitting: boolean
     +submit(): Promise<SubmitOutcome>
   }
   class AnswerDraftStore <<module>> {
-    +load(activityId, groupId, questionNumber): string[]
+    +load(activityId, groupId, questionNumber, blankCount): string[]
     +save(activityId, groupId, questionNumber, texts): void
     +clear(activityId, groupId, questionNumber): void
     +clearAll(): void
   }
   class validateDraft <<function>> {
     +validateDraft(question, texts): DraftIssue[]
+    +blankLabelOf(question, index): string | null
   }
   class StudentResultBoard {
+    +questions: QuestionSummary[]
     +results: ResultView[]
     +ownSubmissions: OwnSubmission[]
     +groupId: number
   }
   class groupOutcomes <<function>> {
     +groupOutcomes(results, ownSubmissions, groupId): GroupOutcome[]
+    +wonCount(outcomes): number
   }
   enum OutcomeKind {
     WON
@@ -121,6 +140,7 @@ package "web（學生端）" {
   }
 
   StudentPage --> useStudentAuth
+  useStudentAuth ..> InvalidationReason
   StudentPage --> JoinGroupPanel
   StudentPage --> PhaseBanner
   StudentPage --> AnswerSheet
