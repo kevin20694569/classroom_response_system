@@ -36,7 +36,12 @@ npm start
 - 需要一列同時有「題號」與「作答」的表頭（「題目」欄可有可無）
 - 題號可寫成 `1`、`1.`、`1、`、`Q1`、`第1題`，或全形數字
 - 同一題號涵蓋多個作答格即為題組；作答格的「（1）」「（2）」標記可有可無，有寫就必須從（1）連號
-- 匯出時答案寫入原本的作答格，題組保留子題標記（例如「（1）CPU」），其他儲存格不會被改動
+- 「題目」欄的敘述會用於老師端的題目預覽（沒有「題目」欄也能匯入，預覽會顯示「文件未提供題目敘述」）
+- 匯出時答案寫入原本的作答格，題組保留子題標記（例如「（1）CPU」）。匯出可選三種模式，寫入位置見
+  [002 contracts/guided-notes-format.md](specs/002-teacher-dashboard-enhancements/contracts/guided-notes-format.md)：
+  - 只有答案：只寫作答格，其他儲存格不會被改動
+  - 答案＋組別時間欄：另在表頭列最右側新增「搶答組別」「提交時間」兩欄
+  - 答案＋格內附註行：答案下方另起一行，以灰色小字記錄組別與提交時間
 
 ## 開發與測試
 
@@ -47,9 +52,10 @@ npm start
 | `npm run typecheck` | TypeScript 型別檢查（strict） |
 | `npm run lint` | ESLint 檢查 |
 | `npm run format` | Prettier 格式化 |
-| `npm run simulate -- --group 1 --question 1 --answers "CPU"` | 以學生身分加入並送出答案（學生畫面於子功能 002 提供） |
+| `npm run simulate -- --group 1 --question 1 --answers "CPU"` | 以學生身分加入並送出答案（學生畫面於子功能 003 提供） |
 
-人工驗證步驟見 [quickstart.md §4](specs/001-teacher-quiz-session/quickstart.md)。
+人工驗證步驟見 [001 quickstart.md §4](specs/001-teacher-quiz-session/quickstart.md) 與
+[002 quickstart.md §4](specs/002-teacher-dashboard-enhancements/quickstart.md)。
 
 ## 專案結構
 
@@ -67,4 +73,5 @@ diagrams/          PlantUML 圖表（.puml 與 .png）
 | 編號 | 內容 | 狀態 |
 |------|------|------|
 | 001 | 使用者角色與老師端搶答活動管理（匯入、開啟／結束、檢視、匯出） | 已實作 |
-| 002 | 學生端畫面（加入組別、作答、檢視結果） | 待實作 |
+| 002 | 老師端介面優化（題目預覽、搶答計時、提交時間提示、匯出模式） | 已實作 |
+| 003 | 學生端畫面（加入組別、作答、檢視結果） | 待實作 |

@@ -177,12 +177,12 @@ US2（搶答計時，P2）、US3（提交時間提示，P3）。
 
 **Purpose**: 文件、圖表一致性、人工驗證與最終品質關卡
 
-- [ ] T052 [P] 更新學生端子功能編號與 README：`README.md` 子功能表改為「001 已實作；002 老師端介面優化（題目預覽、搶答計時、提交時間提示、匯出模式）已實作；003 學生端畫面待實作」，第 50 行模擬指令說明改為「學生畫面於子功能 003 提供」；「Guided Notes 準備規則」補充「題目」欄會用於預覽（可有可無）與三種匯出模式的寫入位置，連到 `specs/002-teacher-dashboard-enhancements/contracts/guided-notes-format.md`；人工驗證連結加上 002 quickstart §4；程式中仍指學生端的「子功能 002」改為「子功能 003」：`apps/web/src/App.tsx` 第 13 行畫面文字與第 18 行註解、`apps/server/src/transport/http/routes/authRoutes.ts:22` 註解、`scripts/simulate-students.ts:3` 註解；001 的 spec、plan、research、quickstart、圖表與 manual-verification 為 001 當時的紀錄，**不修改**
-- [ ] T053 [P] 機敏資料與 log 檢查：`git ls-files` 不含 `.env`、金鑰或 `data/`；`git grep -nE "BEGIN PRIVATE KEY|private_key\"\\s*:|TEACHER_PASSWORD=.+|SESSION_SECRET=.+"` 沒有真實值；確認匯出 log 只新增 `mode` 欄位，沒有記錄憑證；回報結果
-- [ ] T054 圖表一致性驗證（原則 VI）：依 `plan.md`「圖表對應」逐一核對 `diagrams/002-teacher-dashboard-enhancements-{component,class,sequence}.puml` 的元件、類別、欄位、方法與互動順序是否都存在於原始碼且名稱一致；結果寫入 `specs/002-teacher-dashboard-enhancements/diagram-verification.md`（每列：圖表元素、原始碼位置、是否一致、說明）；若實作偏離圖表，先更新 `.puml` 並執行 `plantuml "./diagrams/*.puml"` 重新產生 PNG
-- [ ] T055 執行 `npm start` 冒煙測試：伺服器啟動、`/teacher` 可開啟、`GET /api/session` 未登入時回 `PublicView` 且不含題目敘述；回報結果
+- [X] T052 [P] 更新學生端子功能編號與 README：`README.md` 子功能表改為「001 已實作；002 老師端介面優化（題目預覽、搶答計時、提交時間提示、匯出模式）已實作；003 學生端畫面待實作」，第 50 行模擬指令說明改為「學生畫面於子功能 003 提供」；「Guided Notes 準備規則」補充「題目」欄會用於預覽（可有可無）與三種匯出模式的寫入位置，連到 `specs/002-teacher-dashboard-enhancements/contracts/guided-notes-format.md`；人工驗證連結加上 002 quickstart §4；程式中仍指學生端的「子功能 002」改為「子功能 003」：`apps/web/src/App.tsx` 第 13 行畫面文字與第 18 行註解、`apps/server/src/transport/http/routes/authRoutes.ts:22` 註解、`scripts/simulate-students.ts:3` 註解；001 的 spec、plan、research、quickstart、圖表與 manual-verification 為 001 當時的紀錄，**不修改**
+- [X] T053 [P] 機敏資料與 log 檢查：`git ls-files` 不含 `.env`、金鑰或 `data/`；`git grep -nE "BEGIN PRIVATE KEY|private_key\"\\s*:|TEACHER_PASSWORD=.+|SESSION_SECRET=.+"` 沒有真實值；確認匯出 log 只新增 `mode` 欄位，沒有記錄憑證；回報結果
+- [X] T054 圖表一致性驗證（原則 VI）：依 `plan.md`「圖表對應」逐一核對 `diagrams/002-teacher-dashboard-enhancements-{component,class,sequence}.puml` 的元件、類別、欄位、方法與互動順序是否都存在於原始碼且名稱一致；結果寫入 `specs/002-teacher-dashboard-enhancements/diagram-verification.md`（每列：圖表元素、原始碼位置、是否一致、說明）；若實作偏離圖表，先更新 `.puml` 並執行 `plantuml "./diagrams/*.puml"` 重新產生 PNG
+- [X] T055 執行 `npm start` 冒煙測試：伺服器啟動、`/teacher` 可開啟、`GET /api/session` 未登入時回 `PublicView` 且不含題目敘述；回報結果
 - [ ] T056 依 `quickstart.md` §4 以真實 Google Sheets 副本（單題範例、題組範例）執行 26 個人工驗證步驟，紀錄於 `specs/002-teacher-dashboard-enhancements/checklists/manual-verification.md`（可勾選的步驟清單，每步「操作 → 預期結果」，通過即勾選，不需截圖、日期或執行者；附「已完成功能與驗證對應」表）；學生端以 `npm run simulate` 模擬；此任務需組員親自執行
-- [ ] T057 最終品質關卡：`npm run typecheck`、`npm run lint`、`npm run format:check`、`npm test` 全部通過，回報指令與結果；確認 tasks.md 所有任務已勾選，必要時執行 `/speckit-converge`
+- [X] T057 最終品質關卡：`npm run typecheck`、`npm run lint`、`npm run format:check`、`npm test` 全部通過，回報指令與結果；確認 tasks.md 所有任務已勾選，必要時執行 `/speckit-converge`
 
 ---
 
