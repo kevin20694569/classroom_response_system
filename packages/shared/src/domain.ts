@@ -1,0 +1,170 @@
+import { z } from 'zod';
+
+/** 組數範圍（FR-004）。 */
+export const MIN_GROUPS = 2;
+export const MAX_GROUPS = 20;
+/** 每個填空格答案去除前後空白後的長度上限（FR-017a）。 */
+export const ANSWER_MAX_LENGTH = 200;
+
+/** 以 Unicode 字元（code point）計算長度，避免中文以外的字元（如 emoji）被算成兩個字。 */
+export function unicodeLength(text: string): number {
+  return Array.from(text).length;
+}
+
+export const RoleSchema = z.enum(['teacher', 'student']);
+export type Role = z.infer<typeof RoleSchema>;
+
+/** 搶答活動狀態（FR-012）：尚未匯入、待開始、搶答進行中、已結束。 */
+export const SessionStatusSchema = z.enum(['NOT_IMPORTED', 'READY', 'OPEN', 'CLOSED']);
+export type SessionStatus = z.infer<typeof SessionStatusSchema>;
+
+export const SESSION_STATUS_LABEL: Readonly<Record<SessionStatus, string>> = {
+  NOT_IMPORTED: '尚未匯入',
+  READY: '待開始',
+  OPEN: '搶答進行中',
+  CLOSED: '已結束',
+};
+
+export const GroupIdSchema = z.number().int().min(1).max(MAX_GROUPS);
+export type GroupId = z.infer<typeof GroupIdSchema>;
+
+/** 組別名稱固定為「第 {id} 組」。 */
+export function groupName(id: GroupId): string {
+  return `第 ${id} 組`;
+}
+
+export const GroupSchema = z
+  .object({ id: GroupIdSchema, name: z.string() })
+  .refine((g) => g.name === groupName(g.id), { message: '組別名稱必須為「第 {id} 組」' });
+export type Group = z.infer<typeof GroupSchema>;
+
+const PositiveInt = z.number().int().positive();
+const IsoDateTime = z.iso.datetime({ offset: true });
+
+export const GuidedNotesRefSchema = z.object({
+  spreadsheetId: z.string().regex(/^[A-Za-z0-9_-]+$/),
+  /** 匯入時選中的工作表名稱，僅供顯示；匯出時依規則重新選擇（FR-006a） */
+  sheetTitle: z.string(),
+});
+export type GuidedNotesRef = z.infer<typeof GuidedNotesRefSchema>;
+
+/** 儲存格位置（0 起算；合併儲存格指左上角）。 */
+export const CellLocationSchema = z.object({
+  sheetTitle: z.string(),
+  rowIndex: z.number().int().nonnegative(),
+  columnIndex: z.number().int().nonnegative(),
+});
+export type CellLocation = z.infer<typeof CellLocationSchema>;
+
+export const BlankSchema = z.object({
+  /** 子題序號，從 1 連續編號（單題為 1） */
+  index: PositiveInt,
+  /** 原有的「（n）」標記原文；沒有標記為 null */
+  label: z.string().nullable(),
+  location: CellLocationSchema,
+});
+export type Blank = z.infer<typeof BlankSchema>;
+
+export const QuestionKindSchema = z.enum(['single', 'group']);
+export type QuestionKind = z.infer<typeof QuestionKindSchema>;
+
+export const QuestionSchema = z
+  .object({
+    number: PositiveInt,
+    order: PositiveInt,
+    kind: QuestionKindSchema,
+    blanks: z.array(BlankSchema).min(1),
+  })
+  .superRefine((q, ctx) => {
+    // 單題恰 1 個填空格；題組至少 2 個（FR-009a）
+    if (q.kind === 'single' && q.blanks.length !== 1) {
+      ctx.addIssue({ code: 'custom', message: '單題必須恰有 1 個填空格' });
+    }
+    if (q.kind === 'group' && q.blanks.length < 2) {
+      ctx.addIssue({ code: 'custom', message: '題組至少要有 2 個填空格' });
+    }
+    q.blanks.forEach((b, i) => {
+      if (b.index !== i + 1) {
+        ctx.addIssue({ code: 'custom', message: '填空格序號必須從 1 連續編號' });
+      }
+    });
+  });
+export type Question = z.infer<typeof QuestionSchema>;
+
+/** 每個答案：去除前後空白後 1～200 字（以 Unicode 字元計，FR-017a）。 */
+export const AnswerTextSchema = z
+  .string()
+  .trim()
+  .refine((t) => unicodeLength(t) >= 1 && unicodeLength(t) <= ANSWER_MAX_LENGTH, {
+    message: `答案需為 1～${ANSWER_MAX_LENGTH} 字`,
+  });
+
+export const BlankAnswerSchema = z.object({
+  blankIndex: PositiveInt,
+  text: AnswerTextSchema,
+});
+export type BlankAnswer = z.infer<typeof BlankAnswerSchema>;
+
+export const SubmissionSchema = z.object({
+  id: z.uuid(),
+  questionNumber: PositiveInt,
+  groupId: GroupIdSchema,
+  answers: z.array(BlankAnswerSchema).min(1),
+  /** 伺服器依處理順序指派，決定順位（FR-016） */
+  sequence: PositiveInt,
+  /** 伺服器時間，僅供顯示，不用於排序 */
+  receivedAt: IsoDateTime,
+});
+export type Submission = z.infer<typeof SubmissionSchema>;
+
+export const LastExportSchema = z.object({
+  exportedAt: IsoDateTime,
+  writtenQuestionCount: z.number().int().nonnegative(),
+});
+export type LastExport = z.infer<typeof LastExportSchema>;
+
+export const QuizSessionSchema = z
+  .object({
+    activityId: z.uuid().nullable(),
+    status: SessionStatusSchema,
+    source: GuidedNotesRefSchema.nullable(),
+    groups: z.array(GroupSchema).max(MAX_GROUPS),
+    questions: z.array(QuestionSchema),
+    submissions: z.array(SubmissionSchema),
+    nextSequence: PositiveInt,
+    openedAt: IsoDateTime.nullable(),
+    closedAt: IsoDateTime.nullable(),
+    lastExport: LastExportSchema.nullable(),
+  })
+  .superRefine((s, ctx) => {
+    if (s.status === 'NOT_IMPORTED') {
+      if (s.activityId !== null || s.questions.length > 0 || s.groups.length > 0) {
+        ctx.addIssue({ code: 'custom', message: '尚未匯入時不得有活動、題目或組別' });
+      }
+      return;
+    }
+    if (s.activityId === null || s.source === null) {
+      ctx.addIssue({ code: 'custom', message: '已匯入的活動必須有 activityId 與來源文件' });
+    }
+    if (s.groups.length < MIN_GROUPS) {
+      ctx.addIssue({ code: 'custom', message: `組數必須為 ${MIN_GROUPS}～${MAX_GROUPS}` });
+    }
+    if (s.questions.length === 0) {
+      ctx.addIssue({ code: 'custom', message: '已匯入的活動至少要有 1 題' });
+    }
+  });
+export type QuizSession = z.infer<typeof QuizSessionSchema>;
+
+/** 推導值：每題的搶答成功作答紀錄，沒有作答為 null（無人搶答）。 */
+export const QuestionResultSchema = z.object({
+  questionNumber: PositiveInt,
+  winner: SubmissionSchema.nullable(),
+});
+export type QuestionResult = z.infer<typeof QuestionResultSchema>;
+
+/** 本機保存檔格式（data/session.json），不含任何 token、密碼或憑證。 */
+export const PersistedStateSchema = z.object({
+  schemaVersion: z.literal(1),
+  session: QuizSessionSchema,
+});
+export type PersistedState = z.infer<typeof PersistedStateSchema>;

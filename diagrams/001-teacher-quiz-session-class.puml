@@ -1,32 +1,36 @@
 @startuml 001-teacher-quiz-session-class
-' 子功能 001：使用者角色與老師端搶答活動管理 — 類別圖
+' 子功能 001：使用者角色與老師端搶答活動管理 — 類別圖（已依實作驗證，見 specs/001-teacher-quiz-session/diagram-verification.md）
 skinparam defaultFontName "PingFang TC"
 hide empty members
 title 001 老師端搶答活動管理 — 類別圖 (Class Diagram)
 
 package "使用者與角色" {
   enum Role {
-    TEACHER
-    STUDENT
+    teacher
+    student
   }
   abstract class User {
-    +id: UserId
     +role: Role
   }
   class TabIdentity {
-    +token: string
     +role: Role
-    +groupId: GroupId | null
-    +activityId: string | null
-    +expiresAt: DateTime
+    +groupId: GroupId（學生）
+    +activityId: string（學生）
+    +issuedAt: string
+    +expiresAt: string
   }
   class AuthService {
-    +loginAsTeacher(password: string): TabIdentity
-    +joinAsStudent(groupId: GroupId): TabIdentity
-    +resolve(token: string): User | null
+    +loginAsTeacher(password: string): AuthResponse
+    +joinAsStudent(groupId: number, session: QuizSession): AuthResponse
+    +resolve(token: string, currentActivityId: string | null): TabIdentity | null
   }
-  TabIdentity --> User
+  class RoleGuard <<functions>> {
+    +requireTeacher(identity): TeacherIdentity
+    +requireStudent(identity): StudentIdentity
+  }
+  TabIdentity --> User : 以簽章 token 表示
   AuthService ..> TabIdentity : 簽發 / 驗證
+  RoleGuard ..> TabIdentity
   class Teacher {
   }
   class Student {
@@ -49,24 +53,43 @@ package "搶答活動" {
     OPEN
     CLOSED
   }
-  class QuizSession {
+  class QuizSession <<data>> {
     +activityId: string | null
     +status: SessionStatus
-    +nextSequence: number
-    +source: GuidedNotesRef
+    +source: GuidedNotesRef | null
     +groups: Group[]
     +questions: Question[]
-    +importQuestions(parsed: ParsedGuidedNotes): void
-    +open(): void
-    +close(): void
-    +canTransition(to: SessionStatus): boolean
+    +submissions: Submission[]
+    +nextSequence: number
+    +openedAt: string | null
+    +closedAt: string | null
+    +lastExport: LastExport | null
+  }
+  class QuizSessionStateMachine <<functions>> {
+    +initialSession(): QuizSession
+    +assertTransition(status, action, options): void
+  }
+  class QuizSessionService {
+    +init(): void
+    +getSession(): QuizSession
+    +onChange(listener): unsubscribe
+    +mutate(fn): T
+    +importQuestions(options: ImportOptions): QuizSession
+    +open(): QuizSession
+    +close(): QuizSession
+    +exportResults(): ExportResult
+  }
+  class SubmissionService {
+    +submit(groupId: GroupId, request: SubmitRequest): SubmitResponse
+  }
+  class AsyncMutex {
+    +runExclusive(fn): T
   }
   class Question {
     +number: number
     +order: number
     +kind: single | group
     +blanks: Blank[]
-    +isQuestionGroup(): boolean
   }
   class Blank {
     +index: number
@@ -74,16 +97,17 @@ package "搶答活動" {
     +location: CellLocation
   }
   class CellLocation {
-    +sheetName: string
-    +row: number
-    +column: number
+    +sheetTitle: string
+    +rowIndex: number
+    +columnIndex: number
   }
   class Submission {
+    +id: string
     +groupId: GroupId
     +questionNumber: number
     +answers: BlankAnswer[]
-    +receivedAt: ServerTimestamp
     +sequence: number
+    +receivedAt: string
   }
   class BlankAnswer {
     +blankIndex: number
@@ -96,11 +120,11 @@ package "搶答活動" {
   class QuestionResult {
     +questionNumber: number
     +winner: Submission | null
-    +isUnanswered(): boolean
   }
   QuizSession --> SessionStatus
   QuizSession "1" *-- "*" Question
   QuizSession "1" o-- "2..20" Group
+  QuizSession "1" *-- "*" Submission
   Question "1" *-- "1..*" Blank
   Blank --> CellLocation
   Submission "1" *-- "1..*" BlankAnswer
@@ -108,35 +132,50 @@ package "搶答活動" {
   Submission "*" --> "1" Group
   QuestionResult --> Question
   QuestionResult --> "0..1" Submission : 搶答成功
+  QuizSessionService --> QuizSession : 唯一持有者
+  QuizSessionService ..> QuizSessionStateMachine
+  QuizSessionService *-- AsyncMutex
+  SubmissionService --> QuizSessionService : mutate
 }
 
 package "Guided Notes 處理" {
   class GuidedNotesRef {
+    +spreadsheetId: string
+    +sheetTitle: string
+  }
+  class SpreadsheetRef {
     +spreadsheetId: string
   }
   class SpreadsheetSnapshot {
     +sheets: SheetGrid[]
   }
   class SheetGrid {
-    +sheetName: string
+    +sheetTitle: string
     +cells: string[][]
-    +mergedRanges: CellRange[]
+    +merges: MergeRange[]
   }
-  class GuidedNotesParser {
-    +selectSheet(snapshot: SpreadsheetSnapshot): SheetGrid
-    +parse(grid: SheetGrid): ParsedGuidedNotes
+  class GuidedNotesParser <<functions>> {
+    +parseGuidedNotes(snapshot: SpreadsheetSnapshot): ParsedGuidedNotes
+    -selectSheet(snapshot): SheetGrid
+    +parseQuestionNumber(raw): number | empty | invalid
+    +readBlankMarker(text): BlankMarker | null
   }
   SpreadsheetSnapshot "1" *-- "*" SheetGrid
   class ParsedGuidedNotes {
+    +sheetTitle: string
     +questions: Question[]
   }
-  class ImportError {
+  class ErrorDetail {
+    +code: string
     +message: string
-    +location: string
+    +sheetTitle?: string
+    +row?: number
+    +column?: string
+    +questionNumber?: number
   }
   interface GuidedNotesGateway {
-    +read(ref: GuidedNotesRef): SpreadsheetSnapshot
-    +writeCells(ref: GuidedNotesRef, writes: CellWrite[]): void
+    +read(ref: SpreadsheetRef): SpreadsheetSnapshot
+    +writeCells(ref: SpreadsheetRef, writes: CellWrite[]): void
   }
   class GoogleSheetsGateway
   class FakeGuidedNotesGateway
@@ -144,7 +183,9 @@ package "Guided Notes 處理" {
   GuidedNotesGateway <|.. FakeGuidedNotesGateway
   GuidedNotesParser ..> SheetGrid : 讀取
   GuidedNotesParser ..> ParsedGuidedNotes : 產生
-  GuidedNotesParser ..> ImportError : 驗證失敗時
+  GuidedNotesParser ..> ErrorDetail : 驗證失敗時（全部回報）
+  QuizSessionService ..> GuidedNotesParser
+  QuizSessionService --> GuidedNotesGateway
 }
 
 package "擴充點（核心只實作預設）" {
@@ -157,36 +198,43 @@ package "擴充點（核心只實作預設）" {
     +export(session: QuizSession, results: QuestionResult[]): ExportReport
   }
   class GuidedNotesExporter
+  class ExportPlanner <<functions>> {
+    +planExport(session, results, fresh: ParsedGuidedNotes): ExportPlan
+  }
   ResultExporter <|.. GuidedNotesExporter
   GuidedNotesExporter --> GuidedNotesGateway
   GuidedNotesExporter ..> GuidedNotesParser : 匯出前重新定位
+  GuidedNotesExporter ..> ExportPlanner
+  QuizSessionService --> ResultExporter
+  QuizSessionService --> RankingStrategy
 }
 
 package "資料保存" {
   interface SessionRepository {
     +load(): QuizSession | null
-    +save(session: QuizSession, submissions: Submission[]): void
+    +save(session: QuizSession): void
   }
   class LocalSessionRepository
   SessionRepository <|.. LocalSessionRepository
 }
 SessionRepository ..> QuizSession
-SessionRepository ..> Submission
+QuizSessionService --> SessionRepository
 
 note bottom of LocalSessionRepository
   每次狀態轉換或收件成功後先保存再回覆；
   伺服器重啟後載入恢復（FR-028）
 end note
 
-class VisibilityPolicy {
-  +filterFor(viewer: User, session: QuizSession): SessionView
+class VisibilityPolicy <<functions>> {
+  +toPublicView(session): PublicView
+  +toStudentView(session, groupId, ranking): StudentView
+  +toTeacherView(session, ranking): TeacherView
 }
-VisibilityPolicy ..> User
 VisibilityPolicy ..> QuizSession
 
 QuizSession --> GuidedNotesRef
 
-note bottom of QuizSession
+note bottom of QuizSessionStateMachine
   狀態轉換（其餘一律拒絕）：
   NOT_IMPORTED -> READY（匯入）
   READY -> READY（重新匯入）
@@ -206,7 +254,7 @@ note right of Question
 end note
 
 note bottom of FirstSubmissionStrategy
-  順位依伺服器收到的 sequence，
+  順位依伺服器處理順序（sequence），
   不採用客戶端時間
 end note
 @enduml
