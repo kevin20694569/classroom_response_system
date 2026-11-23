@@ -79,8 +79,7 @@ package "web（學生端）" {
   class AnswerSheet {
     +questions: QuestionSummary[]
     +ownSubmissions: OwnSubmission[]
-    +selectedNumber: number | null
-    +select(number): void
+    +jumpTo(number): void（題號清單跳到該題）
   }
   class QuestionAnswerForm {
     +question: QuestionSummary
@@ -123,7 +122,7 @@ package "web（學生端）" {
   StudentPage --> PhaseBanner
   StudentPage --> AnswerSheet
   StudentPage --> StudentResultBoard
-  AnswerSheet --> QuestionAnswerForm
+  AnswerSheet *-- "0..*" QuestionAnswerForm : 每題一個
   QuestionAnswerForm --> AnswerDraftStore
   QuestionAnswerForm ..> validateDraft
   QuestionAnswerForm ..> SubmitRequest : 送出
