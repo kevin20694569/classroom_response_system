@@ -26,7 +26,7 @@
 
 **Storage**: 沿用 001 的 `data/session.json`；`schemaVersion` 維持 1，新欄位以預設值相容舊檔（R2）
 
-**Testing**: Vitest 5（shared／server／web 三個 project）；server project 固定 `TZ=Asia/Taipei`（R11）；
+**Testing**: Vitest 5（shared／server／web 三個 project）；server 與 web project 固定 `TZ=Asia/Taipei`（R11）；
 前端計時以假時鐘與假 `requestAnimationFrame` 測試；Google Sheets 仍以 `FakeGuidedNotesGateway` 取代，
 批次請求內容以純函式單元測試
 
@@ -65,14 +65,14 @@
 |----------|------|------------|
 | QuestionList、QuestionPreview、togglePreview | 組件圖、類別圖、時序圖 | `apps/web/src/components/QuestionList.tsx`、`apps/web/src/components/QuestionPreview.tsx` |
 | SessionTimer | 組件圖、類別圖、時序圖 | `apps/web/src/pages/teacher/SessionTimer.tsx`（由 `SessionControls.tsx` 使用） |
-| TimeHint | 組件圖、類別圖、時序圖 | `apps/web/src/components/TimeHint.tsx`（由 `SubmissionBoard.tsx` 使用） |
+| TimeHint | 組件圖、類別圖、時序圖 | `apps/web/src/components/TimeHint.tsx`（含 `computeTooltipPosition`）（由 `SubmissionBoard.tsx` 使用） |
 | timeFormat（formatElapsed、formatClock） | 組件圖、類別圖 | `apps/web/src/utils/timeFormat.ts` |
 | ExportPanel（模式選擇） | 組件圖、類別圖、時序圖 | `apps/web/src/pages/teacher/ExportPanel.tsx` |
 | Contracts（ExportMode、ExportRequest、ExportResponse、LastExport、TeacherQuestionView、TeacherResultView、TeacherView、Question、Blank） | 組件圖、類別圖 | `packages/shared/src/{domain,api,views}.ts` |
 | HttpApi（匯出 mode） | 組件圖、時序圖 | `apps/server/src/transport/http/routes/sessionRoutes.ts` |
 | VisibilityPolicy | 組件圖、類別圖 | `apps/server/src/domain/visibility/visibilityPolicy.ts` |
 | QuizSessionService.exportResults(mode) | 組件圖、類別圖、時序圖 | `apps/server/src/domain/session/quizSessionService.ts` |
-| GuidedNotesParser、ParsedGuidedNotes、ResultColumns | 組件圖、類別圖、時序圖 | `apps/server/src/domain/guidedNotes/parser.ts`（新增 `prompts.ts`） |
+| GuidedNotesParser、GuidedNotesPrompts、ParsedGuidedNotes、ResultColumns | 組件圖、類別圖、時序圖 | `apps/server/src/domain/guidedNotes/parser.ts`、`prompts.ts` |
 | ResultExporter、GuidedNotesExporter | 類別圖、時序圖 | `apps/server/src/domain/export/{resultExporter,guidedNotesExporter}.ts` |
 | ExportPlanner、ExportPlan | 組件圖、類別圖、時序圖 | `apps/server/src/domain/export/exportPlan.ts` |
 | SubmittedAtFormat | 組件圖、類別圖 | `apps/server/src/domain/export/submittedAt.ts` |
@@ -153,7 +153,7 @@ apps/web/src/
 │   └── ExportPanel.tsx          ～ 匯出模式選擇、顯示模式
 apps/web/tests/                  ＋／～ 對應的元件測試
 
-vitest.config.ts                 ～ server project 設定 TZ=Asia/Taipei
+vitest.config.ts                 ～ server 與 web project 設定 TZ=Asia/Taipei
 README.md                        ～ 子功能表：002 為老師端優化、學生端改為下一個編號
 ```
 
@@ -180,7 +180,7 @@ README.md                        ～ 子功能表：002 為老師端優化、學
 - **原則 V**：所有新契約集中在 `packages/shared`；[contracts/http-api.md](./contracts/http-api.md) 規定 mode 的
   執行期驗證。
 - **原則 VI**：三張 002 圖表的元素都已對應到原始碼位置（上方「圖表對應」）。
-- **原則 VII**：[quickstart.md](./quickstart.md) §3 列出自動化測試重點，§4 列出 25 步人工驗證（含重跑 001 的
+- **原則 VII**：[quickstart.md](./quickstart.md) §3 列出自動化測試重點，§4 列出 26 步人工驗證（含重跑 001 的
   20 步）。
 - **原則 VIII**：沒有新增機敏設定；錯誤回應沿用 001 的統一錯誤處理。
 
