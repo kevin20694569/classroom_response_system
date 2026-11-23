@@ -1,8 +1,10 @@
 import { useSessionState } from '../../hooks/useSessionState';
 import { useStudentAuth } from '../../hooks/useStudentAuth';
+import * as AnswerDraftStore from '../../student/answerDraftStore';
 import { AnswerSheet } from './AnswerSheet';
 import { JoinGroupPanel } from './JoinGroupPanel';
 import { PhaseBanner } from './PhaseBanner';
+import { StudentResultBoard } from './StudentResultBoard';
 
 /**
  * 學生端（003，路徑 /student）：依分頁身分與伺服器推播的檢視切換畫面（data-model §4）。
@@ -52,7 +54,13 @@ export function StudentPage() {
         onLeave={auth.leave}
       />
       {view.status === 'CLOSED' ? (
-        <p className="text-slate-600">搶答已結束</p>
+        <StudentResultBoard
+          questions={view.questions}
+          results={view.results ?? []}
+          ownSubmissions={view.ownSubmissions}
+          groupId={view.groupId}
+          showUnsentNotice={AnswerDraftStore.hasUnsent(identity.activityId, identity.groupId)}
+        />
       ) : (
         <AnswerSheet
           // 換組或換活動時重新掛載，草稿不會帶到別組

@@ -134,15 +134,15 @@ US3（檢視結果，P2）。
 
 ### Tests for User Story 3（先寫，預期失敗）
 
-- [ ] T032 [P] [US3] 新增 `apps/web/tests/groupOutcomes.test.ts`：本組搶答成功 → `WON`；本組有送出但他組搶到 → `SUBMITTED_NOT_WON`（帶本組答案與搶答成功答案）；本組未送出 → `NOT_SUBMITTED`；無人搶答 → `winnerGroupId` 與 `winnerAnswers` 為 `null`；依題號排序；搶答成功題數計算正確（含 0 題）
-- [ ] T033 [P] [US3] 新增 `apps/web/tests/StudentResultBoard.test.tsx`：上方顯示「本組搶答成功 N 題」；每題顯示搶答成功組別與答案（題組依子題分列並顯示標記）或「無人搶答」；三種成績標籤文字依 contracts/student-ui.md §4；「已送出，未搶到」另外列出本組答案；`showUnsentNotice` 為 true 時最上方顯示「搶答已結束，尚未送出的答案不會被採計」，false 時不顯示（FR-018）；畫面不出現其他組未搶到的答案、順序或時間
+- [X] T032 [P] [US3] 新增 `apps/web/tests/groupOutcomes.test.ts`：本組搶答成功 → `WON`；本組有送出但他組搶到 → `SUBMITTED_NOT_WON`（帶本組答案與搶答成功答案）；本組未送出 → `NOT_SUBMITTED`；無人搶答 → `winnerGroupId` 與 `winnerAnswers` 為 `null`；依題號排序；搶答成功題數計算正確（含 0 題）
+- [X] T033 [P] [US3] 新增 `apps/web/tests/StudentResultBoard.test.tsx`：上方顯示「本組搶答成功 N 題」；每題顯示搶答成功組別與答案（題組依子題分列並顯示標記）或「無人搶答」；三種成績標籤文字依 contracts/student-ui.md §4；「已送出，未搶到」另外列出本組答案；`showUnsentNotice` 為 true 時最上方顯示「搶答已結束，尚未送出的答案不會被採計」，false 時不顯示（FR-018）；畫面不出現其他組未搶到的答案、順序或時間
 
 ### Implementation for User Story 3
 
-- [ ] T034 [P] [US3] 新增 `apps/web/src/student/groupOutcomes.ts`：`OutcomeKind`、`GroupOutcome` 型別與 `groupOutcomes(results, ownSubmissions, groupId): GroupOutcome[]`、`wonCount(outcomes)`（research R11、data-model §3）
-- [ ] T035 [US3] 新增 `apps/web/src/pages/student/StudentResultBoard.tsx`（props：`questions`、`results`、`ownSubmissions`、`groupId`、`showUnsentNotice`），使用 `groupOutcomes` 與 `blankLabelOf`
-- [ ] T036 [US3] 在 `apps/web/src/pages/student/StudentPage.tsx` 的 `CLOSED` 階段改為顯示 `StudentResultBoard`，`showUnsentNotice` 取自 `AnswerDraftStore.hasUnsent(identity.activityId, identity.groupId)`；在 `apps/web/tests/StudentPage.test.tsx` 加測試：推送 `CLOSED`（含 `results`）後自動顯示結果；`OPEN` 時有一題輸入內容未送出，推送 `CLOSED` 後結果上方顯示「搶答已結束，尚未送出的答案不會被採計」，沒有未送出內容時不顯示（FR-018）；以同一份 `CLOSED` 檢視重新掛載（模擬重新整理）仍顯示相同結果且沒有「離開組別」
-- [ ] T037 [US3] 品質關卡：`npm run typecheck`、`npm run lint`、`npm run format:check`、`npm test` 全部通過，回報指令與結果
+- [X] T034 [P] [US3] 新增 `apps/web/src/student/groupOutcomes.ts`：`OutcomeKind`、`GroupOutcome` 型別與 `groupOutcomes(results, ownSubmissions, groupId): GroupOutcome[]`、`wonCount(outcomes)`（research R11、data-model §3）
+- [X] T035 [US3] 新增 `apps/web/src/pages/student/StudentResultBoard.tsx`（props：`questions`、`results`、`ownSubmissions`、`groupId`、`showUnsentNotice`），使用 `groupOutcomes` 與 `blankLabelOf`
+- [X] T036 [US3] 在 `apps/web/src/pages/student/StudentPage.tsx` 的 `CLOSED` 階段改為顯示 `StudentResultBoard`，`showUnsentNotice` 取自 `AnswerDraftStore.hasUnsent(identity.activityId, identity.groupId)`；在 `apps/web/tests/StudentPage.test.tsx` 加測試：推送 `CLOSED`（含 `results`）後自動顯示結果；`OPEN` 時有一題輸入內容未送出，推送 `CLOSED` 後結果上方顯示「搶答已結束，尚未送出的答案不會被採計」，沒有未送出內容時不顯示（FR-018）；以同一份 `CLOSED` 檢視重新掛載（模擬重新整理）仍顯示相同結果且沒有「離開組別」
+- [X] T037 [US3] 品質關卡：`npm run typecheck`、`npm run lint`、`npm run format:check`、`npm test` 全部通過，回報指令與結果
 
 **Checkpoint**: 三個 user story 都可獨立運作
 
