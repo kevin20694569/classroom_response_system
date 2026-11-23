@@ -63,6 +63,7 @@ package "web（學生端）" {
     +render(): 選組 / 作答 / 結果
   }
   class useStudentAuth <<hook>> {
+    +identity: StudentIdentity | null
     +join(groupId): Promise<void>
     +leave(): void
     +onInvalidated(reason): void
@@ -75,6 +76,7 @@ package "web（學生端）" {
     +groupId: number
     +status: SessionStatus
     +connected: boolean
+    +onLeave(): void（只有 READY 顯示「離開組別」）
   }
   class AnswerSheet {
     +questions: QuestionSummary[]
@@ -91,7 +93,8 @@ package "web（學生端）" {
   class AnswerDraftStore <<module>> {
     +load(activityId, groupId, questionNumber): string[]
     +save(activityId, groupId, questionNumber, texts): void
-    +clear(questionNumber?): void
+    +clear(activityId, groupId, questionNumber): void
+    +clearAll(): void
   }
   class validateDraft <<function>> {
     +validateDraft(question, texts): DraftIssue[]
