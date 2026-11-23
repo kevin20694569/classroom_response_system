@@ -10,7 +10,8 @@
 npm start
 ```
 
-開啟 <http://localhost:3000/teacher> 進入老師端（密碼見 `.env` 的 `TEACHER_PASSWORD`）。
+開啟 <http://localhost:3000/teacher> 進入老師端（密碼見 `.env` 的 `TEACHER_PASSWORD`）；
+學生用另外的分頁開啟 <http://localhost:3000/student> 選擇組別加入（不需密碼，每個分頁的身分各自獨立）。
 
 第一次使用前請先完成下方「環境需求」與「設定」。
 
@@ -52,17 +53,18 @@ npm start
 | `npm run typecheck` | TypeScript 型別檢查（strict） |
 | `npm run lint` | ESLint 檢查 |
 | `npm run format` | Prettier 格式化 |
-| `npm run simulate -- --group 1 --question 1 --answers "CPU"` | 以學生身分加入並送出答案（學生畫面於子功能 003 提供） |
+| `npm run simulate -- --group 1 --question 1 --answers "CPU"` | 模擬學生送出（自動化與壓力測試用；學生畫面見 `/student`） |
 
-人工驗證步驟見 [001 quickstart.md §4](specs/001-teacher-quiz-session/quickstart.md) 與
-[002 quickstart.md §4](specs/002-teacher-dashboard-enhancements/quickstart.md)。
+人工驗證步驟見 [001 quickstart.md §4](specs/001-teacher-quiz-session/quickstart.md)、
+[002 quickstart.md §4](specs/002-teacher-dashboard-enhancements/quickstart.md) 與
+[003 quickstart.md §4](specs/003-student-quiz-participation/quickstart.md)。
 
 ## 專案結構
 
 ```text
 packages/shared/   前後端共用契約（Zod schema 與型別）
 apps/server/       後端：Fastify HTTP API、Socket.IO 即時推播、Google Sheets 存取
-apps/web/          前端：React + Vite + Tailwind CSS（老師端）
+apps/web/          前端：React + Vite + Tailwind CSS（老師端 /teacher、學生端 /student）
 scripts/           模擬學生腳本
 specs/             SpecKit 文件（spec、plan、tasks、contracts…）
 diagrams/          PlantUML 圖表（.puml 與 .png）
@@ -74,4 +76,4 @@ diagrams/          PlantUML 圖表（.puml 與 .png）
 |------|------|------|
 | 001 | 使用者角色與老師端搶答活動管理（匯入、開啟／結束、檢視、匯出） | 已實作 |
 | 002 | 老師端介面優化（題目預覽、搶答計時、提交時間提示、匯出模式） | 已實作 |
-| 003 | 學生端畫面（加入組別、作答、檢視結果） | 待實作 |
+| 003 | 學生端畫面（`/student`：加入組別、作答與送出、檢視結果） | 已實作 |

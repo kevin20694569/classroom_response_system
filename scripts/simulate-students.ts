@@ -1,6 +1,6 @@
 /**
  * 模擬學生腳本（quickstart.md §4）：以正式的學生 API 加入組別並送出答案，
- * 供子功能 001 的人工驗證與 Demo 扮演學生（學生畫面於子功能 003 提供）。
+ * 學生畫面已於子功能 003 提供（/student），本腳本保留作為自動化與壓力測試的輔助工具。
  *
  * 用法：
  *   npm run simulate -- --group 1 --question 1 --answers "CPU" "作業系統"
