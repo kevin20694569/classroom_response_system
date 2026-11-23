@@ -10,12 +10,12 @@ function HomePage() {
       >
         老師端
       </a>
-      <p className="rounded-md bg-slate-100 px-4 py-3 text-slate-500">學生端（子功能 002 提供）</p>
+      <p className="rounded-md bg-slate-100 px-4 py-3 text-slate-500">學生端（子功能 003 提供）</p>
     </main>
   );
 }
 
-/** 依路徑切換頁面：/teacher 為老師端（001），/student 為學生端（002 預留）。 */
+/** 依路徑切換頁面：/teacher 為老師端（001），/student 為學生端（003 預留）。 */
 export function App() {
   const path = window.location.pathname.replace(/\/+$/, '') || '/';
   if (path === '/teacher') return <TeacherPage />;

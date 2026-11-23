@@ -19,7 +19,7 @@ export function registerAuthRoutes(
     return reply.send(response);
   });
 
-  /** 學生加入組別（002 學生端與模擬腳本使用）。 */
+  /** 學生加入組別（003 學生端與模擬腳本使用）。 */
   app.post('/api/auth/student', (request, reply) => {
     const body = StudentJoinRequestSchema.parse(request.body ?? {});
     const response: AuthResponse = auth.joinAsStudent(body.groupId, service.getSession());

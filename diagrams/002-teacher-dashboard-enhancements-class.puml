@@ -1,5 +1,5 @@
 @startuml 002-teacher-dashboard-enhancements-class
-' 子功能 002：老師端介面優化 — 類別圖（只列出本子功能新增或修改的成員；其餘沿用 001 類別圖）
+' 子功能 002：老師端介面優化 — 類別圖（只列出本子功能新增或修改的成員；其餘沿用 001 類別圖；已依實作驗證，見 specs/002-teacher-dashboard-enhancements/diagram-verification.md）
 skinparam defaultFontName "PingFang TC"
 hide empty members
 title 002 老師端介面優化 — 類別圖 (Class Diagram)
@@ -145,6 +145,7 @@ package "server：外部服務存取層" {
   }
   class GoogleSheetsGateway {
     +writeCells(ref, writes): void
+    +writeCellsWith(client, ref, writes, onError): void
   }
   class SheetsBatchRequests <<functions>> {
     +buildBatchUpdateRequests(sheets, writes): Request[]
