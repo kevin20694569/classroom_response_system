@@ -38,7 +38,7 @@ export default defineConfig({
         plugins: [react()],
         test: {
           name: 'web',
-          include: ['apps/web/tests/**/*.test.tsx'],
+          include: ['apps/web/tests/**/*.test.{ts,tsx}'],
           environment: 'jsdom',
           env: { TZ: 'Asia/Taipei' },
           setupFiles: ['apps/web/tests/setup.ts'],

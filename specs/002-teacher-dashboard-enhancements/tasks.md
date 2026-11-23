@@ -136,15 +136,15 @@ US2（搶答計時，P2）、US3（提交時間提示，P3）。
 
 ### Tests for User Story 2
 
-- [ ] T039 [P] [US2] 測試 `apps/web/tests/timeFormat.test.ts`：`formatElapsed(0)` 為 `00:00.00`；`187420` 為 `03:07.42`；無條件捨去（`999` → `00:00.99`）；`3_600_000` 為 `1:00:00.00`；負數視為 0
-- [ ] T040 [P] [US2] 測試 `apps/web/tests/SessionTimer.test.tsx`（Vitest 假時鐘＋以 `vi.stubGlobal` 替換 `requestAnimationFrame`／`cancelAnimationFrame`）：`NOT_IMPORTED`／`READY` 顯示 `00:00.00` 且不排程影格；`OPEN` 時依 `openedAt` 與 `serverNow` 計算（瀏覽器時鐘與 `serverNow` 相差 5 秒時仍顯示正確經過時間、不出現負數）並在推進時間後更新；搶答進行中每次 rAF callback 都再呼叫一次 `requestAnimationFrame`（更新頻率跟隨瀏覽器畫面更新，FR-010）；改為 `CLOSED` 後取消影格並顯示 `closedAt − openedAt`；元件卸載時取消影格
+- [X] T039 [P] [US2] 測試 `apps/web/tests/timeFormat.test.ts`：`formatElapsed(0)` 為 `00:00.00`；`187420` 為 `03:07.42`；無條件捨去（`999` → `00:00.99`）；`3_600_000` 為 `1:00:00.00`；負數視為 0
+- [X] T040 [P] [US2] 測試 `apps/web/tests/SessionTimer.test.tsx`（Vitest 假時鐘＋以 `vi.stubGlobal` 替換 `requestAnimationFrame`／`cancelAnimationFrame`）：`NOT_IMPORTED`／`READY` 顯示 `00:00.00` 且不排程影格；`OPEN` 時依 `openedAt` 與 `serverNow` 計算（瀏覽器時鐘與 `serverNow` 相差 5 秒時仍顯示正確經過時間、不出現負數）並在推進時間後更新；搶答進行中每次 rAF callback 都再呼叫一次 `requestAnimationFrame`（更新頻率跟隨瀏覽器畫面更新，FR-010）；改為 `CLOSED` 後取消影格並顯示 `closedAt − openedAt`；元件卸載時取消影格
 
 ### Implementation for User Story 2
 
-- [ ] T041 [P] [US2] 在 `apps/web/src/utils/timeFormat.ts` 實作 `formatElapsed(ms: number): string`（research R5、Clarification Q2），讓 T039 通過
-- [ ] T042 [US2] 在 `apps/web/src/pages/teacher/SessionTimer.tsx` 實作計時元件（research R5）：props 為 `status`、`openedAt`、`closedAt`、`serverNow`；每次 `serverNow` 改變時重算 `offset`；`OPEN` 時以 `requestAnimationFrame` 迴圈每格由時鐘重算並只更新本元件 state；其他狀態不啟動迴圈；使用 `font-variant-numeric: tabular-nums`（Tailwind `tabular-nums`）避免數字寬度跳動；`aria-label="搶答計時"`，並以 `aria-live="off"` 避免輔助科技每格朗讀
-- [ ] T043 [US2] 在 `apps/web/src/pages/teacher/SessionControls.tsx` 放入 `SessionTimer`（活動控制段落內、按鈕旁）；更新 `apps/web/tests/SessionControls.test.tsx` 確認各狀態都有計時區塊且既有按鈕行為不變
-- [ ] T044 [US2] 品質關卡：`npm run typecheck`、`npm run lint`、`npm test` 全部通過，回報指令與結果
+- [X] T041 [P] [US2] 在 `apps/web/src/utils/timeFormat.ts` 實作 `formatElapsed(ms: number): string`（research R5、Clarification Q2），讓 T039 通過
+- [X] T042 [US2] 在 `apps/web/src/pages/teacher/SessionTimer.tsx` 實作計時元件（research R5）：props 為 `status`、`openedAt`、`closedAt`、`serverNow`；每次 `serverNow` 改變時重算 `offset`；`OPEN` 時以 `requestAnimationFrame` 迴圈每格由時鐘重算並只更新本元件 state；其他狀態不啟動迴圈；使用 `font-variant-numeric: tabular-nums`（Tailwind `tabular-nums`）避免數字寬度跳動；`aria-label="搶答計時"`，並以 `aria-live="off"` 避免輔助科技每格朗讀
+- [X] T043 [US2] 在 `apps/web/src/pages/teacher/SessionControls.tsx` 放入 `SessionTimer`（活動控制段落內、按鈕旁）；更新 `apps/web/tests/SessionControls.test.tsx` 確認各狀態都有計時區塊且既有按鈕行為不變
+- [X] T044 [US2] 品質關卡：`npm run typecheck`、`npm run lint`、`npm test` 全部通過，回報指令與結果
 
 **Checkpoint**: 計時可獨立展示；重新整理後依伺服器時間接續
 
