@@ -62,6 +62,11 @@ export const BlankSchema = z.object({
   /** 原有的「（n）」標記原文；沒有標記為 null */
   label: z.string().nullable(),
   location: CellLocationSchema,
+  /**
+   * 題組子題的敘述（取該子題作答格所在列的「題目」欄）；單題一律 null。
+   * 預設 null，讓 001 的保存檔（沒有此欄位）可直接載入（002 research R2）。
+   */
+  prompt: z.string().nullable().default(null),
 });
 export type Blank = z.infer<typeof BlankSchema>;
 
@@ -74,6 +79,11 @@ export const QuestionSchema = z
     order: PositiveInt,
     kind: QuestionKindSchema,
     blanks: z.array(BlankSchema).min(1),
+    /**
+     * 單題為題目敘述；題組為題組說明（區塊內不屬於任何子題列的敘述）；沒有則為 null。
+     * 只供老師端預覽，不會出現在學生或公開檢視（002 FR-007）。預設 null 以相容 001 保存檔。
+     */
+    prompt: z.string().nullable().default(null),
   })
   .superRefine((q, ctx) => {
     // 單題恰 1 個填空格；題組至少 2 個（FR-009a）

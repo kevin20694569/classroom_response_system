@@ -12,6 +12,6 @@ export function viewFor(identity: TabIdentity | null, service: QuizSessionServic
   const session = service.getSession();
   const ranking = service.deps.ranking;
   if (identity === null) return toPublicView(session);
-  if (identity.role === 'teacher') return toTeacherView(session, ranking);
+  if (identity.role === 'teacher') return toTeacherView(session, ranking, service.deps.now());
   return toStudentView(session, identity.groupId, ranking);
 }

@@ -41,9 +41,37 @@ describe('VisibilityPolicy', () => {
   });
 
   it('老師看得到所有作答與目前第一名', () => {
-    const view = toTeacherView(openSession, strategy);
+    const view = toTeacherView(openSession, strategy, new Date());
     expect(view.submissions).toHaveLength(2);
     expect(view.results[0]?.winnerGroupId).toBe(1);
     expect(view.results[1]?.winnerGroupId).toBeNull();
+  });
+
+  it('老師檢視含題目敘述、子題、結果提交時間與 serverNow（002）', () => {
+    const now = new Date('2026-11-23T02:10:00.000Z');
+    const closed = { ...openSession, status: 'CLOSED' as const };
+    const view = toTeacherView(closed, strategy, now);
+    expect(view.serverNow).toBe(now.toISOString());
+    expect(view.questions[0]).toMatchObject({ number: 1, prompt: '第 1 題的敘述', blankCount: 1 });
+    expect(view.questions[2]?.blanks).toEqual([
+      { index: 1, label: '（1）', prompt: '第 3 題子題一的敘述' },
+      { index: 2, label: '（2）', prompt: '第 3 題子題二的敘述' },
+    ]);
+    expect(JSON.stringify(view.questions)).not.toContain('location');
+    const winner = closed.submissions.find((s) => s.groupId === 1);
+    expect(view.results[0]?.receivedAt).toBe(winner?.receivedAt);
+    // 無人搶答的題目沒有提交時間
+    expect(view.results[1]?.receivedAt).toBeNull();
+  });
+
+  it('學生與公開檢視不含任何題目敘述（SC-009）', () => {
+    for (const status of ['OPEN', 'CLOSED'] as const) {
+      const session = { ...openSession, status };
+      for (const view of [toPublicView(session), toStudentView(session, 1, strategy)]) {
+        const json = JSON.stringify(view);
+        expect(json).not.toContain('敘述');
+        expect(json).not.toContain('prompt');
+      }
+    }
   });
 });

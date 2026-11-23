@@ -29,6 +29,8 @@ export default defineConfig({
           include: ['apps/server/tests/**/*.test.ts'],
           environment: 'node',
           testTimeout: 30_000,
+          // 時間格式測試固定時區，結果與執行電腦無關（002 research R11）
+          env: { TZ: 'Asia/Taipei' },
         },
       },
       {
@@ -38,6 +40,7 @@ export default defineConfig({
           name: 'web',
           include: ['apps/web/tests/**/*.test.tsx'],
           environment: 'jsdom',
+          env: { TZ: 'Asia/Taipei' },
           setupFiles: ['apps/web/tests/setup.ts'],
         },
       },

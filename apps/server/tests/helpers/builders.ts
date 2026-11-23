@@ -9,8 +9,14 @@ export function singleQuestion(number: number, row = number * 2): Question {
     order: number,
     kind: 'single',
     blanks: [
-      { index: 1, label: null, location: { sheetTitle: '學習單', rowIndex: row, columnIndex: 6 } },
+      {
+        index: 1,
+        label: null,
+        location: { sheetTitle: '學習單', rowIndex: row, columnIndex: 6 },
+        prompt: null,
+      },
     ],
+    prompt: `第 ${number} 題的敘述`,
   };
 }
 
@@ -24,13 +30,16 @@ export function groupQuestion(number: number, row = number * 3): Question {
         index: 1,
         label: '（1）',
         location: { sheetTitle: '學習單', rowIndex: row, columnIndex: 6 },
+        prompt: `第 ${number} 題子題一的敘述`,
       },
       {
         index: 2,
         label: '（2）',
         location: { sheetTitle: '學習單', rowIndex: row + 1, columnIndex: 6 },
+        prompt: `第 ${number} 題子題二的敘述`,
       },
     ],
+    prompt: null,
   };
 }
 

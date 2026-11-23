@@ -30,6 +30,27 @@ export const ResultViewSchema = z.object({
 });
 export type ResultView = z.infer<typeof ResultViewSchema>;
 
+/** 老師端預覽用的子題資料：不含儲存格位置（002 data-model §2）。 */
+export const TeacherBlankViewSchema = z.object({
+  index: z.number().int().positive(),
+  label: z.string().nullable(),
+  prompt: z.string().nullable(),
+});
+export type TeacherBlankView = z.infer<typeof TeacherBlankViewSchema>;
+
+/** 老師端的題目資料：比 QuestionSummary 多了題目敘述與子題（只出現在 TeacherView，002 FR-007）。 */
+export const TeacherQuestionViewSchema = QuestionSummarySchema.extend({
+  prompt: z.string().nullable(),
+  blanks: z.array(TeacherBlankViewSchema),
+});
+export type TeacherQuestionView = z.infer<typeof TeacherQuestionViewSchema>;
+
+/** 老師端的每題結果：多了搶答成功作答的伺服器收件時間（002 FR-014）。 */
+export const TeacherResultViewSchema = ResultViewSchema.extend({
+  receivedAt: z.string().nullable(),
+});
+export type TeacherResultView = z.infer<typeof TeacherResultViewSchema>;
+
 const BaseViewShape = {
   status: SessionStatusSchema,
   groups: z.array(GroupSchema),
@@ -62,14 +83,17 @@ export type StudentView = z.infer<typeof StudentViewSchema>;
 export const TeacherViewSchema = z.object({
   viewer: z.literal('teacher'),
   ...BaseViewShape,
+  questions: z.array(TeacherQuestionViewSchema),
   activityId: z.uuid().nullable(),
   source: GuidedNotesRefSchema.nullable(),
   submissions: z.array(SubmissionSchema),
   /** 「搶答進行中」時為目前的第一名，「已結束」後為最終結果 */
-  results: z.array(ResultViewSchema),
+  results: z.array(TeacherResultViewSchema),
   openedAt: z.string().nullable(),
   closedAt: z.string().nullable(),
   lastExport: LastExportSchema.nullable(),
+  /** 伺服器產生這份資料時的時間，前端據此校正計時（002 FR-012、research R5） */
+  serverNow: z.string(),
 });
 export type TeacherView = z.infer<typeof TeacherViewSchema>;
 

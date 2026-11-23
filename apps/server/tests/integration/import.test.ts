@@ -56,7 +56,7 @@ describe('POST /api/session/import（US1）', () => {
     });
     expect(
       group.json<{ view: { questions: { kind: string; blankCount: number }[] } }>().view.questions,
-    ).toEqual([
+    ).toMatchObject([
       { number: 1, kind: 'group', blankCount: 2 },
       { number: 2, kind: 'group', blankCount: 2 },
       { number: 3, kind: 'single', blankCount: 1 },
