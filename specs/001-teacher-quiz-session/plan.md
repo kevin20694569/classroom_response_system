@@ -132,6 +132,7 @@ packages/shared/
 ├── src/
 │   ├── domain.ts            # SessionStatus、Question、Blank、Submission 等 schema 與型別
 │   ├── api.ts               # HTTP 請求／回應 schema
+│   ├── views.ts             # PublicView、StudentView、TeacherView（依角色的檢視資料）
 │   ├── events.ts            # Socket.IO 事件名稱與 payload schema
 │   ├── errors.ts            # 錯誤代碼列舉
 │   └── index.ts
@@ -146,10 +147,11 @@ apps/server/
 │   ├── domain/              # 不依賴網路與外部服務
 │   │   ├── session/         # QuizSession 狀態機、QuizSessionService
 │   │   ├── submission/      # SubmissionService、答案驗證
-│   │   ├── ranking/         # RankingStrategy、FirstSubmissionStrategy
+│   │   ├── ranking/         # RankingStrategy、FirstSubmissionStrategy、results（推導每題結果）
 │   │   ├── guidedNotes/     # GuidedNotesParser、questionNumber、markers
 │   │   ├── export/          # ResultExporter、GuidedNotesExporter
 │   │   ├── visibility/      # VisibilityPolicy（產生 TeacherView / StudentView）
+│   │   ├── mutex.ts         # AsyncMutex（序列化所有狀態變更，順位公平性的基礎）
 │   │   └── errors.ts        # DomainError（含錯誤代碼與使用者訊息）
 │   ├── infrastructure/
 │   │   ├── sheets/          # GuidedNotesGateway、GoogleSheetsGateway、spreadsheetUrl
