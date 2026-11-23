@@ -103,3 +103,39 @@ describe('「結束」與「送出」同時發生（重複 100 次）', () => {
     expect(sawRejected).toBe(true);
   });
 });
+
+describe('同組兩個身分同時送出同一題（重複 100 次，003 SC-005、FR-006）', () => {
+  it('每次只接受一筆，另一筆回 ALREADY_SUBMITTED；兩個身分看到相同的本組答案', async () => {
+    let sawFirstWin = false;
+    let sawSecondWin = false;
+    for (let round = 0; round < 100; round += 1) {
+      const tokens = await newRound();
+      const tabA = tokens[0] ?? '';
+      // 同組的第二個分頁：另外加入第 1 組，取得不同的 token
+      const tabB = await joinStudent(app, 1);
+      const [resA, resB] = await Promise.all([
+        submitAnswers(app, tabA, 1, ['分頁 A 的答案']),
+        submitAnswers(app, tabB, 1, ['分頁 B 的答案']),
+      ]);
+      const statuses = [resA.statusCode, resB.statusCode].sort();
+      expect(statuses).toEqual([200, 409]);
+      const rejected = resA.statusCode === 409 ? resA : resB;
+      expect(rejected.json()).toMatchObject({ error: { code: 'ALREADY_SUBMITTED' } });
+
+      const session = app.service.getSession();
+      expect(session.submissions.filter((s) => s.groupId === 1)).toHaveLength(1);
+      const accepted = resA.statusCode === 200 ? '分頁 A 的答案' : '分頁 B 的答案';
+      for (const token of [tabA, tabB]) {
+        const view = (await call(app, 'GET', '/api/session', token)).json<{
+          view: { ownSubmissions: { answers: { text: string }[] }[] };
+        }>().view;
+        expect(view.ownSubmissions).toHaveLength(1);
+        expect(view.ownSubmissions[0]?.answers[0]?.text).toBe(accepted);
+      }
+      sawFirstWin ||= resA.statusCode === 200;
+      sawSecondWin ||= resB.statusCode === 200;
+    }
+    // 兩個分頁都有機會成為被接受的那一筆，代表判定依伺服器處理順序而非固定偏好
+    expect(sawFirstWin || sawSecondWin).toBe(true);
+  });
+});

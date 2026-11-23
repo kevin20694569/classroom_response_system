@@ -131,4 +131,61 @@ describe('可見性', () => {
     for (const text of prompts) expect(others).not.toContain(text);
     expect(others).not.toContain('prompt');
   });
+
+  it('各階段學生收到的資料只含允許的欄位，題目含子題標記、不含敘述（003 FR-021、FR-022、SC-004）', async () => {
+    app = await startTestApp();
+    const teacher = await teacherWithImport(app, 'group-example', 2);
+    const [g1, g2] = await Promise.all([joinStudent(app, 1), joinStudent(app, 2)]);
+    const [s1, s2] = await Promise.all([connectSocket(app.url, g1), connectSocket(app.url, g2)]);
+    sockets.push(s1, s2);
+    const httpBodies: string[] = [(await call(app, 'GET', '/api/session', g2)).body];
+
+    const opened = [s1, s2].map((s) => s.nextState((p) => p.view.status === 'OPEN', 1000));
+    await call(app, 'POST', '/api/session/open', teacher);
+    await Promise.all(opened);
+    const statesBefore = s2.states.length;
+    expect((await submitAnswers(app, g1, 1, [SECRET_1, '第一組的第二格'])).statusCode).toBe(200);
+    await s1.nextState((p) => p.view.viewer === 'student' && p.view.ownSubmissions.length === 1);
+    // 第 1 組送出時第 2 組沒有收到任何事件
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    expect(s2.states.length).toBe(statesBefore);
+    httpBodies.push((await call(app, 'GET', '/api/session', g2)).body);
+
+    const closed = s2.nextState((p) => p.view.status === 'CLOSED', 1000);
+    await call(app, 'POST', '/api/session/close', teacher);
+    await closed;
+    httpBodies.push((await call(app, 'GET', '/api/session', g2)).body);
+
+    const views: Record<string, unknown>[] = [
+      ...httpBodies.map((body) => (JSON.parse(body) as { view: Record<string, unknown> }).view),
+      ...s2.states.map((p) => p.view as unknown as Record<string, unknown>),
+    ];
+    for (const view of views) {
+      expect(Object.keys(view).sort()).toEqual(
+        ['groupId', 'groups', 'ownSubmissions', 'questions', 'results', 'status', 'viewer'].sort(),
+      );
+      const questions = view.questions as Record<string, unknown>[];
+      for (const q of questions) {
+        expect(Object.keys(q).sort()).toEqual(['blankCount', 'blankLabels', 'kind', 'number']);
+        expect((q.blankLabels as unknown[]).length).toBe(q.blankCount);
+      }
+      expect(view.ownSubmissions).toEqual([]);
+      if (view.status !== 'CLOSED') expect(view.results).toBeNull();
+      else {
+        for (const r of view.results as Record<string, unknown>[]) {
+          expect(Object.keys(r).sort()).toEqual(['answers', 'questionNumber', 'winnerGroupId']);
+        }
+      }
+    }
+    const everything = [...httpBodies, ...s2.states.map((p) => JSON.stringify(p))].join('\n');
+    // 結束前看不到第 1 組的答案；結束後只看得到搶答成功答案（第 1 題由第 1 組搶到）
+    const beforeClose = [
+      httpBodies[0],
+      httpBodies[1],
+      ...s2.states.filter((p) => p.view.status !== 'CLOSED').map((p) => JSON.stringify(p)),
+    ].join('\n');
+    expect(beforeClose).not.toContain(SECRET_1);
+    expect(everything).not.toMatch(/sequence|receivedAt|prompt/);
+    expect(everything).toContain('（1）');
+  });
 });
