@@ -2,8 +2,10 @@ import { afterEach, describe, expect, it } from 'vitest';
 import {
   forgeStudentToken,
   connectSocket,
+  joinStudent,
   loginTeacher,
   startTestApp,
+  teacherWithImport,
   TEST_PASSWORD,
   type TestApp,
 } from '../helpers/testApp.js';
@@ -149,5 +151,22 @@ describe('錯誤不洩漏內部細節（FR-026、原則 VIII）', () => {
     const logs = app.logLines.join('\n');
     expect(logs).not.toContain(token);
     expect(logs).not.toContain(TEST_PASSWORD);
+  });
+
+  it('學生加入成功與被拒都有結構化 log，且不含 token（003 FR-028）', async () => {
+    app = await startTestApp();
+    const rejected = await app.app.inject({
+      method: 'POST',
+      url: '/api/auth/student',
+      payload: { groupId: 1 },
+    });
+    expect(rejected.json()).toMatchObject({ error: { code: 'NO_ACTIVE_ACTIVITY' } });
+    await teacherWithImport(app, 'single-example');
+    const token = await joinStudent(app, 2);
+    const logs = app.logLines.join('\n');
+    expect(logs).toContain('student.join.rejected');
+    expect(logs).toContain('NO_ACTIVE_ACTIVITY');
+    expect(logs).toContain('student.joined');
+    expect(logs).not.toContain(token);
   });
 });
