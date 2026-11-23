@@ -31,9 +31,9 @@
 
 ## Notes
 
-- 未標記 [NEEDS CLARIFICATION]；以下以合理預設寫入 spec，建議在 `/speckit-clarify` 時確認：
+- 未標記 [NEEDS CLARIFICATION]；以下預設已於 Clarifications Session 2026-11-23 確認，其中 FR-005 改為只有「待開始」可以離開組別：
   - 結束後學生只看得到每題的搶答成功答案與本組答案，看不到其他組未搶到的答案（FR-025）。
-  - 學生可在任何階段離開組別改選其他組（FR-005）。
+  - 學生只有在「待開始」時可以離開組別改選其他組（FR-005）。
   - 未送出的輸入內容在同一分頁重新整理後保留（FR-020）。
   - 學生端不顯示題目敘述，只顯示題號與子題標記（FR-012）。
 - Items marked incomplete require spec updates before `/speckit-clarify` or `/speckit-plan`

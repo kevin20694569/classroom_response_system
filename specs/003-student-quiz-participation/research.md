@@ -42,8 +42,9 @@ Technical Context 沒有 NEEDS CLARIFICATION；以下記錄本子功能的設計
   | 推播 `session:reset`（老師匯入新的活動） | `NEW_ACTIVITY` | 老師已開始新的活動，請重新選擇組別。 |
   | 連線被拒 `connect_error: UNAUTHORIZED`（逾時、屬於舊活動、伺服器重啟後活動已換） | `EXPIRED` | 這個分頁的組別身分已失效，請重新選擇組別。 |
   | HTTP 回應 `401 UNAUTHORIZED`（例如送出時才發現逾時） | `EXPIRED` | 同上 |
+  | 分頁內依 `identity.expiresAt` 計時到期（分頁一直連著時伺服器不會主動通知逾時） | `EXPIRED` | 同上 |
 
-- **Rationale**: 伺服器在連線被拒時只回 `UNAUTHORIZED`，無法區分逾時與舊活動；兩者對學生的處理相同
+- **Rationale**: 分頁內計時只是畫面提示，送出時伺服器仍以 401 做最終判定（原則 I）。伺服器在連線被拒時只回 `UNAUTHORIZED`，無法區分逾時與舊活動；兩者對學生的處理相同
   （重新選組），合併成一個訊息即可。`session:reset` 有明確原因，給更具體的說明。
 - **Alternatives considered**: 伺服器在 `connect_error` 細分原因——要改 001 的即時契約，對學生沒有額外價值。
 
@@ -137,7 +138,7 @@ Technical Context 沒有 NEEDS CLARIFICATION；以下記錄本子功能的設計
 - **Decision**:
   - shared：`QuestionSummary.blankLabels` 的 schema 測試。
   - server：`visibilityPolicy` 單元測試與 `visibility` 整合測試加上 `blankLabels` 檢查，並確認學生資料在任何
-    階段都不含題目或子題敘述（SC-004）；既有 `concurrency` 測試涵蓋同組同時送出（SC-005）。
+    階段都不含題目或子題敘述（SC-004）；既有 `concurrency` 測試涵蓋不同組同時送出，同組兩個分頁同時送出另外補測試（SC-005）。
   - web（jsdom，`@testing-library/react`）：`validateDraft`、`groupOutcomes`、`AnswerDraftStore` 單元測試；
     `JoinGroupPanel`、`PhaseBanner`、`QuestionAnswerForm`、`AnswerSheet`、`StudentResultBoard`、`StudentPage`
     元件測試，以假的 `fetch` 與假的 socket 模擬伺服器回應（每個元件至少一個正常與一個錯誤或邊界案例）。
