@@ -1,0 +1,192 @@
+@startuml 002-teacher-dashboard-enhancements-class
+' 子功能 002：老師端介面優化 — 類別圖（只列出本子功能新增或修改的成員；其餘沿用 001 類別圖）
+skinparam defaultFontName "PingFang TC"
+hide empty members
+title 002 老師端介面優化 — 類別圖 (Class Diagram)
+
+package "shared（契約）" {
+  class Question {
+    +number: number
+    +kind: single | group
+    +blanks: Blank[]
+    +prompt: string | null（新增：單題敘述或題組說明）
+  }
+  class Blank {
+    +index: number
+    +label: string | null
+    +location: CellLocation
+    +prompt: string | null（新增：子題敘述）
+  }
+  Question "1" *-- "1..*" Blank
+
+  enum ExportMode {
+    answers-only
+    answers-with-columns
+    answers-with-note-line
+  }
+  class ExportRequest {
+    +mode: ExportMode = answers-only
+  }
+  class ExportResponse {
+    +mode: ExportMode
+    +writtenQuestionCount: number
+    +writtenCellCount: number
+    +exportedAt: string
+  }
+  class LastExport {
+    +exportedAt: string
+    +writtenQuestionCount: number
+    +mode: ExportMode（新增）
+  }
+  class TeacherQuestionView {
+    +number: number
+    +kind: single | group
+    +blankCount: number
+    +prompt: string | null
+    +blanks: TeacherBlankView[]
+  }
+  class TeacherBlankView {
+    +index: number
+    +label: string | null
+    +prompt: string | null
+  }
+  class TeacherResultView {
+    +questionNumber: number
+    +winnerGroupId: GroupId | null
+    +answers: BlankAnswer[] | null
+    +receivedAt: string | null（新增）
+  }
+  class TeacherView {
+    +questions: TeacherQuestionView[]（改為含敘述）
+    +results: TeacherResultView[]
+    +openedAt / closedAt
+    +serverNow: string（新增：產生資料時的伺服器時間）
+    +lastExport: LastExport | null
+  }
+  class "QuestionSummary\n（Public / Student 檢視，不變）" as QuestionSummary
+  TeacherView *-- TeacherQuestionView
+  TeacherQuestionView *-- TeacherBlankView
+  TeacherView *-- TeacherResultView
+  TeacherView --> LastExport
+  ExportRequest --> ExportMode
+  ExportResponse --> ExportMode
+  LastExport --> ExportMode
+}
+
+package "server：領域層" {
+  class ParsedGuidedNotes {
+    +sheetTitle: string
+    +questions: Question[]
+    +headerRowIndex: number（新增）
+    +usedColumnCount: number（新增）
+    +resultColumns: ResultColumns（新增）
+  }
+  class ResultColumns {
+    +groupColumn: number | null
+    +timeColumn: number | null
+  }
+  class GuidedNotesParser <<functions>> {
+    +parseGuidedNotes(snapshot): ParsedGuidedNotes
+    -readPrompts(grid, header, block): 敘述
+  }
+  class ExportPlanner <<functions>> {
+    +planExport(session, results, fresh, mode): ExportPlan
+    -answerValue(question, blank, answer): string
+    -attribution(winner): string
+  }
+  class ExportPlan {
+    +writes: CellWrite[]
+    +writtenQuestionCount: number
+  }
+  class SubmittedAtFormat <<functions>> {
+    +formatSubmittedAt(iso): string
+  }
+  class GuidedNotesExporter {
+    +export(session, results, mode): ExportReport
+  }
+  interface ResultExporter {
+    +export(session, results, mode): ExportReport
+  }
+  class QuizSessionService {
+    +exportResults(mode: ExportMode): ExportResult
+  }
+  ResultExporter <|.. GuidedNotesExporter
+  GuidedNotesExporter ..> ExportPlanner
+  GuidedNotesExporter ..> GuidedNotesParser
+  ExportPlanner ..> SubmittedAtFormat
+  ExportPlanner ..> ParsedGuidedNotes
+  ExportPlanner ..> ExportPlan
+  ParsedGuidedNotes *-- ResultColumns
+  GuidedNotesParser ..> ParsedGuidedNotes
+  QuizSessionService --> ResultExporter
+  class VisibilityPolicy <<functions>> {
+    +toTeacherView(session, ranking, now): TeacherView
+    +toStudentView(...)：不含敘述
+    +toPublicView(...)：不含敘述
+  }
+}
+
+package "server：外部服務存取層" {
+  class CellWrite {
+    +sheetTitle: string
+    +rowIndex: number
+    +columnIndex: number
+    +text: string（空字串表示清空）
+    +mutedFrom: number | null（淡化樣式起點）
+  }
+  interface GuidedNotesGateway {
+    +read(ref): SpreadsheetSnapshot
+    +writeCells(ref, writes: CellWrite[]): void
+  }
+  class GoogleSheetsGateway {
+    +writeCells(ref, writes): void
+  }
+  class SheetsBatchRequests <<functions>> {
+    +buildBatchUpdateRequests(sheets, writes): Request[]
+  }
+  GuidedNotesGateway <|.. GoogleSheetsGateway
+  GoogleSheetsGateway ..> SheetsBatchRequests
+  GuidedNotesExporter --> GuidedNotesGateway
+  ExportPlan *-- CellWrite
+}
+
+package "web：老師端" {
+  class QuestionList {
+    -previewNumber: number | null
+    +onToggle(number): void
+  }
+  class QuestionPreview {
+    +question: TeacherQuestionView
+  }
+  class SessionTimer {
+    +status / openedAt / closedAt / serverNow
+    -requestAnimationFrame 迴圈
+  }
+  class TimeHint {
+    +receivedAt: string
+    +openedAt: string
+  }
+  class TimeFormat <<functions>> {
+    +formatElapsed(ms): string
+    +formatClock(iso): string
+  }
+  class ExportPanel {
+    -mode: ExportMode = answers-only
+  }
+  QuestionList --> QuestionPreview
+  SessionTimer ..> TimeFormat
+  TimeHint ..> TimeFormat
+}
+
+note bottom of QuestionList
+  previewNumber 切換規則（FR-003、FR-004）：
+  點未預覽的題號 → 改為該題
+  點預覽中的題號 → null
+  activityId 改變或題號不存在 → null（FR-008）
+end note
+
+note right of CellWrite
+  mutedFrom：從該字元位置（UTF-16）起
+  以較小灰色字顯示（格內附註行模式）
+end note
+@enduml

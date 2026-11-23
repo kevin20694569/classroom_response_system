@@ -1,0 +1,74 @@
+@startuml 002-teacher-dashboard-enhancements-sequence
+' 子功能 002：老師端介面優化 — 時序圖
+skinparam defaultFontName "PingFang TC"
+skinparam sequenceMessageAlign left
+autonumber
+title 002 老師端介面優化 — 時序圖 (Sequence Diagram)
+
+actor "老師" as Teacher
+participant "QuestionList /\nQuestionPreview" as QL
+participant "SessionTimer" as Timer
+participant "SubmissionBoard /\nTimeHint" as Board
+participant "ExportPanel" as EP
+participant "HttpApi /\nRealtimeGateway" as API
+participant "QuizSessionService" as Session
+participant "GuidedNotesParser" as Parser
+participant "GuidedNotesExporter /\nExportPlanner" as Exp
+participant "GoogleSheetsGateway" as GW
+database "Google Sheets" as Sheets
+
+== 匯入時讀取題目敘述 ==
+API -> Session : importQuestions(spreadsheetUrl, groupCount)
+Session -> GW : read(文件)
+GW -> Sheets : 讀取內容與合併儲存格
+Session -> Parser : parseGuidedNotes(snapshot)
+Parser --> Session : 題目（含題目敘述、子題敘述、題組說明）
+Session -> API : 推播 session:state
+API --> QL : TeacherView（含敘述）\n學生與公開資料不含敘述
+
+== 題目預覽（只在老師分頁內） ==
+Teacher -> QL : 點擊第 1 題
+QL -> QL : previewNumber = 1；第 1 題按鈕標示「預覽中」
+Teacher -> QL : 點擊第 3 題
+QL -> QL : previewNumber = 3；第 1 題取消標示
+Teacher -> QL : 再點第 3 題
+QL -> QL : previewNumber = null；預覽區收起
+note right of QL : 不呼叫伺服器（FR-007）
+
+== 搶答計時 ==
+API --> Timer : session:state（status=OPEN、openedAt、serverNow）
+Timer -> Timer : offset = serverNow − 瀏覽器現在時間
+loop 每個畫面影格（約每秒 60 次）
+  Timer -> Timer : 顯示 formatElapsed(現在 + offset − openedAt)
+end
+API --> Timer : session:state（status=CLOSED、closedAt）
+Timer -> Timer : 停止迴圈，顯示 closedAt − openedAt
+
+== 提交時間提示 ==
+Teacher -> Board : 滑鼠移到答案後的時間圖示（或 Tab 聚焦）
+Board -> Board : 浮出小視窗：formatClock(receivedAt)、\n開始後 formatElapsed(receivedAt − openedAt)
+Teacher -> Board : 移開或失焦
+Board -> Board : 關閉小視窗
+
+== 依模式匯出 ==
+Teacher -> EP : 選擇匯出模式，按「匯出答案」
+EP -> API : POST /api/session/export { mode }
+API -> API : 驗證 mode 屬於三種之一
+API -> Session : exportResults(mode)
+Session -> Exp : export(session, results, mode)
+Exp -> GW : read(文件)
+GW -> Sheets : 重新讀取
+Exp -> Parser : parseGuidedNotes（重新定位題目、表頭列、既有結果欄）
+Exp -> Exp : planExport(…, mode)
+alt 有題目無法定位
+  Exp --> Session : EXPORT_LOCATE_FAILED（列出題號）
+  Session --> API : 錯誤，文件不變
+else 全部可定位
+  Exp -> GW : writeCells(writes：文字＋淡化區段)
+  GW -> Sheets : 單一 batchUpdate：\n必要時補欄位 → 寫入所有儲存格（全有或全無）
+  Exp --> Session : 寫入題數 / 格數
+  Session -> Session : 保存 lastExport（含 mode）
+  Session --> API : ExportResponse（含 mode）
+  API --> EP : 顯示「已寫入 n 題（模式）」
+end
+@enduml

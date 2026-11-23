@@ -1,0 +1,97 @@
+@startuml 002-teacher-dashboard-enhancements-component
+' 子功能 002：老師端介面優化 — 組件圖（灰色為沿用 001、本子功能不改動的元件）
+skinparam defaultFontName "PingFang TC"
+skinparam componentStyle uml2
+title 002 老師端介面優化 — 組件圖 (Component Diagram)
+
+actor "老師" as TeacherActor
+
+node "老師分頁（瀏覽器）" as Browser {
+  package "TeacherClient（老師端畫面）" {
+    component "QuestionList\n題號按鈕（預覽中狀態）" as QuestionList
+    component "QuestionPreview\n題目敘述 / 子題 / 題組說明" as QuestionPreview
+    component "SessionTimer\n搶答計時（百分秒，持續跳動）" as SessionTimer
+    component "SubmissionBoard\n作答狀況 / 搶答結果" as Board
+    component "TimeHint\n時間圖示與浮出小視窗" as TimeHint
+    component "ExportPanel\n匯出模式選擇" as ExportPanel
+    component "timeFormat\nformatElapsed / formatClock" as TimeFormat
+  }
+}
+
+package "shared（前後端共用契約）" as Shared {
+  component "Contracts\nTeacherView（題目敘述、serverNow、\n結果提交時間）/ ExportMode / ExportRequest" as Contracts
+}
+
+node "本機伺服器" as Server {
+  package "傳輸層" {
+    component "HttpApi\nPOST /api/session/export（mode）" as HttpApi
+    component "RealtimeGateway\nsession:state" as Realtime #EEEEEE
+  }
+  package "存取控制" {
+    component "VisibilityPolicy\n題目敘述只放進老師端資料" as Visibility
+  }
+  package "領域層" {
+    component "QuizSessionService\nexportResults(mode)" as SessionService
+    component "GuidedNotesParser\n＋題目欄敘述、表頭列資訊" as Parser
+    component "GuidedNotesExporter" as Exporter
+    component "ExportPlanner\n三種匯出模式的寫入計畫" as Planner
+    component "submittedAtFormat\nYYYY/MM/DD HH:mm:ss.SSS" as SubmittedAt
+  }
+  package "外部服務存取層" {
+    component "GuidedNotesGateway\n<<interface>>\nwriteCells（文字＋淡化區段）" as Gateway
+    component "GoogleSheetsGateway\n單一 spreadsheets.batchUpdate" as SheetsGateway
+    component "FakeGuidedNotesGateway" as FakeGateway #EEEEEE
+    component "LocalSessionRepository\n舊存檔相容（敘述預設 null）" as LocalRepo
+  }
+}
+
+cloud "Google 雲端" {
+  database "Guided Notes\n（老師的 Google Sheets）" as Sheets
+}
+
+TeacherActor --> QuestionList : 點擊題號
+QuestionList --> QuestionPreview : 預覽中的題號（分頁本地狀態）
+SessionTimer ..> TimeFormat
+TimeHint ..> TimeFormat
+Board --> TimeHint : 每筆答案後面
+TeacherActor --> ExportPanel : 選擇模式並匯出
+
+QuestionList ..> Contracts
+SessionTimer ..> Contracts
+ExportPanel ..> Contracts
+HttpApi ..> Contracts : 驗證 mode
+
+ExportPanel --> HttpApi : 匯出（mode）
+Realtime --> SessionTimer : openedAt / closedAt / serverNow
+Realtime --> Board : 作答紀錄與 receivedAt
+Realtime --> QuestionList : 題目（含敘述）
+Realtime --> Visibility
+
+HttpApi --> SessionService
+SessionService --> Parser : 匯入時讀取題目敘述
+SessionService --> Exporter
+Exporter --> Parser : 匯出前重新定位
+Exporter --> Planner
+Planner ..> SubmittedAt
+Exporter --> Gateway : 一次寫入
+Gateway <|.. SheetsGateway
+Gateway <|.. FakeGateway
+SheetsGateway --> Sheets : 補欄位 + 寫入儲存格\n（同一個 batchUpdate，全有或全無）
+SessionService --> LocalRepo : 先保存再回覆
+
+note right of Visibility
+  學生端與公開資料不含
+  題目敘述（FR-007、SC-009）
+end note
+
+note bottom of Planner
+  只有答案：與 001 相同
+  答案＋組別時間欄：表頭列「搶答組別」「提交時間」
+  答案＋格內附註行：答案下一行〔第 N 組｜時間〕（淡化樣式）
+end note
+
+note bottom of QuestionPreview
+  預覽狀態只存在該老師分頁，
+  不送往伺服器（FR-007）
+end note
+@enduml
