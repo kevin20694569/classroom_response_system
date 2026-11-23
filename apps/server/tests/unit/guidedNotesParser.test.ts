@@ -25,6 +25,7 @@ describe('課程範例（contracts/guided-notes-format.md §8 驗收基準）', 
       label: null,
       location: { sheetTitle: '學習單', rowIndex: 4, columnIndex: 6 },
       prompt: null,
+      labelInAnswerCell: true,
     });
     expect(questions.map((q) => q.blanks[0]?.location.rowIndex)).toEqual([4, 6, 8, 10, 12, 14]);
     expect(questions.map((q) => q.order)).toEqual([1, 2, 3, 4, 5, 6]);
@@ -132,19 +133,19 @@ describe('錯誤（全部回報並指出位置，FR-010）', () => {
 });
 
 describe('表頭列與結果欄資訊（002 research R9）', () => {
-  it('一般範例：表頭列為第 4 列、使用範圍 7 欄、沒有結果欄', () => {
+  it('課程範例（真實版面）：表頭列為第 4 列、使用範圍 8 欄（作答 G:H）、沒有結果欄', () => {
     for (const name of ['single-example', 'group-example']) {
       const parsed = parseGuidedNotes(loadFixture(name));
       expect(parsed.headerRowIndex).toBe(3);
-      expect(parsed.usedColumnCount).toBe(7);
+      expect(parsed.usedColumnCount).toBe(8);
       expect(parsed.resultColumns).toEqual({ groupColumn: null, timeColumn: null });
     }
   });
 
-  it('已匯出過結果欄的文件：辨識 H、I 欄，題目判斷與題組範例相同（FR-023）', () => {
+  it('已匯出過結果欄的文件：辨識 I、J 欄，題目判斷與題組範例相同（FR-023）', () => {
     const parsed = parseGuidedNotes(loadFixture('exported-columns'));
-    expect(parsed.resultColumns).toEqual({ groupColumn: 7, timeColumn: 8 });
-    expect(parsed.usedColumnCount).toBe(9);
+    expect(parsed.resultColumns).toEqual({ groupColumn: 8, timeColumn: 9 });
+    expect(parsed.usedColumnCount).toBe(10);
     expect(parsed.questions.map((q) => [q.number, q.kind, q.blanks.length])).toEqual([
       [1, 'group', 2],
       [2, 'group', 2],
@@ -157,5 +158,72 @@ describe('表頭列與結果欄資訊（002 research R9）', () => {
     const parsed = parseGuidedNotes(loadFixture('exported-note-line'));
     expect(parsed.questions[0]?.blanks.map((b) => b.label)).toEqual(['（1）', '（2）']);
     expect(parsed.questions).toHaveLength(4);
+  });
+});
+
+describe('作答區與填答格（002 contracts §A0，FR-025）', () => {
+  it('題組範例（真實版面）：子題填答格為 H 欄，標記讀自 G 欄且不在填答格內', () => {
+    const { questions } = parseGuidedNotes(loadFixture('group-example'));
+    const [q1, q2, q3, q4] = questions;
+    expect(
+      q1?.blanks.map((b) => [
+        b.label,
+        b.location.rowIndex,
+        b.location.columnIndex,
+        b.labelInAnswerCell,
+      ]),
+    ).toEqual([
+      ['（1）', 4, 7, false],
+      ['（2）', 5, 7, false],
+    ]);
+    expect(q2?.blanks.map((b) => [b.location.rowIndex, b.location.columnIndex])).toEqual([
+      [7, 7],
+      [8, 7],
+    ]);
+    // 單題的作答格為 G:H 合併，填答格為左上角 G 欄
+    expect([q3?.blanks[0]?.location.columnIndex, q4?.blanks[0]?.location.columnIndex]).toEqual([
+      6, 6,
+    ]);
+  });
+
+  it('單題範例（真實版面）：每題一列，填答格為 G:H 合併的左上角', () => {
+    const { questions } = parseGuidedNotes(loadFixture('single-example'));
+    expect(
+      questions.map((q) => [q.blanks[0]?.location.rowIndex, q.blanks[0]?.location.columnIndex]),
+    ).toEqual([
+      [4, 6],
+      [6, 6],
+      [8, 6],
+      [10, 6],
+      [12, 6],
+      [14, 6],
+    ]);
+  });
+
+  it('標記與答案同格的版面（作答區只有一欄）：維持 001 行為', () => {
+    const { questions } = parseGuidedNotes(loadFixture('marker-in-answer-cell'));
+    expect(
+      questions[0]?.blanks.map((b) => [b.label, b.location.columnIndex, b.labelInAnswerCell]),
+    ).toEqual([
+      ['（1）', 6, true],
+      ['（2）', 6, true],
+    ]);
+    const twoRow = parseGuidedNotes(loadFixture('single-two-row-layout'));
+    expect(twoRow.questions).toHaveLength(6);
+    expect(twoRow.questions.every((q) => q.blanks[0]?.location.columnIndex === 6)).toBe(true);
+  });
+
+  it('真實版面的題組只有部分子題有標記時仍回報 PARTIAL_BLANK_MARKERS', () => {
+    const doc = loadFixture('group-example');
+    const row = doc.sheets[0]?.cells[5];
+    if (row === undefined) throw new Error('fixture 缺少列');
+    row[6] = '';
+    try {
+      parseGuidedNotes(doc);
+      expect.unreachable();
+    } catch (error) {
+      const details = (error as { details: { code: string }[] }).details;
+      expect(details.map((d) => d.code)).toContain('PARTIAL_BLANK_MARKERS');
+    }
   });
 });

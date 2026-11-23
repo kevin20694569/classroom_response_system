@@ -56,17 +56,29 @@ describe('planExport：只有答案（與 001 相同）', () => {
     });
   });
 
-  it('題組有標記時寫「（1）答案」；無人搶答的題目不產生寫入', () => {
+  it('題組（真實版面）：答案寫入 H 欄填答格、不加標記，G 欄標記不動；無人搶答的題目不產生寫入（FR-025）', () => {
     const session = closedSessionFor('group-example', [
       submission(1, 2, 1, ['CPU', '作業系統']),
       submission(1, 1, 2, ['GPU', 'Linux']),
     ]);
     const result = plan(session, loadFixture('group-example'));
-    expect(result.writes.map((w) => [w.rowIndex, w.text])).toEqual([
-      [4, '（1）CPU'],
-      [5, '（2）作業系統'],
+    expect(result.writes.map((w) => [w.rowIndex, w.columnIndex, w.text])).toEqual([
+      [4, 7, 'CPU'],
+      [5, 7, '作業系統'],
     ]);
+    expect(result.writes.some((w) => w.columnIndex === 6)).toBe(false);
     expect(result.writtenQuestionCount).toBe(1);
+  });
+
+  it('標記與答案同格的版面：維持 001 的「（1）答案」', () => {
+    const session = closedSessionFor('marker-in-answer-cell', [
+      submission(1, 2, 1, ['CPU', '作業系統']),
+    ]);
+    const result = plan(session, loadFixture('marker-in-answer-cell'));
+    expect(result.writes.map((w) => [w.rowIndex, w.columnIndex, w.text])).toEqual([
+      [4, 6, '（1）CPU'],
+      [5, 6, '（2）作業系統'],
+    ]);
   });
 
   it('題組沒有標記時只寫答案', () => {
@@ -128,29 +140,29 @@ const T2 = '2026/11/23 08:00:02.000';
 describe('planExport：答案＋組別時間欄（002 FR-019）', () => {
   it('沒有結果欄時在使用範圍之後新增表頭，搶答成功寫在題目區塊第一列、無人搶答清空', () => {
     const fresh = loadFixture('group-example');
-    expect(parseGuidedNotes(fresh).usedColumnCount).toBe(7);
+    expect(parseGuidedNotes(fresh).usedColumnCount).toBe(8);
     const { writes, writtenQuestionCount } = plan(groupResults(), fresh, 'answers-with-columns');
     expect(writtenQuestionCount).toBe(2);
-    const answers = writes.filter((w) => w.columnIndex === 6);
+    const answers = writes.filter((w) => w.columnIndex === 6 || w.columnIndex === 7);
     expect(answers.map((w) => [w.rowIndex, w.text, w.mutedFrom])).toEqual([
-      [4, '（1）CPU', null],
-      [5, '（2）作業系統', null],
+      [4, 'CPU', null],
+      [5, '作業系統', null],
       [10, '0', null],
     ]);
     const results = writes
-      .filter((w) => w.columnIndex >= 7)
+      .filter((w) => w.columnIndex >= 8)
       .map((w) => [w.rowIndex, w.columnIndex, w.text]);
     expect(results).toEqual([
-      [3, 7, '搶答組別'],
-      [3, 8, '提交時間'],
-      [4, 7, '第 2 組'],
-      [4, 8, T1],
-      [7, 7, ''],
+      [3, 8, '搶答組別'],
+      [3, 9, '提交時間'],
+      [4, 8, '第 2 組'],
+      [4, 9, T1],
       [7, 8, ''],
-      [10, 7, '第 1 組'],
-      [10, 8, T2],
-      [12, 7, ''],
+      [7, 9, ''],
+      [10, 8, '第 1 組'],
+      [10, 9, T2],
       [12, 8, ''],
+      [12, 9, ''],
     ]);
   });
 
@@ -158,7 +170,7 @@ describe('planExport：答案＋組別時間欄（002 FR-019）', () => {
     const doc = loadFixture('exported-columns');
     const { writes } = plan(groupResults(), doc, 'answers-with-columns');
     expect(writes.some((w) => w.rowIndex === 3)).toBe(false);
-    expect(writes.filter((w) => w.rowIndex === 4 && w.columnIndex >= 7).map((w) => w.text)).toEqual(
+    expect(writes.filter((w) => w.rowIndex === 4 && w.columnIndex >= 8).map((w) => w.text)).toEqual(
       ['第 2 組', T1],
     );
   });
@@ -167,19 +179,19 @@ describe('planExport：答案＋組別時間欄（002 FR-019）', () => {
     const doc = loadFixture('exported-columns');
     const header = doc.sheets[0]?.cells[3];
     if (header === undefined) throw new Error('fixture 缺少表頭列');
-    header[8] = '';
-    for (const row of doc.sheets[0]?.cells ?? []) row[8] = '';
+    header[9] = '';
+    for (const row of doc.sheets[0]?.cells ?? []) row[9] = '';
     const { writes } = plan(groupResults(), doc, 'answers-with-columns');
     expect(writes.filter((w) => w.rowIndex === 3).map((w) => [w.columnIndex, w.text])).toEqual([
-      [8, '提交時間'],
+      [9, '提交時間'],
     ]);
   });
 
-  it('兩份範例：單題範例的結果欄也新增在 G 欄之後', () => {
+  it('兩份範例：單題範例的結果欄也新增在 G:H 之後（I 欄）', () => {
     const session = closedSessionFor('single-example', [submission(2, 1, 1, ['0'])]);
     const { writes } = plan(session, loadFixture('single-example'), 'answers-with-columns');
-    expect(writes.find((w) => w.text === '搶答組別')?.columnIndex).toBe(7);
-    expect(writes.filter((w) => w.rowIndex === 6 && w.columnIndex >= 7).map((w) => w.text)).toEqual(
+    expect(writes.find((w) => w.text === '搶答組別')?.columnIndex).toBe(8);
+    expect(writes.filter((w) => w.rowIndex === 6 && w.columnIndex >= 8).map((w) => w.text)).toEqual(
       ['第 1 組', '2026/11/23 08:00:01.000'],
     );
   });
@@ -196,9 +208,10 @@ describe('planExport：答案＋格內附註行（002 FR-020）', () => {
   it('題組只有最後一個子題有附註行', () => {
     const { writes } = plan(groupResults(), loadFixture('group-example'), 'answers-with-note-line');
     const [first, second] = writes.filter((w) => w.rowIndex === 4 || w.rowIndex === 5);
-    expect(first).toMatchObject({ text: '（1）CPU', mutedFrom: null });
-    expect(second?.text).toBe(`（2）作業系統\n〔第 2 組｜${T1}〕`);
-    expect(second?.mutedFrom).toBe('（2）作業系統'.length);
+    expect(first).toMatchObject({ columnIndex: 7, text: 'CPU', mutedFrom: null });
+    expect(second?.columnIndex).toBe(7);
+    expect(second?.text).toBe(`作業系統\n〔第 2 組｜${T1}〕`);
+    expect(second?.mutedFrom).toBe('作業系統'.length);
   });
 
   it('已有附註行的文件：標記仍被辨識，重複匯出內容相同、不累加', () => {
@@ -232,7 +245,11 @@ describe('planExport：三種模式共通', () => {
       const doc = loadFixture('group-example');
       const first = plan(groupResults(), doc, mode);
       expect(
-        first.writes.some((w) => w.columnIndex === 6 && (w.rowIndex === 7 || w.rowIndex === 12)),
+        first.writes.some(
+          (w) =>
+            (w.columnIndex === 6 || w.columnIndex === 7) &&
+            (w.rowIndex === 7 || w.rowIndex === 8 || w.rowIndex === 12),
+        ),
       ).toBe(false);
       expect(first.writtenQuestionCount).toBe(2);
       apply(doc, first.writes);

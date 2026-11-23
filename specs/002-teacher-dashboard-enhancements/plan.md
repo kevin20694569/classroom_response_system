@@ -72,7 +72,7 @@
 | HttpApi（匯出 mode） | 組件圖、時序圖 | `apps/server/src/transport/http/routes/sessionRoutes.ts` |
 | VisibilityPolicy | 組件圖、類別圖 | `apps/server/src/domain/visibility/visibilityPolicy.ts` |
 | QuizSessionService.exportResults(mode) | 組件圖、類別圖、時序圖 | `apps/server/src/domain/session/quizSessionService.ts` |
-| GuidedNotesParser、GuidedNotesPrompts、ParsedGuidedNotes、ResultColumns | 組件圖、類別圖、時序圖 | `apps/server/src/domain/guidedNotes/parser.ts`、`prompts.ts` |
+| GuidedNotesParser（`answerSlots`，FR-025 作答區與填答格）、GuidedNotesPrompts、ParsedGuidedNotes、ResultColumns | 組件圖、類別圖、時序圖 | `apps/server/src/domain/guidedNotes/parser.ts`、`prompts.ts`、`grid.ts`（`columnSpanOf`） |
 | ResultExporter、GuidedNotesExporter | 類別圖、時序圖 | `apps/server/src/domain/export/{resultExporter,guidedNotesExporter}.ts` |
 | ExportPlanner、ExportPlan | 組件圖、類別圖、時序圖 | `apps/server/src/domain/export/exportPlan.ts` |
 | SubmittedAtFormat | 組件圖、類別圖 | `apps/server/src/domain/export/submittedAt.ts` |

@@ -11,6 +11,8 @@
 |------|----------|------|
 | 類別圖 | `GoogleSheetsGateway` 加上 `writeCellsWith(client, ref, writes, onError)` | 寫入流程抽成可注入 client 的函式，讓單元測試不需金鑰或網路即可驗證單一 batchUpdate |
 | 時序圖 | 匯出段落在 batchUpdate 前加上「讀取工作表屬性（sheetId、目前欄數）」 | 補欄與 updateCells 需要工作表 ID 與目前欄數（research R8） |
+| 類別圖 | `Blank` 加上 `labelInAnswerCell`、`location` 註明為填答格；`GuidedNotesParser` 加上 `answerSlots` 與作答區規則註解 | Phase 8（T060、T062）：課程範例作答區為 G:H，題組標記在 G、填答格在 H（FR-025） |
+| 時序圖 | 匯出計畫註明答案寫入填答格、標記在獨立格時不加前綴 | Phase 8（T061、T062） |
 
 更新後已執行 `plantuml "./diagrams/002-*.puml"` 重新產生 PNG。組件圖不需要更新。
 
@@ -31,7 +33,8 @@
 | HttpApi（匯出 mode） | 組件、時序 | `apps/server/src/transport/http/routes/sessionRoutes.ts` | ✔ | 錯誤時回「匯出模式不正確。」 |
 | VisibilityPolicy（`toTeacherView(session, ranking, now)`） | 組件、類別 | `apps/server/src/domain/visibility/visibilityPolicy.ts` | ✔ | |
 | QuizSessionService.exportResults(mode) | 組件、類別、時序 | `apps/server/src/domain/session/quizSessionService.ts` | ✔ | log 含 `mode` |
-| GuidedNotesParser、ParsedGuidedNotes、ResultColumns | 組件、類別、時序 | `apps/server/src/domain/guidedNotes/parser.ts` | ✔ | `headerRowIndex`、`usedColumnCount`、`resultColumns` |
+| GuidedNotesParser（`answerSlots`）、ParsedGuidedNotes、ResultColumns | 組件、類別、時序 | `apps/server/src/domain/guidedNotes/parser.ts`（`columnSpanOf` 在 `grid.ts`） | ✔ | `headerRowIndex`、`usedColumnCount`、`resultColumns`；作答區依表頭合併範圍 |
+| Blank.labelInAnswerCell | 類別 | `packages/shared/src/domain.ts` | ✔ | 預設 true（舊存檔相容） |
 | GuidedNotesPrompts（`findPromptColumn`、`promptAt`、`readQuestionPrompts`） | 類別 | `apps/server/src/domain/guidedNotes/prompts.ts` | ✔ | |
 | ResultExporter、GuidedNotesExporter（`export(…, mode)`） | 組件、類別、時序 | `apps/server/src/domain/export/{resultExporter,guidedNotesExporter}.ts` | ✔ | |
 | ExportPlanner（`planExport`、`answerValue`、`attribution`）、ExportPlan | 組件、類別、時序 | `apps/server/src/domain/export/exportPlan.ts` | ✔ | 結果欄由 `resultColumnWrites` 計算 |

@@ -23,9 +23,13 @@ export interface ExportPlan {
 const HEADER_RESULT_GROUP = '搶答組別';
 const HEADER_RESULT_TIME = '提交時間';
 
-/** 答案值（三種模式共用，同 001）：題組子題目前有「（n）」標記時寫「標記原文＋答案」，否則只寫答案。 */
+/**
+ * 答案值（三種模式共用，contracts §B.2、FR-025）：
+ * 題組子題的「（n）」標記與填答格同一格時寫「標記原文＋答案」（同 001）；
+ * 標記在獨立的標記格（課程範例 G 欄）時只寫答案，標記格不改動。
+ */
 function answerValue(question: Question, blank: Blank, answer: BlankAnswer): string {
-  return question.kind === 'group' && blank.label !== null
+  return question.kind === 'group' && blank.label !== null && blank.labelInAnswerCell
     ? `${blank.label}${answer.text}`
     : answer.text;
 }

@@ -280,3 +280,20 @@ Task: "Phase 5 US2 → Phase 6 US3"
 - 每完成一個任務或一組相關任務就 commit
 - 實作若需偏離 plan、contracts 或圖表：需求改變 → 先改 spec 與圖表；只是程式寫錯 → 直接修程式（constitution 開發流程）
 - 避免：模糊任務、多個任務同時修改同一檔案、破壞 story 獨立性的跨 story 相依
+
+---
+
+## Phase 8: Convergence
+
+依使用者以真實 Google Sheets 人工驗證時的發現：課程範例的「作答」表頭橫跨 G:H 合併；單題的作答格為 G:H 合併的一格；
+題組的 G 欄是子題標記「（n）」、H 欄才是填答格。目前解析把題組的 G 欄標記格當成填空格，匯出把「（1）答案」寫進
+G 欄、H 欄沒有被填寫；測試 fixtures 也沒有重現真實版面（作答欄只有 G 一欄、單題佔兩列）。
+
+- [X] T058 CRITICAL 先更新需求與契約再改程式（constitution 開發流程「需求變了先改 spec 與圖表」）：在 `specs/002-teacher-dashboard-enhancements/spec.md` 的 Clarifications 記錄「作答區依『作答』表頭的合併範圍判斷；題組的子題標記在獨立儲存格時，答案寫入同列作答區中標記格以外的填答格，標記格不改動；單題寫入作答區合併後的那一格」，並新增對應 FR（題組填答格定位與寫入）；更新 `contracts/guided-notes-format.md` 新增「作答區與填答格」規則並修正 §B.2、§B.3、§B.5 範例（題組答案寫在 H 欄、不含標記；附註行加在最後一個子題的 H 欄）；更新 `data-model.md` 的 Blank（填答格位置與標記是否在同一格）per Constitution III、FR-020、FR-021 (contradicts)
+- [X] T059 CRITICAL 依真實課程版面重建 `apps/server/tests/fixtures/guided-notes/single-example.json` 與 `group-example.json`（表頭「作答」G:H 合併、單題一列且作答格 G:H 合併、題目之間的分隔列 B:H 合併、題組 G 欄為「（1）」「（2）」標記且 H 欄為空白填答格、題組題號 B 欄跨列合併）；原本「標記與答案在同一格、作答欄只有一欄」的版面改名保留為 `marker-in-answer-cell.json` 等變體，證明兩種版面都能處理（原則 VII 兩份版面不同的測試文件）per Constitution VII、SC-002、SC-005 (contradicts)
+- [X] T060 CRITICAL 修改 `apps/server/src/domain/guidedNotes/parser.ts`：作答區 = 表頭「作答」儲存格的合併欄範圍；每列在作答區內若為同一個合併儲存格，該格即填答格；若分成多格，內容為「（n）」標記的格為標記格（`label` 取自它），其右側的格為填答格；`Blank.location` 一律指向填答格，並記錄標記是否與填答格同一格；作答區只有一欄時維持 001 行為（標記與答案同格）。先在 `apps/server/tests/unit/guidedNotesParser.test.ts` 與 `prompts.test.ts` 加上真實版面的預期（題組填答格為 H 欄、單題為 G 欄合併左上角）per Constitution III、FR-001、FR-021 (contradicts)
+- [X] T061 HIGH 修改 `apps/server/src/domain/export/exportPlan.ts`：標記在獨立儲存格時答案值只寫答案（不加標記前綴、不改動標記格），標記與填答格同格時維持「（n）答案」；附註行模式的附註行加在最後一個子題的填答格；欄位模式的 `usedColumnCount` 以真實版面計算（G:H 之後的 I、J 欄）。更新 `exportPlan.test.ts`、`integration/export.test.ts` 的真實版面預期（三種模式 × 兩份範例、重複匯出不變、匯出後重新匯入題數不變）per FR-017、FR-019、FR-020、FR-021、SC-005、SC-006 (contradicts)
+- [X] T062 HIGH 更新 `diagrams/002-teacher-dashboard-enhancements-class.puml`（Blank 的填答格／標記格欄位、parser 作答區判斷）並執行 `plantuml "./diagrams/*.puml"` 重新產生 PNG，同步更新 `specs/002-teacher-dashboard-enhancements/diagram-verification.md` 與 `plan.md` 圖表對應 per Constitution VI (partial)
+- [X] T063 MEDIUM 更新 `specs/002-teacher-dashboard-enhancements/quickstart.md` §4 與 `checklists/manual-verification.md` 的預期結果：題組答案寫在 H 欄、G 欄標記不變；附註行出現在第 1 題第 2 個子題的 H 欄；結果欄新增在 I、J 欄；並註明 001 manual-verification 步驟 19「題組作答格寫成（1）答案」已由此規則取代 per SC-005、FR-021 (partial)
+- [X] T064 品質關卡：`npm run typecheck`、`npm run lint`、`npm run format:check`、`npm test` 全部通過，回報指令與結果；並以真實 Google Sheets 副本（題組範例）重跑匯出確認 H 欄被填寫、G 欄標記不變 per Constitution VII (missing)
+  - 執行結果：品質關卡全部通過（315 個測試）。以服務帳號唯讀讀取真實「題組範例 的副本」並計算三種模式的寫入計畫：題組填答格為 H5、H6、H8、H9（G 欄標記不寫入），單題為 G11、G13，結果欄為 I、J；未實際寫入文件，實際寫入由 T056 人工驗證步驟 16～19 確認。
