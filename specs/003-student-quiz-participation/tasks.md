@@ -77,19 +77,19 @@ US3（檢視結果，P2）。
 
 ### Tests for User Story 1（先寫，預期失敗）
 
-- [ ] T010 [P] [US1] 新增 `apps/web/tests/useStudentAuth.test.tsx`：`join(groupId)` 呼叫 `POST /api/auth/student`，成功後保存 token 與 identity；`NO_ACTIVE_ACTIVITY`、`INVALID_GROUP` 時拋出含伺服器訊息的錯誤且不保存；`leave()` 清除身分與該分頁所有草稿鍵（`crs.draft.` 開頭）；`onInvalidated('NEW_ACTIVITY')`／`('EXPIRED')` 清除身分與草稿並記下對應訊息（research R4 訊息表）；重新建立 hook 時從 `sessionStorage` 讀回身分；以假時鐘測試到達 `identity.expiresAt` 時自動視為 `EXPIRED`，以及讀回的身分已過期時直接視為失效
-- [ ] T011 [P] [US1] 新增 `apps/web/tests/JoinGroupPanel.test.tsx`：`status === 'NOT_IMPORTED'` 顯示「老師尚未匯入題目，請稍候」且沒有組別按鈕；有組別時依序列出「第 1 組」～「第 N 組」，點擊呼叫 `onJoin(groupId)`；加入處理中按鈕停用；有失效訊息或加入錯誤訊息時顯示在上方
-- [ ] T012 [P] [US1] 新增 `apps/web/tests/PhaseBanner.test.tsx`：顯示「第 N 組」與階段文字（待開始／搶答進行中／已結束）；只有 `READY` 顯示「離開組別」且點擊呼叫 `onLeave`，`OPEN`、`CLOSED` 不顯示；`connected === false` 時顯示「連線中斷，正在重新連線」
-- [ ] T013 [P] [US1] 新增 `apps/web/tests/StudentPage.test.tsx`（US1 部分）：未加入時收到 public `NOT_IMPORTED` 顯示等待訊息，接著推送 `READY` 自動出現組別；選組後以新 token 重新連線並顯示頂端列；收到 `session:reset` 回到選組並顯示「老師已開始新的活動，請重新選擇組別」；`connect_error: UNAUTHORIZED` 顯示「這個分頁的組別身分已失效，請重新選擇組別」；有 token 且收到 `viewer: 'teacher'` 顯示老師身分提示、沒有選組與作答功能、不清除 token；尚未收到資料時顯示「連線中…」
+- [X] T010 [P] [US1] 新增 `apps/web/tests/useStudentAuth.test.tsx`：`join(groupId)` 呼叫 `POST /api/auth/student`，成功後保存 token 與 identity；`NO_ACTIVE_ACTIVITY`、`INVALID_GROUP` 時拋出含伺服器訊息的錯誤且不保存；`leave()` 清除身分與該分頁所有草稿鍵（`crs.draft.` 開頭）；`onInvalidated('NEW_ACTIVITY')`／`('EXPIRED')` 清除身分與草稿並記下對應訊息（research R4 訊息表）；重新建立 hook 時從 `sessionStorage` 讀回身分；以假時鐘測試到達 `identity.expiresAt` 時自動視為 `EXPIRED`，以及讀回的身分已過期時直接視為失效
+- [X] T011 [P] [US1] 新增 `apps/web/tests/JoinGroupPanel.test.tsx`：`status === 'NOT_IMPORTED'` 顯示「老師尚未匯入題目，請稍候」且沒有組別按鈕；有組別時依序列出「第 1 組」～「第 N 組」，點擊呼叫 `onJoin(groupId)`；加入處理中按鈕停用；有失效訊息或加入錯誤訊息時顯示在上方
+- [X] T012 [P] [US1] 新增 `apps/web/tests/PhaseBanner.test.tsx`：顯示「第 N 組」與階段文字（待開始／搶答進行中／已結束）；只有 `READY` 顯示「離開組別」且點擊呼叫 `onLeave`，`OPEN`、`CLOSED` 不顯示；`connected === false` 時顯示「連線中斷，正在重新連線」
+- [X] T013 [P] [US1] 新增 `apps/web/tests/StudentPage.test.tsx`（US1 部分）：未加入時收到 public `NOT_IMPORTED` 顯示等待訊息，接著推送 `READY` 自動出現組別；選組後以新 token 重新連線並顯示頂端列；收到 `session:reset` 回到選組並顯示「老師已開始新的活動，請重新選擇組別」；`connect_error: UNAUTHORIZED` 顯示「這個分頁的組別身分已失效，請重新選擇組別」；有 token 且收到 `viewer: 'teacher'` 顯示老師身分提示、沒有選組與作答功能、不清除 token；尚未收到資料時顯示「連線中…」
 
 ### Implementation for User Story 1
 
-- [ ] T014 [US1] 新增 `apps/web/src/hooks/useStudentAuth.ts`：`identity`、`token`、`join(groupId)`、`leave()`、`onInvalidated(reason)`、`notice`（失效原因訊息，加入成功後清空）；依 `identity.expiresAt` 設計時器，到期時呼叫 `onInvalidated('EXPIRED')`，讀回時已過期則直接視為失效（research R4；只是畫面提示，伺服器仍以 401 做最終判定）；`leave` 與 `onInvalidated` 呼叫 `clearIdentity()` 與 `AnswerDraftStore.clearAll()`；同時建立 `apps/web/src/student/answerDraftStore.ts`，本 Phase 只實作 `clearAll()`（清除所有 `crs.draft.` 開頭的鍵），其餘方法由 US2 的 T026 補齊
-- [ ] T015 [P] [US1] 新增 `apps/web/src/pages/student/JoinGroupPanel.tsx`（props：`status`、`groups`、`notice`、`onJoin`），依 contracts/student-ui.md §1「等待匯入」「選擇組別」
-- [ ] T016 [P] [US1] 新增 `apps/web/src/pages/student/PhaseBanner.tsx`（props：`groupId`、`status`、`connected`、`onLeave`），依 contracts/student-ui.md §2
-- [ ] T017 [US1] 新增 `apps/web/src/pages/student/StudentPage.tsx`：以 `useStudentAuth` 與 `useSessionState(token, onInvalidated)` 依 data-model §4 切換畫面（載入中／等待匯入或選組／老師身分提示／頂端列＋階段內容）；本 Phase 的階段內容先顯示「等待老師開啟搶答」（READY）、「搶答進行中」（OPEN）、「搶答已結束」（CLOSED）文字，US2、US3 再換成作答與結果元件；在 `apps/web/src/App.tsx` 新增 `/student` 路徑，首頁的學生端占位文字改為連到 `/student` 的按鈕（research R1），並更新檔頭註解
-- [ ] T018 [US1] FR-028：在 `apps/server/src/transport/http/routes/authRoutes.ts` 以 Fastify 的 `request.log` 於學生加入成功時記錄結構化 log（`groupId`、`activityId`，**不含 token**）；確認加入被拒（`NO_ACTIVE_ACTIVITY`、`INVALID_GROUP`）已由既有錯誤處理記錄，沒有則補上；在 `apps/server/tests/integration/auth.test.ts` 加測試確認 log 內容不含 token
-- [ ] T019 [US1] 品質關卡：`npm run typecheck`、`npm run lint`、`npm run format:check`、`npm test` 全部通過，回報指令與結果
+- [X] T014 [US1] 新增 `apps/web/src/hooks/useStudentAuth.ts`：`identity`、`token`、`join(groupId)`、`leave()`、`onInvalidated(reason)`、`notice`（失效原因訊息，加入成功後清空）；依 `identity.expiresAt` 設計時器，到期時呼叫 `onInvalidated('EXPIRED')`，讀回時已過期則直接視為失效（research R4；只是畫面提示，伺服器仍以 401 做最終判定）；`leave` 與 `onInvalidated` 呼叫 `clearIdentity()` 與 `AnswerDraftStore.clearAll()`；同時建立 `apps/web/src/student/answerDraftStore.ts`，本 Phase 只實作 `clearAll()`（清除所有 `crs.draft.` 開頭的鍵），其餘方法由 US2 的 T026 補齊
+- [X] T015 [P] [US1] 新增 `apps/web/src/pages/student/JoinGroupPanel.tsx`（props：`status`、`groups`、`notice`、`onJoin`），依 contracts/student-ui.md §1「等待匯入」「選擇組別」
+- [X] T016 [P] [US1] 新增 `apps/web/src/pages/student/PhaseBanner.tsx`（props：`groupId`、`status`、`connected`、`onLeave`），依 contracts/student-ui.md §2
+- [X] T017 [US1] 新增 `apps/web/src/pages/student/StudentPage.tsx`：以 `useStudentAuth` 與 `useSessionState(token, onInvalidated)` 依 data-model §4 切換畫面（載入中／等待匯入或選組／老師身分提示／頂端列＋階段內容）；本 Phase 的階段內容先顯示「等待老師開啟搶答」（READY）、「搶答進行中」（OPEN）、「搶答已結束」（CLOSED）文字，US2、US3 再換成作答與結果元件；在 `apps/web/src/App.tsx` 新增 `/student` 路徑，首頁的學生端占位文字改為連到 `/student` 的按鈕（research R1），並更新檔頭註解
+- [X] T018 [US1] FR-028：在 `apps/server/src/transport/http/routes/authRoutes.ts` 以 Fastify 的 `request.log` 於學生加入成功時記錄結構化 log（`groupId`、`activityId`，**不含 token**）；確認加入被拒（`NO_ACTIVE_ACTIVITY`、`INVALID_GROUP`）已由既有錯誤處理記錄，沒有則補上；在 `apps/server/tests/integration/auth.test.ts` 加測試確認 log 內容不含 token
+- [X] T019 [US1] 品質關卡：`npm run typecheck`、`npm run lint`、`npm run format:check`、`npm test` 全部通過，回報指令與結果
 
 **Checkpoint**: 學生可加入、看到即時階段、重新整理保留、待開始可離開、失效時回到選組（MVP）
 
