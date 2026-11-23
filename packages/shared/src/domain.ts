@@ -67,6 +67,12 @@ export const BlankSchema = z.object({
    * 預設 null，讓 001 的保存檔（沒有此欄位）可直接載入（002 research R2）。
    */
   prompt: z.string().nullable().default(null),
+  /**
+   * 子題標記是否與填答格在同一格（002 FR-025）。true：匯出寫「（n）答案」；
+   * false：標記在獨立的標記格（例如課程題組範例的 G 欄），匯出只寫答案、不改動標記格。
+   * 預設 true 以相容舊保存檔。
+   */
+  labelInAnswerCell: z.boolean().default(true),
 });
 export type Blank = z.infer<typeof BlankSchema>;
 

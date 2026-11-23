@@ -27,6 +27,21 @@ export function anchorOf(grid: SheetGrid, row: number, col: number): CellPositio
     : { rowIndex: merge.startRow, columnIndex: merge.startColumn };
 }
 
+/**
+ * 某格所在合併範圍的欄範圍（end 不含）；沒有合併時只有自己這一欄。
+ * 用於判斷「作答」表頭橫跨哪些欄（002 contracts §A0）。
+ */
+export function columnSpanOf(
+  grid: SheetGrid,
+  row: number,
+  col: number,
+): { start: number; end: number } {
+  const merge = mergeAt(grid, row, col);
+  return merge === undefined
+    ? { start: col, end: col + 1 }
+    : { start: merge.startColumn, end: merge.endColumn };
+}
+
 /** 合併範圍內任一格都視為擁有左上角那一格的值。 */
 export function effectiveValue(grid: SheetGrid, row: number, col: number): string {
   const anchor = anchorOf(grid, row, col);

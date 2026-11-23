@@ -59,7 +59,7 @@ Session -> Exp : export(session, results, mode)
 Exp -> GW : read(文件)
 GW -> Sheets : 重新讀取
 Exp -> Parser : parseGuidedNotes（重新定位題目、表頭列、既有結果欄）
-Exp -> Exp : planExport(…, mode)
+Exp -> Exp : planExport(…, mode)\n（答案寫入填答格；標記在獨立格時不加前綴、不動標記格）
 alt 有題目無法定位
   Exp --> Session : EXPORT_LOCATE_FAILED（列出題號）
   Session --> API : 錯誤，文件不變

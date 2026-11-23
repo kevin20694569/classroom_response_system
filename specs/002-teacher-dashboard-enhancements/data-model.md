@@ -18,6 +18,8 @@
 | 欄位 | 型別 | 說明 | 規則 |
 |------|------|------|------|
 | `prompt` | `string \| null` | 新增。題組子題的敘述（取該子題作答格所在列的題目欄）；單題一律 null | 同上 |
+| `location` | `CellLocation` | 修改語意：一律指向**填答格**（contracts §A0；題組真實版面為 H 欄） | 沿用 001 |
+| `labelInAnswerCell` | `boolean` | 新增（FR-025）。子題標記是否與填答格在同一格；true 時匯出寫「標記＋答案」，false 時只寫答案且不動標記格 | 預設 true（舊存檔相容） |
 
 敘述的讀取規則見 [contracts/guided-notes-format.md](./contracts/guided-notes-format.md) §A。
 

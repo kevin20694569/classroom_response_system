@@ -14,8 +14,9 @@ package "shared（契約）" {
   class Blank {
     +index: number
     +label: string | null
-    +location: CellLocation
+    +location: CellLocation（填答格）
     +prompt: string | null（新增：子題敘述）
+    +labelInAnswerCell: boolean（新增：標記是否與填答格同格）
   }
   Question "1" *-- "1..*" Blank
 
@@ -87,7 +88,13 @@ package "server：領域層" {
   }
   class GuidedNotesParser <<functions>> {
     +parseGuidedNotes(snapshot): ParsedGuidedNotes
+    -answerSlots(grid, header, block): AnswerSlot[]
   }
+  note right of GuidedNotesParser
+    作答區＝「作答」表頭的合併欄範圍（FR-025）：
+    一格（單題 G:H）→ 該格為填答格；
+    多格（題組 G「（n）」＋ H）→ 標記格右側為填答格
+  end note
   class GuidedNotesPrompts <<functions>> {
     +findPromptColumn(grid, headerRowIndex): number | null
     +promptAt(grid, row, column): string | null

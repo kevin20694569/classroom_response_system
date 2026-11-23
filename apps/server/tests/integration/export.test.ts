@@ -85,7 +85,7 @@ describe('匯出至原 Guided Notes（US4，SC-007）', () => {
     expect(app.gateway.get('single-example')).toEqual(after);
   });
 
-  it('題組範例：子題保留「（n）」標記，答案接在後面', async () => {
+  it('題組範例（真實版面）：答案寫入 H 欄，G 欄標記不動（002 FR-025）', async () => {
     app = await startTestApp();
     const teacher = await runActivity(app, 'group-example', [
       { group: 1, question: 1, answers: ['CPU', '作業系統'] },
@@ -98,9 +98,25 @@ describe('匯出至原 Guided Notes（US4，SC-007）', () => {
     const after = app.gateway.get('group-example');
     if (after === undefined) throw new Error('缺少文件');
     expect(diffCells(before, after)).toEqual({
+      '4,7': ['', 'CPU'],
+      '5,7': ['', '作業系統'],
+      '10,6': ['', '0'],
+    });
+  });
+
+  it('標記與答案同格的版面：子題保留「（n）」標記，答案接在後面（同 001）', async () => {
+    app = await startTestApp();
+    const teacher = await runActivity(app, 'marker-in-answer-cell', [
+      { group: 1, question: 1, answers: ['CPU', '作業系統'] },
+    ]);
+    const before = app.gateway.get('marker-in-answer-cell');
+    if (before === undefined) throw new Error('缺少文件');
+    expect((await call(app, 'POST', '/api/session/export', teacher)).statusCode).toBe(200);
+    const after = app.gateway.get('marker-in-answer-cell');
+    if (after === undefined) throw new Error('缺少文件');
+    expect(diffCells(before, after)).toEqual({
       '4,6': ['（1）', '（1）CPU'],
       '5,6': ['（2）', '（2）作業系統'],
-      '10,6': ['', '0'],
     });
   });
 
@@ -196,7 +212,7 @@ describe('匯出模式（002 US4）', () => {
     call(a, 'POST', '/api/session/export', teacher, payload);
   const cells = (a: TestApp) => a.gateway.get('group-example')?.sheets[0]?.cells ?? [];
 
-  it('{} 等同「只有答案」，結果與 001 相同', async () => {
+  it('{} 等同「只有答案」：只有填答格寫入答案', async () => {
     app = await startTestApp();
     const teacher = await groupActivity(app);
     const before = app.gateway.get('group-example');
@@ -207,8 +223,8 @@ describe('匯出模式（002 US4）', () => {
     const after = app.gateway.get('group-example');
     if (after === undefined) throw new Error('缺少文件');
     expect(diffCells(before, after)).toEqual({
-      '4,6': ['（1）', '（1）CPU'],
-      '5,6': ['（2）', '（2）作業系統'],
+      '4,7': ['', 'CPU'],
+      '5,7': ['', '作業系統'],
       '10,6': ['', '0'],
     });
   });
@@ -235,12 +251,12 @@ describe('匯出模式（002 US4）', () => {
     expect(res.statusCode).toBe(200);
     expect(res.json()).toMatchObject({ mode: 'answers-with-columns', writtenQuestionCount: 2 });
     const doc = cells(app);
-    expect([doc[3]?.[7], doc[3]?.[8]]).toEqual(['搶答組別', '提交時間']);
-    expect(doc[4]?.[7]).toBe('第 2 組');
-    expect(doc[4]?.[8]).toMatch(TIME_PATTERN);
-    expect(doc[10]?.[7]).toBe('第 1 組');
-    expect([doc[7]?.[7], doc[12]?.[7]]).toEqual(['', '']);
-    expect([doc[4]?.[6], doc[10]?.[6]]).toEqual(['（1）CPU', '0']);
+    expect([doc[3]?.[8], doc[3]?.[9]]).toEqual(['搶答組別', '提交時間']);
+    expect(doc[4]?.[8]).toBe('第 2 組');
+    expect(doc[4]?.[9]).toMatch(TIME_PATTERN);
+    expect(doc[10]?.[8]).toBe('第 1 組');
+    expect([doc[7]?.[8], doc[12]?.[8]]).toEqual(['', '']);
+    expect([doc[4]?.[6], doc[4]?.[7], doc[10]?.[6]]).toEqual(['（1）', 'CPU', '0']);
 
     const snapshot = app.gateway.get('group-example');
     expect((await exportWith(app, teacher, { mode: 'answers-with-columns' })).statusCode).toBe(200);
@@ -254,11 +270,12 @@ describe('匯出模式（002 US4）', () => {
       200,
     );
     let doc = cells(app);
-    expect(doc[4]?.[6]).toBe('（1）CPU');
-    expect(doc[5]?.[6]).toMatch(/^（2）作業系統\n〔第 2 組｜.+〕$/);
+    expect([doc[4]?.[6], doc[5]?.[6]]).toEqual(['（1）', '（2）']);
+    expect(doc[4]?.[7]).toBe('CPU');
+    expect(doc[5]?.[7]).toMatch(/^作業系統\n〔第 2 組｜.+〕$/);
     expect(doc[10]?.[6]).toMatch(/^0\n〔第 1 組｜.+〕$/);
-    expect(app.gateway.formatAt('學習單', 5, 6)).toBe('（2）作業系統'.length);
-    expect(app.gateway.formatAt('學習單', 4, 6)).toBeNull();
+    expect(app.gateway.formatAt('學習單', 5, 7)).toBe('作業系統'.length);
+    expect(app.gateway.formatAt('學習單', 4, 7)).toBeNull();
 
     const snapshot = app.gateway.get('group-example');
     expect((await exportWith(app, teacher, { mode: 'answers-with-note-line' })).statusCode).toBe(
@@ -268,18 +285,18 @@ describe('匯出模式（002 US4）', () => {
 
     expect((await exportWith(app, teacher, { mode: 'answers-only' })).statusCode).toBe(200);
     doc = cells(app);
-    expect([doc[5]?.[6], doc[10]?.[6]]).toEqual(['（2）作業系統', '0']);
-    expect(app.gateway.formatAt('學習單', 5, 6)).toBeNull();
+    expect([doc[5]?.[7], doc[10]?.[6]]).toEqual(['作業系統', '0']);
+    expect(app.gateway.formatAt('學習單', 5, 7)).toBeNull();
   });
 
   it('欄位模式後改用其他模式：結果欄保留不動', async () => {
     app = await startTestApp();
     const teacher = await groupActivity(app);
     await exportWith(app, teacher, { mode: 'answers-with-columns' });
-    const groupCell = cells(app)[4]?.[7];
+    const groupCell = cells(app)[4]?.[8];
     await exportWith(app, teacher, { mode: 'answers-with-note-line' });
-    expect(cells(app)[3]?.[7]).toBe('搶答組別');
-    expect(cells(app)[4]?.[7]).toBe(groupCell);
+    expect(cells(app)[3]?.[8]).toBe('搶答組別');
+    expect(cells(app)[4]?.[8]).toBe(groupCell);
   });
 
   it('匯出後的文件重新匯入成功，題數與題組判斷不變（FR-023）', async () => {
