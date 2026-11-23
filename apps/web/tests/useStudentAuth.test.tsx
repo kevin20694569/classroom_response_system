@@ -103,6 +103,23 @@ describe('useStudentAuth（003 US1、research R2、R4）', () => {
     expect(getToken()).toBeNull();
   });
 
+  it('到期時間很遠（超過 setTimeout 上限）時不會提早失效', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-11-24T00:00:00.000Z'));
+    setToken('token-2');
+    setStudentIdentity(identity('2026-12-31T00:00:00.000Z'));
+    const { result } = renderHook(() => useStudentAuth());
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+    expect(result.current.identity).not.toBeNull();
+    act(() => {
+      vi.advanceTimersByTime(37 * 24 * 60 * 60 * 1000);
+    });
+    expect(result.current.identity).toBeNull();
+    expect(result.current.notice).toBe(INVALIDATION_NOTICE.EXPIRED);
+  });
+
   it('讀回的身分已過期時直接視為失效', () => {
     setToken('token-2');
     setStudentIdentity(identity('2000-01-01T00:00:00.000Z'));

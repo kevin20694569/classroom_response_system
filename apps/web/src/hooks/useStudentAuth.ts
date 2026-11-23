@@ -36,6 +36,9 @@ interface AuthState {
   notice: string | null;
 }
 
+/** setTimeout 可接受的最大延遲（約 24.8 天）。 */
+const MAX_TIMER_DELAY_MS = 2_147_483_647;
+
 const isExpired = (identity: StudentIdentity, now = Date.now()): boolean =>
   Date.parse(identity.expiresAt) <= now;
 
@@ -85,12 +88,18 @@ export function useStudentAuth(): StudentAuth {
   const { identity } = state;
   useEffect(() => {
     if (identity === null) return;
-    const timer = setTimeout(
-      () => {
+    const expiresAt = Date.parse(identity.expiresAt);
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    // setTimeout 的延遲超過上限會立刻觸發，因此分段等待，到期前不會誤判失效
+    const schedule = (): void => {
+      const remaining = expiresAt - Date.now();
+      if (remaining <= 0) {
         onInvalidated('EXPIRED');
-      },
-      Math.max(0, Date.parse(identity.expiresAt) - Date.now()),
-    );
+        return;
+      }
+      timer = setTimeout(schedule, Math.min(remaining, MAX_TIMER_DELAY_MS));
+    };
+    schedule();
     return () => {
       clearTimeout(timer);
     };

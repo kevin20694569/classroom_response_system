@@ -130,3 +130,48 @@ describe('StudentPage — US2 作答與送出', () => {
     expect(screen.getByRole('button', { name: '第 3 題 已送出' })).toBeTruthy();
   });
 });
+
+describe('StudentPage — US3 結果檢視', () => {
+  const closedView = () =>
+    studentView({
+      status: 'CLOSED',
+      ownSubmissions: [{ questionNumber: 3, answers: [{ blankIndex: 1, text: '本組的答案' }] }],
+      results: [
+        { questionNumber: 1, winnerGroupId: null, answers: null },
+        { questionNumber: 2, winnerGroupId: null, answers: null },
+        { questionNumber: 3, winnerGroupId: 2, answers: [{ blankIndex: 1, text: '本組的答案' }] },
+        { questionNumber: 4, winnerGroupId: null, answers: null },
+      ],
+    });
+
+  it('結束後自動顯示結果；沒有未送出內容時不顯示提示', () => {
+    joinedTab();
+    render(<StudentPage />);
+    currentSocket().sendState(studentView({ status: 'OPEN' }));
+    currentSocket().sendState(closedView());
+    expect(screen.getByText('本組搶答成功 1 題')).toBeTruthy();
+    expect(screen.queryByText('搶答已結束，尚未送出的答案不會被採計')).toBeNull();
+  });
+
+  it('作答中有未送出內容時，結束後結果上方顯示提示（FR-018）', async () => {
+    joinedTab();
+    render(<StudentPage />);
+    currentSocket().sendState(studentView({ status: 'OPEN' }));
+    await userEvent.type(screen.getByLabelText('第 4 題答案'), '來不及送出');
+    currentSocket().sendState(closedView());
+    expect(screen.getByText('搶答已結束，尚未送出的答案不會被採計')).toBeTruthy();
+    expect(screen.queryAllByRole('textbox')).toHaveLength(0);
+  });
+
+  it('重新整理後仍顯示相同結果，且沒有離開組別', () => {
+    joinedTab();
+    const { unmount } = render(<StudentPage />);
+    currentSocket().sendState(closedView());
+    expect(screen.getByText('本組搶答成功 1 題')).toBeTruthy();
+    unmount();
+    render(<StudentPage />);
+    currentSocket().sendState(closedView());
+    expect(screen.getByText('本組搶答成功 1 題')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: '離開組別' })).toBeNull();
+  });
+});
