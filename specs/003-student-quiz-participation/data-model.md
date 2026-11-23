@@ -42,7 +42,7 @@
 |----|----|------|------|
 | `crs.token` | 不透明 token 字串（沿用 001） | 加入組別成功 | 離開組別、身分失效 |
 | `crs.identity` | `IdentitySummary` JSON（`role: 'student'`、`groupId`、`activityId`、`expiresAt`） | 加入組別成功 | 離開組別、身分失效 |
-| `crs.draft.{activityId}.{groupId}.{questionNumber}` | `string[]` JSON，依子題序號排列的未送出文字 | 每次輸入 | 該題送出成功、`ownSubmissions` 已含該題、離開組別、身分失效 |
+| `crs.draft.{activityId}.{groupId}.{questionNumber}` | `string[]` JSON，依子題序號排列的未送出文字 | 每次輸入 | 該題送出成功、`ownSubmissions` 已含該題、離開組別、身分失效（活動結束時保留，供結果畫面判斷是否有未送出的內容，FR-018） |
 
 讀取 `crs.identity` 與草稿時 MUST 以 schema 驗證（原則 V）；內容壞掉時視為不存在（身分）或空白（草稿）。
 
