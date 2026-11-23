@@ -130,3 +130,32 @@ describe('錯誤（全部回報並指出位置，FR-010）', () => {
     }
   });
 });
+
+describe('表頭列與結果欄資訊（002 research R9）', () => {
+  it('一般範例：表頭列為第 4 列、使用範圍 7 欄、沒有結果欄', () => {
+    for (const name of ['single-example', 'group-example']) {
+      const parsed = parseGuidedNotes(loadFixture(name));
+      expect(parsed.headerRowIndex).toBe(3);
+      expect(parsed.usedColumnCount).toBe(7);
+      expect(parsed.resultColumns).toEqual({ groupColumn: null, timeColumn: null });
+    }
+  });
+
+  it('已匯出過結果欄的文件：辨識 H、I 欄，題目判斷與題組範例相同（FR-023）', () => {
+    const parsed = parseGuidedNotes(loadFixture('exported-columns'));
+    expect(parsed.resultColumns).toEqual({ groupColumn: 7, timeColumn: 8 });
+    expect(parsed.usedColumnCount).toBe(9);
+    expect(parsed.questions.map((q) => [q.number, q.kind, q.blanks.length])).toEqual([
+      [1, 'group', 2],
+      [2, 'group', 2],
+      [3, 'single', 1],
+      [4, 'single', 1],
+    ]);
+  });
+
+  it('作答格含附註行的文件：子題標記仍被辨識（FR-023）', () => {
+    const parsed = parseGuidedNotes(loadFixture('exported-note-line'));
+    expect(parsed.questions[0]?.blanks.map((b) => b.label)).toEqual(['（1）', '（2）']);
+    expect(parsed.questions).toHaveLength(4);
+  });
+});

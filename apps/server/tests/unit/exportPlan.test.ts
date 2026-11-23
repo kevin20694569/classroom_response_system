@@ -1,4 +1,4 @@
-import type { QuizSession } from '@crs/shared';
+import type { ExportMode, QuizSession } from '@crs/shared';
 import { describe, expect, it } from 'vitest';
 import { planExport } from '../../src/domain/export/exportPlan.js';
 import { parseGuidedNotes } from '../../src/domain/guidedNotes/parser.js';
@@ -18,19 +18,40 @@ function closedSessionFor(fixture: string, submissions: QuizSession['submissions
   });
 }
 
-function plan(session: QuizSession, snapshot: SpreadsheetSnapshot) {
+function plan(
+  session: QuizSession,
+  snapshot: SpreadsheetSnapshot,
+  mode: ExportMode = 'answers-only',
+) {
   return planExport(
     session,
     deriveResults(session, new FirstSubmissionStrategy()),
     parseGuidedNotes(snapshot),
+    mode,
   );
 }
 
-describe('planExport', () => {
+/** 把寫入套用到文件副本（模擬 Google Sheets），用來驗證重複匯出。 */
+function apply(
+  doc: SpreadsheetSnapshot,
+  writes: { rowIndex: number; columnIndex: number; text: string }[],
+) {
+  const sheet = doc.sheets[0];
+  if (sheet === undefined) throw new Error('fixture 缺少工作表');
+  for (const w of writes) {
+    while (sheet.cells.length <= w.rowIndex) sheet.cells.push([]);
+    const row = sheet.cells[w.rowIndex] ?? [];
+    while (row.length <= w.columnIndex) row.push('');
+    row[w.columnIndex] = w.text;
+    sheet.cells[w.rowIndex] = row;
+  }
+}
+
+describe('planExport：只有答案（與 001 相同）', () => {
   it('單題寫入純答案，位置為作答格（合併左上角）', () => {
     const session = closedSessionFor('single-example', [submission(2, 1, 1, ['0'])]);
     expect(plan(session, loadFixture('single-example'))).toEqual({
-      writes: [{ sheetTitle: '學習單', rowIndex: 6, columnIndex: 6, value: '0' }],
+      writes: [{ sheetTitle: '學習單', rowIndex: 6, columnIndex: 6, text: '0', mutedFrom: null }],
       writtenQuestionCount: 1,
     });
   });
@@ -41,7 +62,7 @@ describe('planExport', () => {
       submission(1, 1, 2, ['GPU', 'Linux']),
     ]);
     const result = plan(session, loadFixture('group-example'));
-    expect(result.writes.map((w) => [w.rowIndex, w.value])).toEqual([
+    expect(result.writes.map((w) => [w.rowIndex, w.text])).toEqual([
       [4, '（1）CPU'],
       [5, '（2）作業系統'],
     ]);
@@ -50,7 +71,7 @@ describe('planExport', () => {
 
   it('題組沒有標記時只寫答案', () => {
     const session = closedSessionFor('group-no-markers', [submission(2, 1, 1, ['演算法', '堆疊'])]);
-    expect(plan(session, loadFixture('group-no-markers')).writes.map((w) => w.value)).toEqual([
+    expect(plan(session, loadFixture('group-no-markers')).writes.map((w) => w.text)).toEqual([
       '演算法',
       '堆疊',
     ]);
@@ -60,10 +81,7 @@ describe('planExport', () => {
     const session = closedSessionFor('group-example', [submission(1, 1, 1, ['CPU', 'OS'])]);
     const doc = loadFixture('group-example');
     const first = plan(session, doc);
-    for (const w of first.writes) {
-      const row = doc.sheets[0]?.cells[w.rowIndex];
-      if (row !== undefined) row[w.columnIndex] = w.value;
-    }
+    apply(doc, first.writes);
     const second = plan(session, doc);
     expect(second.writes).toEqual(first.writes);
   });
@@ -94,5 +112,157 @@ describe('planExport', () => {
       writes: [],
       writtenQuestionCount: 0,
     });
+  });
+});
+
+// 第 1 題由第 2 組（sequence 1）、第 3 題由第 1 組（sequence 2）搶答成功；第 2、4 題無人搶答
+function groupResults(): QuizSession {
+  return closedSessionFor('group-example', [
+    submission(1, 2, 1, ['CPU', '作業系統']),
+    submission(3, 1, 2, ['0']),
+  ]);
+}
+const T1 = '2026/11/23 08:00:01.000';
+const T2 = '2026/11/23 08:00:02.000';
+
+describe('planExport：答案＋組別時間欄（002 FR-019）', () => {
+  it('沒有結果欄時在使用範圍之後新增表頭，搶答成功寫在題目區塊第一列、無人搶答清空', () => {
+    const fresh = loadFixture('group-example');
+    expect(parseGuidedNotes(fresh).usedColumnCount).toBe(7);
+    const { writes, writtenQuestionCount } = plan(groupResults(), fresh, 'answers-with-columns');
+    expect(writtenQuestionCount).toBe(2);
+    const answers = writes.filter((w) => w.columnIndex === 6);
+    expect(answers.map((w) => [w.rowIndex, w.text, w.mutedFrom])).toEqual([
+      [4, '（1）CPU', null],
+      [5, '（2）作業系統', null],
+      [10, '0', null],
+    ]);
+    const results = writes
+      .filter((w) => w.columnIndex >= 7)
+      .map((w) => [w.rowIndex, w.columnIndex, w.text]);
+    expect(results).toEqual([
+      [3, 7, '搶答組別'],
+      [3, 8, '提交時間'],
+      [4, 7, '第 2 組'],
+      [4, 8, T1],
+      [7, 7, ''],
+      [7, 8, ''],
+      [10, 7, '第 1 組'],
+      [10, 8, T2],
+      [12, 7, ''],
+      [12, 8, ''],
+    ]);
+  });
+
+  it('沿用既有的結果欄，不重複新增；舊值被本次結果覆寫', () => {
+    const doc = loadFixture('exported-columns');
+    const { writes } = plan(groupResults(), doc, 'answers-with-columns');
+    expect(writes.some((w) => w.rowIndex === 3)).toBe(false);
+    expect(writes.filter((w) => w.rowIndex === 4 && w.columnIndex >= 7).map((w) => w.text)).toEqual(
+      ['第 2 組', T1],
+    );
+  });
+
+  it('只缺一欄時只新增那一欄', () => {
+    const doc = loadFixture('exported-columns');
+    const header = doc.sheets[0]?.cells[3];
+    if (header === undefined) throw new Error('fixture 缺少表頭列');
+    header[8] = '';
+    for (const row of doc.sheets[0]?.cells ?? []) row[8] = '';
+    const { writes } = plan(groupResults(), doc, 'answers-with-columns');
+    expect(writes.filter((w) => w.rowIndex === 3).map((w) => [w.columnIndex, w.text])).toEqual([
+      [8, '提交時間'],
+    ]);
+  });
+
+  it('兩份範例：單題範例的結果欄也新增在 G 欄之後', () => {
+    const session = closedSessionFor('single-example', [submission(2, 1, 1, ['0'])]);
+    const { writes } = plan(session, loadFixture('single-example'), 'answers-with-columns');
+    expect(writes.find((w) => w.text === '搶答組別')?.columnIndex).toBe(7);
+    expect(writes.filter((w) => w.rowIndex === 6 && w.columnIndex >= 7).map((w) => w.text)).toEqual(
+      ['第 1 組', '2026/11/23 08:00:01.000'],
+    );
+  });
+});
+
+describe('planExport：答案＋格內附註行（002 FR-020）', () => {
+  it('單題作答格為「答案＋換行＋附註行」，mutedFrom 為換行位置', () => {
+    const { writes } = plan(groupResults(), loadFixture('group-example'), 'answers-with-note-line');
+    const q3 = writes.find((w) => w.rowIndex === 10);
+    expect(q3?.text).toBe(`0\n〔第 1 組｜${T2}〕`);
+    expect(q3?.mutedFrom).toBe(1);
+  });
+
+  it('題組只有最後一個子題有附註行', () => {
+    const { writes } = plan(groupResults(), loadFixture('group-example'), 'answers-with-note-line');
+    const [first, second] = writes.filter((w) => w.rowIndex === 4 || w.rowIndex === 5);
+    expect(first).toMatchObject({ text: '（1）CPU', mutedFrom: null });
+    expect(second?.text).toBe(`（2）作業系統\n〔第 2 組｜${T1}〕`);
+    expect(second?.mutedFrom).toBe('（2）作業系統'.length);
+  });
+
+  it('已有附註行的文件：標記仍被辨識，重複匯出內容相同、不累加', () => {
+    const doc = loadFixture('exported-note-line');
+    const first = plan(groupResults(), doc, 'answers-with-note-line');
+    apply(doc, first.writes);
+    const second = plan(groupResults(), doc, 'answers-with-note-line');
+    expect(second.writes).toEqual(first.writes);
+    expect(second.writes.every((w) => (w.text.match(/〔/g) ?? []).length <= 1)).toBe(true);
+  });
+
+  it('單題範例同樣適用', () => {
+    const session = closedSessionFor('single-example', [submission(1, 2, 1, ['CPU'])]);
+    const { writes } = plan(session, loadFixture('single-example'), 'answers-with-note-line');
+    expect(writes).toEqual([
+      {
+        sheetTitle: '學習單',
+        rowIndex: 4,
+        columnIndex: 6,
+        text: 'CPU\n〔第 2 組｜2026/11/23 08:00:01.000〕',
+        mutedFrom: 3,
+      },
+    ]);
+  });
+});
+
+describe('planExport：三種模式共通', () => {
+  it.each<ExportMode>(['answers-only', 'answers-with-columns', 'answers-with-note-line'])(
+    '%s：無人搶答題目的作答格不寫入；重複匯出後文件內容相同',
+    (mode) => {
+      const doc = loadFixture('group-example');
+      const first = plan(groupResults(), doc, mode);
+      expect(
+        first.writes.some((w) => w.columnIndex === 6 && (w.rowIndex === 7 || w.rowIndex === 12)),
+      ).toBe(false);
+      expect(first.writtenQuestionCount).toBe(2);
+      apply(doc, first.writes);
+      const afterFirst = structuredClone(doc);
+      // 第二次匯出（結果欄表頭已存在，不再重寫）後，文件內容與第一次完全相同
+      apply(doc, plan(groupResults(), doc, mode).writes);
+      expect(doc).toEqual(afterFirst);
+    },
+  );
+
+  it.each<ExportMode>(['answers-with-columns', 'answers-with-note-line'])(
+    '%s：任一題無法定位時不回傳任何寫入（含結果欄表頭）',
+    (mode) => {
+      const doc = loadFixture('group-example');
+      doc.sheets[0]?.cells.splice(10, 1);
+      expect(() => plan(groupResults(), doc, mode)).toThrow(
+        expect.objectContaining({ code: 'EXPORT_LOCATE_FAILED' }),
+      );
+    },
+  );
+
+  it('匯出後的文件重新解析，題數、題型、標記與作答格位置不變（FR-023）', () => {
+    const base = parseGuidedNotes(loadFixture('group-example'));
+    for (const name of ['exported-columns', 'exported-note-line']) {
+      const parsed = parseGuidedNotes(loadFixture(name));
+      expect(
+        parsed.questions.map((q) => [q.number, q.kind, q.blanks.map((b) => [b.label, b.location])]),
+      ).toEqual(
+        base.questions.map((q) => [q.number, q.kind, q.blanks.map((b) => [b.label, b.location])]),
+      );
+    }
   });
 });

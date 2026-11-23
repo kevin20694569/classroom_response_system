@@ -127,9 +127,37 @@ export const SubmissionSchema = z.object({
 });
 export type Submission = z.infer<typeof SubmissionSchema>;
 
+/**
+ * 匯出模式（002 FR-017）：老師每次匯出時選擇，預設「只有答案」。
+ * 組別與提交時間一律與答案在視覺上分開（FR-018）。
+ */
+export const ExportModeSchema = z.enum([
+  'answers-only',
+  'answers-with-columns',
+  'answers-with-note-line',
+]);
+export type ExportMode = z.infer<typeof ExportModeSchema>;
+
+export const DEFAULT_EXPORT_MODE: ExportMode = 'answers-only';
+
+export const EXPORT_MODE_LABEL: Readonly<Record<ExportMode, string>> = {
+  'answers-only': '只有答案',
+  'answers-with-columns': '答案＋組別時間欄',
+  'answers-with-note-line': '答案＋格內附註行',
+};
+
+export const EXPORT_MODE_DESCRIPTION: Readonly<Record<ExportMode, string>> = {
+  'answers-only': '只把答案寫入原本的填空格（與先前相同）。',
+  'answers-with-columns': '答案寫入填空格，並在表頭列新增「搶答組別」「提交時間」兩欄記錄結果。',
+  'answers-with-note-line':
+    '答案下方另起一行，以灰色小字記錄組別與時間；複製答案格時會一併複製這一行。',
+};
+
 export const LastExportSchema = z.object({
   exportedAt: IsoDateTime,
   writtenQuestionCount: z.number().int().nonnegative(),
+  /** 該次匯出使用的模式；001 保存檔沒有此欄位，預設為「只有答案」（002 research R2） */
+  mode: ExportModeSchema.default(DEFAULT_EXPORT_MODE),
 });
 export type LastExport = z.infer<typeof LastExportSchema>;
 

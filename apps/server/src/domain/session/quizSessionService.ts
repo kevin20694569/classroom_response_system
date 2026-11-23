@@ -1,4 +1,11 @@
-import { groupName, type GroupId, type QuizSession, type SessionStatus } from '@crs/shared';
+import {
+  DEFAULT_EXPORT_MODE,
+  groupName,
+  type ExportMode,
+  type GroupId,
+  type QuizSession,
+  type SessionStatus,
+} from '@crs/shared';
 import type { SessionRepository } from '../../infrastructure/persistence/sessionRepository.js';
 import type { GuidedNotesGateway } from '../../infrastructure/sheets/guidedNotesGateway.js';
 import { parseSpreadsheetUrl } from '../../infrastructure/sheets/spreadsheetUrl.js';
@@ -41,6 +48,7 @@ export interface QuizSessionServiceDeps {
 }
 
 export interface ExportResult {
+  mode: ExportMode;
   writtenQuestionCount: number;
   writtenCellCount: number;
   exportedAt: string;
@@ -191,26 +199,31 @@ export class QuizSessionService {
 
   /**
    * 匯出至原 Guided Notes（US4，FR-021～FR-025）：只有「已結束」才能匯出；
-   * 寫入成功後保存 lastExport 並推播給老師。可重複執行，結果相同（FR-024）。
+   * 寫入成功後保存 lastExport（含 002 的匯出模式）並推播給老師。同一模式可重複執行，結果相同（FR-024）。
    */
-  async exportResults(): Promise<ExportResult> {
+  async exportResults(mode: ExportMode = DEFAULT_EXPORT_MODE): Promise<ExportResult> {
     const exporter = this.deps.exporter ?? new GuidedNotesExporter(this.deps.gateway);
     try {
       const result = await this.mutate(async (current) => {
         if (current.status !== 'CLOSED') {
           throw new DomainError('INVALID_TRANSITION', '請先結束搶答，再匯出答案。');
         }
-        const report = await exporter.export(current, deriveResults(current, this.deps.ranking));
+        const report = await exporter.export(
+          current,
+          deriveResults(current, this.deps.ranking),
+          mode,
+        );
         const exportedAt = this.deps.now().toISOString();
         const next: QuizSession = {
           ...current,
-          lastExport: { exportedAt, writtenQuestionCount: report.writtenQuestionCount },
+          lastExport: { exportedAt, writtenQuestionCount: report.writtenQuestionCount, mode },
         };
-        return { next, result: { ...report, exportedAt }, changes: [{ kind: 'export' }] };
+        return { next, result: { ...report, mode, exportedAt }, changes: [{ kind: 'export' }] };
       });
       this.deps.logger.info(
         {
           event: 'export.succeeded',
+          mode,
           writtenQuestionCount: result.writtenQuestionCount,
           writtenCellCount: result.writtenCellCount,
         },
@@ -221,6 +234,7 @@ export class QuizSessionService {
       this.deps.logger.warn(
         {
           event: 'export.failed',
+          mode,
           code: error instanceof DomainError ? error.code : 'INTERNAL_ERROR',
         },
         '匯出至 Guided Notes 失敗',
