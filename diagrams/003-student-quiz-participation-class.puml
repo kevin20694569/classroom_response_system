@@ -100,7 +100,6 @@ package "web（學生端）" {
     +submitted: OwnSubmission | null
     +enabled: boolean
     +canSubmit: boolean（連線中才可送出）
-    +status: SessionStatus
     +identity: StudentIdentity
     +onInvalidated(reason): void
     -submitting: boolean

@@ -109,3 +109,24 @@ describe('StudentPage — US1 選組加入與階段同步', () => {
     expect(getToken()).toBe('teacher-token');
   });
 });
+
+describe('StudentPage — US2 作答與送出', () => {
+  it('待開始時輸入停用；開啟後可作答；本組送出推播後該題變為已送出', () => {
+    joinedTab();
+    render(<StudentPage />);
+    const socket = currentSocket();
+    socket.sendState(studentView({ status: 'READY' }));
+    expect(screen.getByLabelText<HTMLInputElement>('第 3 題答案').disabled).toBe(true);
+    socket.sendState(studentView({ status: 'OPEN' }));
+    expect(screen.getByLabelText<HTMLInputElement>('第 3 題答案').disabled).toBe(false);
+    socket.sendState(
+      studentView({
+        status: 'OPEN',
+        ownSubmissions: [{ questionNumber: 3, answers: [{ blankIndex: 1, text: '本組的答案' }] }],
+      }),
+    );
+    expect(screen.getByText('本組的答案')).toBeTruthy();
+    expect(screen.queryByLabelText('第 3 題答案')).toBeNull();
+    expect(screen.getByRole('button', { name: '第 3 題 已送出' })).toBeTruthy();
+  });
+});

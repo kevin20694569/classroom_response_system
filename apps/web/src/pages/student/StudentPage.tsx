@@ -1,15 +1,8 @@
-import type { StudentView } from '@crs/shared';
 import { useSessionState } from '../../hooks/useSessionState';
 import { useStudentAuth } from '../../hooks/useStudentAuth';
+import { AnswerSheet } from './AnswerSheet';
 import { JoinGroupPanel } from './JoinGroupPanel';
 import { PhaseBanner } from './PhaseBanner';
-
-/** 各階段的內容；US2、US3 換成作答與結果元件。 */
-function PhaseContent({ view }: { view: StudentView }) {
-  if (view.status === 'READY') return <p className="text-slate-600">等待老師開啟搶答</p>;
-  if (view.status === 'OPEN') return <p className="text-slate-600">搶答進行中</p>;
-  return <p className="text-slate-600">搶答已結束</p>;
-}
 
 /**
  * 學生端（003，路徑 /student）：依分頁身分與伺服器推播的檢視切換畫面（data-model §4）。
@@ -45,6 +38,11 @@ export function StudentPage() {
     );
   }
 
+  const { identity } = auth;
+  if (identity === null) {
+    return <p className="p-6 text-center text-slate-500">連線中…</p>;
+  }
+
   return (
     <div className="mx-auto max-w-3xl space-y-4 p-6">
       <PhaseBanner
@@ -53,7 +51,20 @@ export function StudentPage() {
         connected={connected}
         onLeave={auth.leave}
       />
-      <PhaseContent view={view} />
+      {view.status === 'CLOSED' ? (
+        <p className="text-slate-600">搶答已結束</p>
+      ) : (
+        <AnswerSheet
+          // 換組或換活動時重新掛載，草稿不會帶到別組
+          key={`${identity.activityId}.${identity.groupId}`}
+          questions={view.questions}
+          ownSubmissions={view.ownSubmissions}
+          status={view.status}
+          connected={connected}
+          identity={identity}
+          onInvalidated={auth.onInvalidated}
+        />
+      )}
     </div>
   );
 }
