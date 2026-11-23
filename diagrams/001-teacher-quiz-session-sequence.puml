@@ -47,6 +47,7 @@ alt 驗證全部通過
   Session -> Repo : save（保存完成才回覆）
   Session --> API : 匯入成功（題數）
   API --> TC : 顯示題號清單
+  API -> SC : session:reset（activityId 換新，舊學生身分失效並中斷連線）
 else 驗證失敗
   Parser --> Session : ImportError[]（含位置）
   Session --> API : 匯入失敗，系統資料不變

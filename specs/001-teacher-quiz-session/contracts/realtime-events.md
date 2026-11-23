@@ -38,7 +38,8 @@ Socket.IO 只負責**伺服器推播**；所有會改變狀態的操作都走 [H
 ### `session:reset`
 
 - Payload：`{ "reason": "NEW_ACTIVITY" }`
-- 時機：老師在 `CLOSED` 後匯入新文件（開始新的一場）時，送給所有 `group:N`。
+- 時機：任何成功的匯入使 `activityId` 換新時（`READY` 重新匯入，或 `CLOSED` 後匯入新文件），送給所有
+  `group:N`；送出後伺服器中斷這些學生連線，讓它們離開舊的 room，不會再收到新活動的 `session:state`。
 - 學生端收到後清除 token（舊活動的學生身分已失效），回到加入畫面。
 
 ## 客戶端 → 伺服器事件

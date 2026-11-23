@@ -59,10 +59,10 @@
 | 從 | 操作 | 到 | 前置條件 | 其他結果 |
 |----|------|----|----------|----------|
 | `NOT_IMPORTED` | 匯入 | `READY` | 文件驗證全部通過 | 建立新的 `activityId` |
-| `READY` | 重新匯入 | `READY` | 文件驗證全部通過 | 題目與組別整批替換；`activityId` 換新；沒有作答紀錄需要處理 |
+| `READY` | 重新匯入 | `READY` | 文件驗證全部通過 | 題目與組別整批替換；`activityId` 換新；所有學生身分失效並收到 `session:reset` |
 | `READY` | 開啟 | `OPEN` | `questions` 至少 1 題 | 記錄 `openedAt` |
 | `OPEN` | 結束 | `CLOSED` | — | 記錄 `closedAt` |
-| `CLOSED` | 匯入新文件 | `READY` | 請求帶 `confirmDiscard: true`，且文件驗證通過 | 清除題目、作答紀錄與匯出紀錄，換新 `activityId`（舊學生身分失效） |
+| `CLOSED` | 匯入新文件 | `READY` | 請求帶 `confirmDiscard: true`，且文件驗證通過 | 清除題目、作答紀錄與匯出紀錄，換新 `activityId`；所有學生身分失效並收到 `session:reset` |
 
 - 表中以外的轉換一律拒絕（`INVALID_TRANSITION`），包括 `CLOSED → OPEN`（不可重新開啟）與 `OPEN` 時匯入。
 - 對已處於目標狀態的重複操作（例如 `OPEN` 時再按開啟）回傳 `ALREADY_IN_STATE`，狀態不變。

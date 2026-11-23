@@ -154,6 +154,10 @@ npm test
 
 學生畫面在子功能 002 才會實作；本子功能以模擬腳本扮演學生，它使用與 002 相同的 API。
 
+**與 constitution 原則 VII 的關係**：001 沒有學生畫面，兩組學生的操作由 `npm run simulate` 透過正式的
+學生 API 執行，這是本子功能的學生端驗證方式。子功能 002 完成學生畫面後，必須以「老師分頁＋兩個學生
+分頁」重跑本清單的步驟 8～19。
+
 ```bash
 npm run simulate -- --group 1 --question 1 --answers "CPU" "作業系統"
 ```
