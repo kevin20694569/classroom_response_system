@@ -1,5 +1,5 @@
 @startuml 001-teacher-quiz-session-sequence
-' 子功能 001：使用者角色與老師端搶答活動管理 — 時序圖
+' 子功能 001：使用者角色與老師端搶答活動管理 — 時序圖（已依實作驗證，見 specs/001-teacher-quiz-session/diagram-verification.md）
 skinparam defaultFontName "PingFang TC"
 skinparam sequenceMessageAlign left
 autonumber
@@ -13,6 +13,7 @@ participant "RoleGuard /\nAuthService" as Guard
 participant "QuizSessionService" as Session
 participant "SubmissionService" as Sub
 participant "GuidedNotesParser" as Parser
+participant "GuidedNotesExporter" as Exp
 participant "GuidedNotesGateway" as GW
 participant "SessionRepository" as Repo
 database "Google Sheets\n（老師的 Guided Notes）" as Sheets
@@ -34,12 +35,12 @@ end
 Teacher -> TC : 貼上 Google Sheets 網址、設定組數
 TC -> API : 匯入
 API -> Guard : 檢查老師權限
-API -> Session : importQuestions
+API -> Session : importQuestions(spreadsheetUrl, groupCount)
 Session -> GW : read(文件)
 GW -> Sheets : 讀取所有工作表內容與合併儲存格
 Sheets --> GW : 表格資料
 GW --> Session : SpreadsheetSnapshot
-Session -> Parser : selectSheet + parse
+Session -> Parser : parseGuidedNotes(snapshot)
 Parser -> Parser : 找出唯一含「題號」與「作答」表頭的工作表\n逐列辨識題號、填空格與題組子題
 alt 驗證全部通過
   Parser --> Session : ParsedGuidedNotes
@@ -49,7 +50,7 @@ alt 驗證全部通過
   API --> TC : 顯示題號清單
   API -> SC : session:reset（activityId 換新，舊學生身分失效並中斷連線）
 else 驗證失敗
-  Parser --> Session : ImportError[]（含位置）
+  Parser --> Session : DomainError(GUIDED_NOTES_INVALID, ErrorDetail[]：含位置)
   Session --> API : 匯入失敗，系統資料不變
   API --> TC : 顯示錯誤與問題位置
 end
@@ -67,7 +68,7 @@ API -> SC : 推播：搶答進行中
 
 == 搶答進行中（學生送出由子功能 002 提供，此處為老師端所需的資料流）==
 SC -> API : 送出第 n 題答案（題組含全部子題）
-API -> Sub : submit
+API -> Sub : submit(groupId 取自 token, request)
 Sub -> Session : 確認狀態為 OPEN
 alt 狀態為 OPEN、子題齊全、每格 1～200 字
   Sub -> Sub : 依伺服器收到順序給 sequence\n由 RankingStrategy 判定順位
@@ -94,18 +95,23 @@ API -> SC : 推播：已結束（結果檢視於子功能 002）
 Teacher -> TC : 匯出
 TC -> API : export
 API -> Guard : 檢查老師權限
-API -> Session : export（狀態須為 CLOSED）
-Session -> GW : read(文件)
+API -> Session : exportResults()（狀態須為 CLOSED）
+Session -> Exp : export(session, results)
+Exp -> GW : read(spreadsheetId)
 GW -> Sheets : 重新讀取目前內容
-GW --> Session : SpreadsheetSnapshot
-Session -> Parser : 重新找出工作表並定位每題填空格
+GW --> Exp : SpreadsheetSnapshot
+Exp -> Parser : parseGuidedNotes + planExport\n（重新找出工作表並定位每題填空格）
 alt 所有目標填空格都能定位
-  Session -> GW : writeCells（只寫搶答成功題目的填空格，\n既有內容直接覆寫，原有「（n）」標記則保留）
-  GW -> Sheets : 寫入目標儲存格
+  Exp -> GW : writeCells（只寫搶答成功題目的填空格，\n既有內容直接覆寫，原有「（n）」標記則保留）
+  GW -> Sheets : 一次批次寫入目標儲存格（RAW）
+  Exp --> Session : ExportReport（題數、格數）
+  Session -> Repo : save（lastExport）
   Session --> API : 成功寫入題數
   API --> TC : 顯示匯出結果
+  API -> TC : 推播：lastExport 更新
 else 任一題無法定位
-  Session --> API : 不寫入任何內容，回報題號
+  Exp --> Session : EXPORT_LOCATE_FAILED（不寫入任何內容）
+  Session --> API : 回報無法定位的題號
   API --> TC : 顯示無法定位的題號
 end
 

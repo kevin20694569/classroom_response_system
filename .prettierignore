@@ -1,0 +1,12 @@
+node_modules/
+dist/
+build/
+coverage/
+data/
+package-lock.json
+diagrams/
+specs/
+.specify/
+.claude/
+.agents/
+*.md

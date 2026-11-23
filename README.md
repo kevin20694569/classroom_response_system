@@ -1,0 +1,70 @@
+# 課堂搶答系統（Classroom Response System）
+
+軟體工程期末專題（SpecKit 組）。把課堂上以填空式學習單（Guided Notes，Google Sheets）進行的搶答活動搬到線上：
+老師匯入 Guided Notes、開啟與結束搶答、即時檢視各組作答，最後把搶答成功的答案寫回原本的 Google Sheets。
+系統只在本機執行，同一台電腦以多個瀏覽器分頁同時扮演老師與不同組別的學生。
+
+## 啟動（單一指令）
+
+```bash
+npm start
+```
+
+開啟 <http://localhost:3000/teacher> 進入老師端（密碼見 `.env` 的 `TEACHER_PASSWORD`）。
+
+第一次使用前請先完成下方「環境需求」與「設定」。
+
+## 環境需求
+
+- Node.js 26 LTS：在專案根目錄執行 `nvm install && nvm use`（版本固定於 `.nvmrc`）
+- 安裝相依套件：`npm ci`
+- 連線真實 Google Sheets 時需要 Google 服務帳號金鑰（自動化測試不需要）
+
+## 設定
+
+1. 依 [quickstart.md §1](specs/001-teacher-quiz-session/quickstart.md) 建立 Google 服務帳號、下載金鑰，
+   並把 Guided Notes（課程範例請先複製到自己的雲端硬碟）分享給服務帳號 email（編輯者）。
+2. 複製 `.env.example` 為 `.env` 並填入老師密碼、token 密鑰與金鑰路徑。
+   缺少或格式錯誤時伺服器會拒絕啟動並說明是哪一個變數。
+3. `.env`、金鑰檔與 `data/`（活動保存檔）都不納入版控。
+
+## Guided Notes 準備規則
+
+系統依文件內容動態辨識題目，不使用固定的儲存格位置，規則見
+[contracts/guided-notes-format.md](specs/001-teacher-quiz-session/contracts/guided-notes-format.md)：
+
+- 需要一列同時有「題號」與「作答」的表頭（「題目」欄可有可無）
+- 題號可寫成 `1`、`1.`、`1、`、`Q1`、`第1題`，或全形數字
+- 同一題號涵蓋多個作答格即為題組；作答格的「（1）」「（2）」標記可有可無，有寫就必須從（1）連號
+- 匯出時答案寫入原本的作答格，題組保留子題標記（例如「（1）CPU」），其他儲存格不會被改動
+
+## 開發與測試
+
+| 指令 | 說明 |
+|------|------|
+| `npm run dev` | 開發模式（後端 + Vite 熱重載，網頁在 <http://localhost:5173/teacher>） |
+| `npm test` | 執行所有自動化測試（不連線 Google、不需真實憑證） |
+| `npm run typecheck` | TypeScript 型別檢查（strict） |
+| `npm run lint` | ESLint 檢查 |
+| `npm run format` | Prettier 格式化 |
+| `npm run simulate -- --group 1 --question 1 --answers "CPU"` | 以學生身分加入並送出答案（學生畫面於子功能 002 提供） |
+
+人工驗證步驟見 [quickstart.md §4](specs/001-teacher-quiz-session/quickstart.md)。
+
+## 專案結構
+
+```text
+packages/shared/   前後端共用契約（Zod schema 與型別）
+apps/server/       後端：Fastify HTTP API、Socket.IO 即時推播、Google Sheets 存取
+apps/web/          前端：React + Vite + Tailwind CSS（老師端）
+scripts/           模擬學生腳本
+specs/             SpecKit 文件（spec、plan、tasks、contracts…）
+diagrams/          PlantUML 圖表（.puml 與 .png）
+```
+
+## 子功能
+
+| 編號 | 內容 | 狀態 |
+|------|------|------|
+| 001 | 使用者角色與老師端搶答活動管理（匯入、開啟／結束、檢視、匯出） | 已實作 |
+| 002 | 學生端畫面（加入組別、作答、檢視結果） | 待實作 |

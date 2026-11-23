@@ -1,0 +1,163 @@
+{
+  "sheets": [
+    {
+      "sheetTitle": "學習單",
+      "cells": [
+        ["", "", "", "", "", "", ""],
+        ["", "計算機概論基礎 學習單", "", "", "", "", ""],
+        ["", "", "", "", "", "", ""],
+        ["", "題號", "題目", "", "", "", "作答"],
+        [
+          "",
+          "1",
+          "電腦系統中負責執行程式指令、處理資料的核心硬體元件，它的英文縮寫是什麼？",
+          "",
+          "",
+          "",
+          ""
+        ],
+        ["", "", "", "", "", "", ""],
+        [
+          "",
+          "2",
+          "電腦底層的資料與指令最終會轉換為由數字 1 與哪一個數字組成的二進位系統？",
+          "",
+          "",
+          "",
+          ""
+        ],
+        ["", "", "", "", "", "", ""],
+        ["", "3", "網際網路中每台設備用來互相通訊的獨一無二識別號碼稱為什麼位址？", "", "", "", ""],
+        ["", "", "", "", "", "", ""],
+        ["", "2", "負責管理硬體資源並提供應用程式執行環境的系統軟體統稱為什麼？", "", "", "", ""],
+        ["", "", "", "", "", "", ""],
+        ["", "5", "具有「後進先出」特性的資料結構稱為什麼？", "", "", "", ""],
+        ["", "", "", "", "", "", ""],
+        ["", "6", "解決特定問題的明確步驟與規則集合稱為什麼？", "", "", "", ""],
+        ["", "", "", "", "", "", ""]
+      ],
+      "merges": [
+        {
+          "startRow": 1,
+          "endRow": 3,
+          "startColumn": 1,
+          "endColumn": 7
+        },
+        {
+          "startRow": 3,
+          "endRow": 4,
+          "startColumn": 2,
+          "endColumn": 6
+        },
+        {
+          "startRow": 4,
+          "endRow": 6,
+          "startColumn": 1,
+          "endColumn": 2
+        },
+        {
+          "startRow": 4,
+          "endRow": 6,
+          "startColumn": 2,
+          "endColumn": 6
+        },
+        {
+          "startRow": 4,
+          "endRow": 6,
+          "startColumn": 6,
+          "endColumn": 7
+        },
+        {
+          "startRow": 6,
+          "endRow": 8,
+          "startColumn": 1,
+          "endColumn": 2
+        },
+        {
+          "startRow": 6,
+          "endRow": 8,
+          "startColumn": 2,
+          "endColumn": 6
+        },
+        {
+          "startRow": 6,
+          "endRow": 8,
+          "startColumn": 6,
+          "endColumn": 7
+        },
+        {
+          "startRow": 8,
+          "endRow": 10,
+          "startColumn": 1,
+          "endColumn": 2
+        },
+        {
+          "startRow": 8,
+          "endRow": 10,
+          "startColumn": 2,
+          "endColumn": 6
+        },
+        {
+          "startRow": 8,
+          "endRow": 10,
+          "startColumn": 6,
+          "endColumn": 7
+        },
+        {
+          "startRow": 10,
+          "endRow": 12,
+          "startColumn": 1,
+          "endColumn": 2
+        },
+        {
+          "startRow": 10,
+          "endRow": 12,
+          "startColumn": 2,
+          "endColumn": 6
+        },
+        {
+          "startRow": 10,
+          "endRow": 12,
+          "startColumn": 6,
+          "endColumn": 7
+        },
+        {
+          "startRow": 12,
+          "endRow": 14,
+          "startColumn": 1,
+          "endColumn": 2
+        },
+        {
+          "startRow": 12,
+          "endRow": 14,
+          "startColumn": 2,
+          "endColumn": 6
+        },
+        {
+          "startRow": 12,
+          "endRow": 14,
+          "startColumn": 6,
+          "endColumn": 7
+        },
+        {
+          "startRow": 14,
+          "endRow": 16,
+          "startColumn": 1,
+          "endColumn": 2
+        },
+        {
+          "startRow": 14,
+          "endRow": 16,
+          "startColumn": 2,
+          "endColumn": 6
+        },
+        {
+          "startRow": 14,
+          "endRow": 16,
+          "startColumn": 6,
+          "endColumn": 7
+        }
+      ]
+    }
+  ]
+}
