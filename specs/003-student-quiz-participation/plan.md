@@ -117,7 +117,8 @@ packages/shared/src/
 packages/shared/tests/            ＋／～ blankLabels schema 測試
 
 apps/server/src/
-└── domain/visibility/visibilityPolicy.ts  ～ base() 與 toTeacherQuestion 產生 blankLabels
+├── domain/visibility/visibilityPolicy.ts  ～ base() 與 toTeacherQuestion 產生 blankLabels
+└── transport/http/routes/authRoutes.ts    ～ 學生加入成功的結構化 log（不含 token，FR-028）
 apps/server/tests/
 ├── unit/visibilityPolicy.test.ts          ～ blankLabels、學生資料不含敘述
 └── integration/visibility.test.ts         ～ 各階段學生推播與回應只含允許的欄位（SC-004）
