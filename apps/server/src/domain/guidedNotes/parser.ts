@@ -6,6 +6,7 @@ import type {
 import { DomainError } from '../errors.js';
 import { anchorOf, columnName, effectiveValue, rawValue, type CellPosition } from './grid.js';
 import { readBlankMarker } from './markers.js';
+import { findPromptColumn, readQuestionPrompts } from './prompts.js';
 import { parseQuestionNumber } from './questionNumber.js';
 
 /**
@@ -222,17 +223,21 @@ export function parseGuidedNotes(snapshot: SpreadsheetSnapshot): ParsedGuidedNot
 
   const { grid, header } = selected;
   const blocks = collectBlocks(grid, header, collector);
+  // 題目欄可有可無：只用來讀取預覽用的敘述，不參與題目與填空格的判斷（002 FR-001）
+  const promptColumn = findPromptColumn(grid, header.rowIndex);
   const questions: Question[] = [];
   for (const block of blocks) {
     const cells = answerCells(grid, header, block);
     const blanks = buildBlanks(grid, block, cells, collector);
     if (blanks.length === 0) continue;
+    const kind = blanks.length === 1 ? 'single' : 'group';
+    const prompts = readQuestionPrompts(grid, promptColumn, block.rows, blanks, kind);
     questions.push({
       number: block.number,
       order: questions.length + 1,
-      kind: blanks.length === 1 ? 'single' : 'group',
-      blanks,
-      prompt: null,
+      kind,
+      blanks: blanks.map((b, i) => ({ ...b, prompt: prompts.blankPrompts[i] ?? null })),
+      prompt: prompts.prompt,
     });
   }
   if (blocks.length === 0) {
