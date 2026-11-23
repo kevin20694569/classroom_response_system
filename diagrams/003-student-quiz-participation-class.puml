@@ -1,0 +1,135 @@
+@startuml 003-student-quiz-participation-class
+' 子功能 003：學生端搶答作答與結果檢視 — 類別圖（只列出本子功能新增或修改的成員；其餘沿用 001、002 類別圖）
+skinparam defaultFontName "PingFang TC"
+hide empty members
+title 003 學生端搶答作答與結果檢視 — 類別圖 (Class Diagram)
+
+package "shared（契約）" {
+  enum SessionStatus {
+    NOT_IMPORTED
+    READY
+    OPEN
+    CLOSED
+  }
+  class QuestionSummary {
+    +number: number
+    +kind: single | group
+    +blankCount: number
+    +blankLabels: (string | null)[]（新增：子題標記，不含敘述）
+  }
+  class OwnSubmission {
+    +questionNumber: number
+    +answers: BlankAnswer[]
+  }
+  class ResultView {
+    +questionNumber: number
+    +winnerGroupId: number | null
+    +answers: BlankAnswer[] | null
+  }
+  class StudentView {
+    +viewer: student
+    +status: SessionStatus
+    +groups: Group[]
+    +questions: QuestionSummary[]
+    +groupId: number
+    +ownSubmissions: OwnSubmission[]
+    +results: ResultView[] | null（只有 CLOSED 才有值）
+  }
+  class SubmitRequest {
+    +questionNumber: number
+    +answers: BlankAnswer[]
+  }
+  StudentView *-- "0..*" QuestionSummary
+  StudentView *-- "0..*" OwnSubmission
+  StudentView *-- "0..*" ResultView
+  StudentView --> SessionStatus
+}
+
+package "server" {
+  class VisibilityPolicy <<module>> {
+    +toStudentView(session, groupId, ranking): StudentView
+  }
+  note right of VisibilityPolicy
+    結束前只放本組 ownSubmissions，results = null；
+    結束後 results 只含每題的搶答成功答案
+  end note
+  VisibilityPolicy ..> StudentView : 產生
+}
+
+package "web（學生端）" {
+  class StudentPage {
+    -identity: StudentIdentity | null
+    -view: StudentView | null
+    +render(): 選組 / 作答 / 結果
+  }
+  class useStudentAuth <<hook>> {
+    +join(groupId): Promise<void>
+    +leave(): void
+    +onInvalidated(reason): void
+  }
+  class JoinGroupPanel {
+    +groups: Group[]
+    +onJoin(groupId): void
+  }
+  class PhaseBanner {
+    +groupId: number
+    +status: SessionStatus
+    +connected: boolean
+  }
+  class AnswerSheet {
+    +questions: QuestionSummary[]
+    +ownSubmissions: OwnSubmission[]
+    +selectedNumber: number | null
+    +select(number): void
+  }
+  class QuestionAnswerForm {
+    +question: QuestionSummary
+    +submitted: OwnSubmission | null
+    +enabled: boolean
+    -submitting: boolean
+    +submit(): Promise<SubmitOutcome>
+  }
+  class AnswerDraftStore <<module>> {
+    +load(activityId, groupId, questionNumber): string[]
+    +save(activityId, groupId, questionNumber, texts): void
+    +clear(questionNumber?): void
+  }
+  class validateDraft <<function>> {
+    +validateDraft(question, texts): DraftIssue[]
+  }
+  class StudentResultBoard {
+    +results: ResultView[]
+    +ownSubmissions: OwnSubmission[]
+    +groupId: number
+  }
+  class groupOutcomes <<function>> {
+    +groupOutcomes(results, ownSubmissions, groupId): GroupOutcome[]
+  }
+  enum OutcomeKind {
+    WON
+    SUBMITTED_NOT_WON
+    NOT_SUBMITTED
+  }
+  class GroupOutcome {
+    +questionNumber: number
+    +kind: OutcomeKind
+    +ownAnswers: BlankAnswer[] | null
+    +winnerGroupId: number | null
+    +winnerAnswers: BlankAnswer[] | null
+  }
+
+  StudentPage --> useStudentAuth
+  StudentPage --> JoinGroupPanel
+  StudentPage --> PhaseBanner
+  StudentPage --> AnswerSheet
+  StudentPage --> StudentResultBoard
+  AnswerSheet --> QuestionAnswerForm
+  QuestionAnswerForm --> AnswerDraftStore
+  QuestionAnswerForm ..> validateDraft
+  QuestionAnswerForm ..> SubmitRequest : 送出
+  StudentResultBoard ..> groupOutcomes
+  groupOutcomes ..> GroupOutcome : 產生
+  GroupOutcome --> OutcomeKind
+  StudentPage ..> StudentView : 訂閱
+}
+@enduml

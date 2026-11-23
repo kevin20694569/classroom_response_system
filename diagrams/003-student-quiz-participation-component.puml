@@ -1,0 +1,92 @@
+@startuml 003-student-quiz-participation-component
+' 子功能 003：學生端搶答作答與結果檢視 — 組件圖（灰色為沿用 001／002、本子功能預期不改動的元件）
+skinparam defaultFontName "PingFang TC"
+skinparam componentStyle uml2
+title 003 學生端搶答作答與結果檢視 — 組件圖 (Component Diagram)
+
+actor "學生（各組）" as StudentActor
+actor "老師" as TeacherActor
+
+node "學生分頁（瀏覽器，每組可多個）" as StudentBrowser {
+  package "StudentClient（學生端畫面）" {
+    component "StudentPage\n依身分與階段切換畫面" as StudentPage
+    component "JoinGroupPanel\n選擇組別加入" as JoinPanel
+    component "PhaseBanner\n組別 / 活動階段 / 連線狀態" as PhaseBanner
+    component "AnswerSheet\n題號清單與本組作答狀態" as AnswerSheet
+    component "QuestionAnswerForm\n單題 / 題組子題輸入與送出" as AnswerForm
+    component "StudentResultBoard\n每題結果與本組成績" as ResultBoard
+    component "AnswerDraftStore\n未送出輸入（只存在該分頁）" as DraftStore
+    component "useStudentAuth\n加入 / 離開 / 身分失效" as StudentAuth
+    component "useSessionState\n訂閱 session:state" as SessionHook #EEEEEE
+  }
+}
+
+node "老師分頁（瀏覽器）" as TeacherBrowser {
+  component "TeacherClient\n（001、002 完成）" as TeacherClient #EEEEEE
+}
+
+package "shared（前後端共用契約）" as Shared {
+  component "Contracts\nStudentView / QuestionSummary（子題標記）/\nOwnSubmission / ResultView / SubmitRequest" as Contracts
+  component "答案規則\nANSWER_MAX_LENGTH、答案驗證" as AnswerRules #EEEEEE
+}
+
+node "本機伺服器" as Server {
+  package "傳輸層" {
+    component "HttpApi\nPOST /api/auth/student\nPOST /api/submissions" as HttpApi #EEEEEE
+    component "RealtimeGateway\n依組別分房推播 session:state / session:reset" as Realtime #EEEEEE
+  }
+  package "存取控制" {
+    component "VisibilityPolicy\ntoStudentView：只含本組資料，\n結束後才含結果" as Visibility
+  }
+  package "領域層" {
+    component "QuizSessionService\n狀態機" as SessionService #EEEEEE
+    component "SubmissionService\n驗證、順位、每組每題一次" as SubmissionService #EEEEEE
+  }
+  package "外部服務存取層" {
+    component "LocalSessionRepository" as LocalRepo #EEEEEE
+  }
+}
+
+StudentActor --> JoinPanel : 選擇組別
+StudentActor --> AnswerForm : 填寫並送出
+StudentActor --> ResultBoard : 檢視結果
+TeacherActor --> TeacherClient : 匯入 / 開啟 / 結束
+
+StudentPage --> JoinPanel
+StudentPage --> PhaseBanner
+StudentPage --> AnswerSheet
+StudentPage --> ResultBoard
+AnswerSheet --> AnswerForm : 選中的題號
+AnswerForm --> DraftStore : 保存 / 清除草稿
+AnswerForm ..> AnswerRules : 送出前檢查
+StudentPage --> StudentAuth
+StudentPage --> SessionHook
+
+JoinPanel --> HttpApi : 加入（groupId）
+AnswerForm --> HttpApi : 送出答案（token 決定組別）
+Realtime --> SessionHook : StudentView / session:reset
+TeacherClient --> HttpApi
+
+StudentPage ..> Contracts
+HttpApi ..> Contracts : 驗證請求
+HttpApi --> SessionService
+HttpApi --> SubmissionService
+SubmissionService --> LocalRepo : 先保存再回覆
+SessionService --> LocalRepo
+SessionService --> Realtime : 狀態改變
+SubmissionService --> Realtime : 本組送出成功
+Realtime --> Visibility
+
+note right of Visibility
+  搶答結束前不含其他組別的
+  作答內容、是否送出、順位或
+  搶答成功組別（FR-021）；
+  任何階段都不含題目敘述（FR-022）
+end note
+
+note bottom of DraftStore
+  草稿只在分頁內，
+  不送往伺服器，
+  同組其他分頁看不到（FR-020）
+end note
+@enduml
