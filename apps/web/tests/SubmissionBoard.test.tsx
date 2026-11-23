@@ -1,5 +1,5 @@
 import type { Submission } from '@crs/shared';
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { SubmissionBoard } from '../src/pages/teacher/SubmissionBoard';
 import { teacherView } from './viewBuilders';
@@ -69,5 +69,54 @@ describe('SubmissionBoard（US3）', () => {
   it('開啟前顯示說明', () => {
     render(<SubmissionBoard view={teacherView({ status: 'READY' })} />);
     expect(screen.getByText('開啟搶答後，這裡會即時顯示各組送出的答案。')).toBeTruthy();
+  });
+
+  it('搶答進行中每筆送出紀錄都有時間圖示，滑鼠移入顯示該筆提交時間（002 FR-014）', () => {
+    const view = teacherView({
+      status: 'OPEN',
+      openedAt: '2026-11-23T08:00:00.000Z',
+      submissions: [
+        { ...record(1, 1, 1, ['CPU', '作業系統']), receivedAt: '2026-11-23T08:00:05.120Z' },
+        { ...record(1, 2, 2, ['GPU', 'Linux']), receivedAt: '2026-11-23T08:00:05.480Z' },
+      ],
+    });
+    render(<SubmissionBoard view={view} />);
+    const q1 = within(screen.getByRole('article', { name: '第 1 題' }));
+    const hints = q1.getAllByRole('button', { name: '查看提交時間' });
+    expect(hints).toHaveLength(2);
+    const second = hints[1];
+    if (second === undefined) throw new Error('缺少時間圖示');
+    fireEvent.pointerEnter(second);
+    expect(screen.getByRole('tooltip').textContent).toContain('提交時間 16:00:05.480');
+    expect(screen.getByRole('tooltip').textContent).toContain('開始後 00:05.48');
+    // 既有順位與「搶答成功」標示不變
+    expect(q1.getAllByRole('listitem')[0]?.textContent).toContain('搶答成功');
+  });
+
+  it('已結束時有結果的題目有時間圖示，無人搶答的題目沒有', () => {
+    const view = teacherView({
+      status: 'CLOSED',
+      openedAt: '2026-11-23T08:00:00.000Z',
+      submissions: [record(3, 2, 1, ['0'])],
+      results: [
+        { questionNumber: 1, winnerGroupId: null, answers: null, receivedAt: null },
+        { questionNumber: 2, winnerGroupId: null, answers: null, receivedAt: null },
+        {
+          questionNumber: 3,
+          winnerGroupId: 2,
+          answers: [{ blankIndex: 1, text: '0' }],
+          receivedAt: '2026-11-23T08:00:12.340Z',
+        },
+        { questionNumber: 4, winnerGroupId: null, answers: null, receivedAt: null },
+      ],
+    });
+    render(<SubmissionBoard view={view} />);
+    expect(screen.getAllByRole('button', { name: '查看提交時間' })).toHaveLength(1);
+    const q3 = within(screen.getByRole('article', { name: '第 3 題' }));
+    fireEvent.pointerEnter(q3.getByRole('button', { name: '查看提交時間' }));
+    expect(screen.getByRole('tooltip').textContent).toContain('開始後 00:12.34');
+    expect(
+      within(screen.getByRole('article', { name: '第 1 題' })).queryByRole('button'),
+    ).toBeNull();
   });
 });

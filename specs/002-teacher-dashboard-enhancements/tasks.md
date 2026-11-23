@@ -158,16 +158,16 @@ US2（搶答計時，P2）、US3（提交時間提示，P3）。
 
 ### Tests for User Story 3
 
-- [ ] T045 [P] [US3] 在 `apps/web/tests/timeFormat.test.ts` 新增 `formatClock('2026-11-23T02:32:15.005Z')` 在 `TZ=Asia/Taipei` 下為 `10:32:15.005`
-- [ ] T046 [P] [US3] 測試 `apps/web/tests/TimeHint.test.tsx`：按鈕有 `aria-label="查看提交時間"`；`pointerenter`／`focus` 後出現 `role="tooltip"` 且按鈕 `aria-describedby` 指向它，內容含「提交時間 10:32:15.123」與「開始後 00:12.34」；`pointerleave`、`blur`、`Escape` 後消失；小視窗渲染在 `document.body` 下（Portal，不在原本的版面容器內）；位置計算函式在按鈕靠近視窗上緣或左右邊緣時，回傳的座標仍在可視範圍內
+- [X] T045 [P] [US3] 在 `apps/web/tests/timeFormat.test.ts` 新增 `formatClock('2026-11-23T02:32:15.005Z')` 在 `TZ=Asia/Taipei` 下為 `10:32:15.005`
+- [X] T046 [P] [US3] 測試 `apps/web/tests/TimeHint.test.tsx`：按鈕有 `aria-label="查看提交時間"`；`pointerenter`／`focus` 後出現 `role="tooltip"` 且按鈕 `aria-describedby` 指向它，內容含「提交時間 10:32:15.123」與「開始後 00:12.34」；`pointerleave`、`blur`、`Escape` 後消失；小視窗渲染在 `document.body` 下（Portal，不在原本的版面容器內）；位置計算函式在按鈕靠近視窗上緣或左右邊緣時，回傳的座標仍在可視範圍內
 
 ### Implementation for User Story 3
 
-- [ ] T047 [P] [US3] 在 `apps/web/src/utils/timeFormat.ts` 新增 `formatClock(iso: string): string`（本地時區 `HH:mm:ss.SSS`），讓 T045 通過
-- [ ] T048 [US3] 在 `apps/web/src/components/TimeHint.tsx` 實作時間提示（research R6）：props 為 `receivedAt`、`openedAt`；時鐘圖示（inline SVG，`aria-hidden`）按鈕；`useId` 產生 tooltip id；以 `createPortal` 渲染 `position: fixed` 的小視窗；匯出純函式 `computeTooltipPosition(anchorRect, tooltipSize, viewport)`（預設放上方，上方空間不足改放下方，水平位置夾在可視範圍內）；內容兩行：`提交時間 formatClock(receivedAt)`、`開始後 formatElapsed(receivedAt − openedAt)`
-- [ ] T049 [US3] 在 `apps/web/src/pages/teacher/SubmissionBoard.tsx` 的每筆答案後加入 `TimeHint`：搶答進行中每筆送出紀錄使用 `submission.receivedAt`；已結束時使用 `result.receivedAt`，無人搶答不顯示（FR-014）；`openedAt` 取自 `view.openedAt`
-- [ ] T050 [US3] 更新 `apps/web/tests/SubmissionBoard.test.tsx`：`OPEN` 時每筆紀錄各有一個時間圖示；`CLOSED` 時有結果的題目有圖示、「無人搶答」的題目沒有；滑鼠移入其中一個圖示時顯示該筆的提交時間；既有順位與「搶答成功」標示不變
-- [ ] T051 [US3] 品質關卡：`npm run typecheck`、`npm run lint`、`npm test` 全部通過，回報指令與結果
+- [X] T047 [P] [US3] 在 `apps/web/src/utils/timeFormat.ts` 新增 `formatClock(iso: string): string`（本地時區 `HH:mm:ss.SSS`），讓 T045 通過
+- [X] T048 [US3] 在 `apps/web/src/components/TimeHint.tsx` 實作時間提示（research R6）：props 為 `receivedAt`、`openedAt`；時鐘圖示（inline SVG，`aria-hidden`）按鈕；`useId` 產生 tooltip id；以 `createPortal` 渲染 `position: fixed` 的小視窗；匯出純函式 `computeTooltipPosition(anchorRect, tooltipSize, viewport)`（預設放上方，上方空間不足改放下方，水平位置夾在可視範圍內）；內容兩行：`提交時間 formatClock(receivedAt)`、`開始後 formatElapsed(receivedAt − openedAt)`
+- [X] T049 [US3] 在 `apps/web/src/pages/teacher/SubmissionBoard.tsx` 的每筆答案後加入 `TimeHint`：搶答進行中每筆送出紀錄使用 `submission.receivedAt`；已結束時使用 `result.receivedAt`，無人搶答不顯示（FR-014）；`openedAt` 取自 `view.openedAt`
+- [X] T050 [US3] 更新 `apps/web/tests/SubmissionBoard.test.tsx`：`OPEN` 時每筆紀錄各有一個時間圖示；`CLOSED` 時有結果的題目有圖示、「無人搶答」的題目沒有；滑鼠移入其中一個圖示時顯示該筆的提交時間；既有順位與「搶答成功」標示不變
+- [X] T051 [US3] 品質關卡：`npm run typecheck`、`npm run lint`、`npm test` 全部通過，回報指令與結果
 
 **Checkpoint**: 四個 user story 都完成並各自可展示
 

@@ -1,4 +1,5 @@
 import type { BlankAnswer, TeacherView } from '@crs/shared';
+import { TimeHint } from '../../components/TimeHint';
 
 function groupLabel(view: TeacherView, groupId: number): string {
   return view.groups.find((g) => g.id === groupId)?.name ?? `第 ${groupId} 組`;
@@ -20,6 +21,7 @@ function AnswerText({ answers, isGroup }: { answers: readonly BlankAnswer[]; isG
 /**
  * 作答狀況與搶答結果（US3，FR-018、FR-019）：
  * 搶答進行中顯示每題送出紀錄與順位（順位第一為搶答成功）；結束後顯示每題結果，無人作答標示「無人搶答」。
+ * 002：每筆答案後面有時間圖示，可查看提交時間（FR-014）。
  */
 export function SubmissionBoard({ view }: { view: TeacherView }) {
   if (view.status === 'NOT_IMPORTED' || view.status === 'READY') {
@@ -58,6 +60,9 @@ export function SubmissionBoard({ view }: { view: TeacherView }) {
                       {groupLabel(view, result.winnerGroupId)}
                     </span>
                     ：<AnswerText answers={result.answers} isGroup={isGroup} />
+                    {result.receivedAt !== null && (
+                      <TimeHint receivedAt={result.receivedAt} openedAt={view.openedAt} />
+                    )}
                   </p>
                 ) : (
                   <p className="mt-2 text-sm text-slate-500">無人搶答</p>
@@ -70,6 +75,7 @@ export function SubmissionBoard({ view }: { view: TeacherView }) {
                     <li key={record.id} className={i === 0 ? 'font-semibold text-green-700' : ''}>
                       第 {i + 1} 位・{groupLabel(view, record.groupId)}：
                       <AnswerText answers={record.answers} isGroup={isGroup} />
+                      <TimeHint receivedAt={record.receivedAt} openedAt={view.openedAt} />
                       {i === 0 && (
                         <span className="ml-2 rounded bg-green-100 px-1.5 text-xs">搶答成功</span>
                       )}
