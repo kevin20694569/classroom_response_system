@@ -79,6 +79,12 @@ describe('SubmissionBoard（US3）', () => {
         { ...record(1, 1, 1, ['CPU', '作業系統']), receivedAt: '2026-11-23T08:00:05.120Z' },
         { ...record(1, 2, 2, ['GPU', 'Linux']), receivedAt: '2026-11-23T08:00:05.480Z' },
       ],
+      results: [1, 2, 3, 4].map((n) => ({
+        questionNumber: n,
+        winnerGroupId: n === 1 ? 1 : null,
+        answers: null,
+        receivedAt: null,
+      })),
     });
     render(<SubmissionBoard view={view} />);
     const q1 = within(screen.getByRole('article', { name: '第 1 題' }));
@@ -97,7 +103,7 @@ describe('SubmissionBoard（US3）', () => {
     const view = teacherView({
       status: 'CLOSED',
       openedAt: '2026-11-23T08:00:00.000Z',
-      submissions: [record(3, 2, 1, ['0'])],
+      submissions: [{ ...record(3, 2, 1, ['0']), receivedAt: '2026-11-23T08:00:12.340Z' }],
       results: [
         { questionNumber: 1, winnerGroupId: null, answers: null, receivedAt: null },
         { questionNumber: 2, winnerGroupId: null, answers: null, receivedAt: null },
@@ -118,5 +124,37 @@ describe('SubmissionBoard（US3）', () => {
     expect(
       within(screen.getByRole('article', { name: '第 1 題' })).queryByRole('button'),
     ).toBeNull();
+  });
+
+  it('結束後仍依順位保留所有組別的答案，搶答成功者有標示，每筆都有時間圖示（002 FR-026）', () => {
+    const view = teacherView({
+      status: 'CLOSED',
+      openedAt: '2026-11-23T08:00:00.000Z',
+      submissions: [
+        { ...record(3, 2, 2, ['1']), receivedAt: '2026-11-23T08:00:06.000Z' },
+        { ...record(3, 1, 1, ['0']), receivedAt: '2026-11-23T08:00:05.000Z' },
+      ],
+      results: [
+        { questionNumber: 1, winnerGroupId: null, answers: null, receivedAt: null },
+        { questionNumber: 2, winnerGroupId: null, answers: null, receivedAt: null },
+        {
+          questionNumber: 3,
+          winnerGroupId: 1,
+          answers: [{ blankIndex: 1, text: '0' }],
+          receivedAt: '2026-11-23T08:00:05.000Z',
+        },
+        { questionNumber: 4, winnerGroupId: null, answers: null, receivedAt: null },
+      ],
+    });
+    render(<SubmissionBoard view={view} />);
+    const q3 = within(screen.getByRole('article', { name: '第 3 題' }));
+    const items = q3.getAllByRole('listitem');
+    expect(items).toHaveLength(2);
+    expect(items[0]?.textContent).toContain('第 1 位・第 1 組：0');
+    expect(items[0]?.textContent).toContain('搶答成功');
+    expect(items[1]?.textContent).toContain('第 2 位・第 2 組：1');
+    expect(items[1]?.textContent).not.toContain('搶答成功');
+    expect(q3.getAllByRole('button', { name: '查看提交時間' })).toHaveLength(2);
+    expect(screen.getAllByText('無人搶答')).toHaveLength(3);
   });
 });

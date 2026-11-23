@@ -348,4 +348,20 @@ describe('匯出模式（002 US4）', () => {
     await exportWith(app, teacher, { mode: 'answers-with-note-line' });
     await pushed;
   });
+
+  it.each(['answers-only', 'answers-with-columns', 'answers-with-note-line'])(
+    '%s：多組作答同一題時只寫入搶答成功（第一名）的答案（002 FR-026）',
+    async (mode) => {
+      app = await startTestApp();
+      const teacher = await runActivity(app, 'group-example', [
+        { group: 2, question: 3, answers: ['第一名答案'] },
+        { group: 1, question: 3, answers: ['第二名答案'] },
+      ]);
+      expect((await exportWith(app, teacher, { mode })).statusCode).toBe(200);
+      const doc = JSON.stringify(app.gateway.get('group-example'));
+      expect(doc).toContain('第一名答案');
+      expect(doc).not.toContain('第二名答案');
+      if (mode !== 'answers-only') expect(doc).toContain('第 2 組');
+    },
+  );
 });
