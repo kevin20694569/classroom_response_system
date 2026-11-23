@@ -65,7 +65,7 @@
 
 | 欄位 | 型別 | 說明 |
 |------|------|------|
-| `receivedAt` | `string \| null` | 搶答成功作答的伺服器收件時間；無人搶答為 null（FR-014） |
+| `receivedAt` | `string \| null` | 搶答成功作答的伺服器收件時間；無人搶答為 null。保留在契約中；畫面的提交時間提示一律使用 `submissions[].receivedAt`（FR-026） |
 
 ## 3. API 契約（`packages/shared/src/api.ts`）
 
