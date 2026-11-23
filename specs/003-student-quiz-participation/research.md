@@ -68,6 +68,9 @@ Technical Context 沒有 NEEDS CLARIFICATION；以下記錄本子功能的設計
   - 該題送出成功；
   - `StudentView.ownSubmissions` 已包含該題（例如同組其他分頁先送出）；
   - 學生離開組別、身分失效（R4）：清除該分頁所有 `crs.draft.` 開頭的鍵。
+
+  活動結束時草稿不清除，`hasUnsent(activityId, groupId)` 用來判斷結果畫面要不要顯示「尚未送出的答案不會被採計」
+  （FR-018）：作答畫面在結束時會被結果畫面取代（FR-023），提示只能放在結果畫面。
 - **Rationale**: `sessionStorage` 只屬於該分頁，滿足「同組其他分頁與伺服器都看不到」；以 `activityId`
   區分可避免舊活動的草稿出現在新活動。題數 ≤ 100、每格 ≤ 200 字，同步寫入成本可忽略。
 - **Alternatives considered**: `localStorage`——同一瀏覽器所有分頁共用，違反 FR-020；存在 React state

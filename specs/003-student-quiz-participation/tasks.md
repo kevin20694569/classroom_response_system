@@ -88,7 +88,7 @@ US3（檢視結果，P2）。
 - [ ] T015 [P] [US1] 新增 `apps/web/src/pages/student/JoinGroupPanel.tsx`（props：`status`、`groups`、`notice`、`onJoin`），依 contracts/student-ui.md §1「等待匯入」「選擇組別」
 - [ ] T016 [P] [US1] 新增 `apps/web/src/pages/student/PhaseBanner.tsx`（props：`groupId`、`status`、`connected`、`onLeave`），依 contracts/student-ui.md §2
 - [ ] T017 [US1] 新增 `apps/web/src/pages/student/StudentPage.tsx`：以 `useStudentAuth` 與 `useSessionState(token, onInvalidated)` 依 data-model §4 切換畫面（載入中／等待匯入或選組／老師身分提示／頂端列＋階段內容）；本 Phase 的階段內容先顯示「等待老師開啟搶答」（READY）、「搶答進行中」（OPEN）、「搶答已結束」（CLOSED）文字，US2、US3 再換成作答與結果元件；在 `apps/web/src/App.tsx` 新增 `/student` 路徑，首頁的學生端占位文字改為連到 `/student` 的按鈕（research R1），並更新檔頭註解
-- [ ] T018 [US1] FR-028：在 `apps/server/src/transport/http/routes/authRoutes.ts`（或 `AuthService.joinAsStudent`，依既有 logger 注入方式擇一）於學生加入成功時記錄結構化 log（`groupId`、`activityId`，**不含 token**）；確認加入被拒（`NO_ACTIVE_ACTIVITY`、`INVALID_GROUP`）已由既有錯誤處理記錄，沒有則補上；在 `apps/server/tests/integration/auth.test.ts` 加測試確認 log 內容不含 token
+- [ ] T018 [US1] FR-028：在 `apps/server/src/transport/http/routes/authRoutes.ts` 以 Fastify 的 `request.log` 於學生加入成功時記錄結構化 log（`groupId`、`activityId`，**不含 token**）；確認加入被拒（`NO_ACTIVE_ACTIVITY`、`INVALID_GROUP`）已由既有錯誤處理記錄，沒有則補上；在 `apps/server/tests/integration/auth.test.ts` 加測試確認 log 內容不含 token
 - [ ] T019 [US1] 品質關卡：`npm run typecheck`、`npm run lint`、`npm run format:check`、`npm test` 全部通過，回報指令與結果
 
 **Checkpoint**: 學生可加入、看到即時階段、重新整理保留、待開始可離開、失效時回到選組（MVP）
@@ -105,19 +105,19 @@ US3（檢視結果，P2）。
 
 ### Tests for User Story 2（先寫，預期失敗）
 
-- [ ] T020 [P] [US2] 新增 `apps/web/tests/answerDraftStore.test.ts`：`save`／`load` 以 `crs.draft.{activityId}.{groupId}.{questionNumber}` 保存；`load` 在沒有資料或內容壞掉時回傳長度為 `blankCount` 的空字串陣列；不同活動或組別互不影響；`clear` 只清該題；`clearAll` 清除所有 `crs.draft.` 鍵且不動 `crs.token`
+- [ ] T020 [P] [US2] 新增 `apps/web/tests/answerDraftStore.test.ts`：`save`／`load` 以 `crs.draft.{activityId}.{groupId}.{questionNumber}` 保存；`load` 在沒有資料或內容壞掉時回傳長度為 `blankCount` 的空字串陣列；不同活動或組別互不影響；`clear` 只清該題；`clearAll` 清除所有 `crs.draft.` 鍵且不動 `crs.token`；`hasUnsent(activityId, groupId)` 在該活動與組別有任一題草稿去除前後空白後不是空白時回 `true`，只有空白或沒有草稿時回 `false`，不受其他組別影響
 - [ ] T021 [P] [US2] 新增 `apps/web/tests/validateDraft.test.ts`：全部填寫時回傳空陣列；去除前後空白後為空回 `EMPTY`（訊息「尚未填寫」）；超過 200 字回 `TOO_LONG`；剛好 200 字通過；表情符號以 `unicodeLength` 計算（例如 200 個表情符號通過、201 個不通過）；題組只填一個子題時指出缺少的子題序號
-- [ ] T022 [P] [US2] 新增 `apps/web/tests/QuestionAnswerForm.test.tsx`：單題一個輸入欄、無標記；題組依子題顯示標記（有標記顯示原文、無標記顯示「（n）」）；顯示「m／200」字數；輸入時寫入草稿、重新掛載時讀回；前端檢查不通過時不呼叫 fetch 並在子題下方顯示原因；送出內容為去除前後空白的文字；送出中按鈕顯示「送出中…」且連點只送出一次；成功後顯示「已送出」與唯讀答案、清除草稿、不顯示順位；`SESSION_NOT_OPEN`、`ALREADY_SUBMITTED`、`ANSWER_INVALID`（依 `details.blankIndex` 標示）、`NETWORK_ERROR`、`UNAUTHORIZED`（呼叫 `onInvalidated('EXPIRED')`）各一個案例，訊息依 contracts/http-api.md §3；伺服器回 500 且內容無法解析時只顯示「系統發生錯誤，請稍後再試。」，不顯示任何原始內容（FR-027）；`enabled === false` 時輸入與送出停用；`OPEN` 變為 `CLOSED` 且有未送出內容時顯示「搶答已結束，尚未送出的答案不會被採計」
+- [ ] T022 [P] [US2] 新增 `apps/web/tests/QuestionAnswerForm.test.tsx`：單題一個輸入欄、無標記；題組依子題顯示標記（有標記顯示原文、無標記顯示「（n）」）；顯示「m／200」字數；輸入時寫入草稿、重新掛載時讀回；前端檢查不通過時不呼叫 fetch 並在子題下方顯示原因；送出內容為去除前後空白的文字；送出中按鈕顯示「送出中…」且連點只送出一次；成功後顯示「已送出」與唯讀答案、清除草稿、不顯示順位；`SESSION_NOT_OPEN`、`ALREADY_SUBMITTED`、`ANSWER_INVALID`（依 `details.blankIndex` 標示）、`NETWORK_ERROR`、`UNAUTHORIZED`（呼叫 `onInvalidated('EXPIRED')`）各一個案例，訊息依 contracts/http-api.md §3；伺服器回 500 且內容無法解析時只顯示「系統發生錯誤，請稍後再試。」，不顯示任何原始內容（FR-027）；`enabled === false` 時輸入與送出停用；`SESSION_NOT_OPEN` 被拒絕後草稿保留（供結果畫面判斷，FR-018）
 - [ ] T023 [P] [US2] 新增 `apps/web/tests/AnswerSheet.test.tsx`：一次列出全部題目，每題標示「單題」或「題組（k 子題）」；題號清單每題顯示「未作答」或「已送出」（依 `ownSubmissions`）；點題號會捲到該題（`scrollIntoView` 以 `vi.fn` 替身）並聚焦第一個輸入欄；`ownSubmissions` 新增某題時該題變為已送出並清除該題草稿（同組其他分頁先送出）；`READY` 時輸入停用並顯示「等待老師開啟搶答」；`connected === false` 時送出停用但仍可輸入
 - [ ] T024 [P] [US2] 在 `apps/server/tests/integration/visibility.test.ts` 新增測試（SC-004、FR-021）：兩組各一個學生 socket 加上一個老師分頁，第 1 組送出後第 2 組的 socket 沒有收到任何事件；各階段學生收到的所有 `session:state` 與 `GET /api/session` 回應只含 `status`、`groups`、`questions`（含 `blankLabels`）、`groupId`、本組 `ownSubmissions`、`results`（結束前為 `null`），不含其他組答案、`sequence`、`receivedAt` 或任何敘述
 - [ ] T025 [P] [US2] 在 `apps/server/tests/integration/concurrency.test.ts` 新增「同組兩個身分同時送出同一題（重複 100 次）」：每次只接受一筆，另一筆回 `409 ALREADY_SUBMITTED`；推播後兩個身分看到的 `ownSubmissions` 都是被接受的那一筆（SC-005、FR-006）
 
 ### Implementation for User Story 2
 
-- [ ] T026 [P] [US2] 在 `apps/web/src/student/answerDraftStore.ts` 補齊：`load(activityId, groupId, questionNumber, blankCount)`、`save(...)`、`clear(activityId, groupId, questionNumber)`、`clearAll()`；讀取時以 `z.array(z.string())` 驗證（research R6、data-model §2）
+- [ ] T026 [P] [US2] 在 `apps/web/src/student/answerDraftStore.ts` 補齊：`load(activityId, groupId, questionNumber, blankCount)`、`save(...)`、`clear(activityId, groupId, questionNumber)`、`clearAll()`、`hasUnsent(activityId, groupId)`（FR-018）；讀取時以 `z.array(z.string())` 驗證（research R6、data-model §2）
 - [ ] T027 [P] [US2] 新增 `apps/web/src/student/validateDraft.ts`：`validateDraft(question: QuestionSummary, texts: string[]): DraftIssue[]`，使用 shared 的 `unicodeLength`、`ANSWER_MAX_LENGTH`（research R8、data-model §3）；並在同目錄定義 `DraftIssue`、`SubmitOutcome` 型別與子題名稱函式 `blankLabelOf(question, index)`（有標記用原文、題組無標記用「（n）」、單題回 `null`，research R5）
 - [ ] T028 [US2] 新增 `apps/web/src/pages/student/QuestionAnswerForm.tsx`（props：`question`、`submitted: OwnSubmission | null`、`enabled`、`canSubmit`、`identity`、`status`、`onInvalidated`），`submit(): Promise<SubmitOutcome>` 依 research R8 的流程與錯誤對應；送出呼叫 `apiRequest('/api/submissions', SubmitResponseSchema, …)`
-- [ ] T029 [US2] 新增 `apps/web/src/pages/student/AnswerSheet.tsx`（props：`questions`、`ownSubmissions`、`status`、`connected`、`identity`、`onInvalidated`），`jumpTo(number)` 依 research R7；每題一個 `QuestionAnswerForm`，各題區塊加上 `id="question-{n}"`
+- [ ] T029 [US2] 新增 `apps/web/src/pages/student/AnswerSheet.tsx`（props：`questions`、`ownSubmissions`、`status`、`connected`、`identity`、`onInvalidated`），`jumpTo(number)` 依 research R7；每題一個 `QuestionAnswerForm`，各題區塊加上 `id="question-{n}"`；`ownSubmissions` 包含某題時（例如同組其他分頁先送出）清除該題草稿（FR-020、research R6）
 - [ ] T030 [US2] 在 `apps/web/src/pages/student/StudentPage.tsx` 的 `READY`、`OPEN` 階段改為顯示 `AnswerSheet`；`CLOSED` 但仍保留 US1 的文字（US3 再換）；在 `apps/web/tests/StudentPage.test.tsx` 加測試：`READY` 輸入停用、推送 `OPEN` 後可作答、推送含本組送出的 `session:state` 後該題變為已送出
 - [ ] T031 [US2] 品質關卡：`npm run typecheck`、`npm run lint`、`npm run format:check`、`npm test` 全部通過，回報指令與結果
 
@@ -135,13 +135,13 @@ US3（檢視結果，P2）。
 ### Tests for User Story 3（先寫，預期失敗）
 
 - [ ] T032 [P] [US3] 新增 `apps/web/tests/groupOutcomes.test.ts`：本組搶答成功 → `WON`；本組有送出但他組搶到 → `SUBMITTED_NOT_WON`（帶本組答案與搶答成功答案）；本組未送出 → `NOT_SUBMITTED`；無人搶答 → `winnerGroupId` 與 `winnerAnswers` 為 `null`；依題號排序；搶答成功題數計算正確（含 0 題）
-- [ ] T033 [P] [US3] 新增 `apps/web/tests/StudentResultBoard.test.tsx`：上方顯示「本組搶答成功 N 題」；每題顯示搶答成功組別與答案（題組依子題分列並顯示標記）或「無人搶答」；三種成績標籤文字依 contracts/student-ui.md §4；「已送出，未搶到」另外列出本組答案；畫面不出現其他組未搶到的答案、順序或時間
+- [ ] T033 [P] [US3] 新增 `apps/web/tests/StudentResultBoard.test.tsx`：上方顯示「本組搶答成功 N 題」；每題顯示搶答成功組別與答案（題組依子題分列並顯示標記）或「無人搶答」；三種成績標籤文字依 contracts/student-ui.md §4；「已送出，未搶到」另外列出本組答案；`showUnsentNotice` 為 true 時最上方顯示「搶答已結束，尚未送出的答案不會被採計」，false 時不顯示（FR-018）；畫面不出現其他組未搶到的答案、順序或時間
 
 ### Implementation for User Story 3
 
 - [ ] T034 [P] [US3] 新增 `apps/web/src/student/groupOutcomes.ts`：`OutcomeKind`、`GroupOutcome` 型別與 `groupOutcomes(results, ownSubmissions, groupId): GroupOutcome[]`、`wonCount(outcomes)`（research R11、data-model §3）
-- [ ] T035 [US3] 新增 `apps/web/src/pages/student/StudentResultBoard.tsx`（props：`questions`、`results`、`ownSubmissions`、`groupId`），使用 `groupOutcomes` 與 `blankLabelOf`
-- [ ] T036 [US3] 在 `apps/web/src/pages/student/StudentPage.tsx` 的 `CLOSED` 階段改為顯示 `StudentResultBoard`；在 `apps/web/tests/StudentPage.test.tsx` 加測試：推送 `CLOSED`（含 `results`）後自動顯示結果；以同一份 `CLOSED` 檢視重新掛載（模擬重新整理）仍顯示相同結果且沒有「離開組別」
+- [ ] T035 [US3] 新增 `apps/web/src/pages/student/StudentResultBoard.tsx`（props：`questions`、`results`、`ownSubmissions`、`groupId`、`showUnsentNotice`），使用 `groupOutcomes` 與 `blankLabelOf`
+- [ ] T036 [US3] 在 `apps/web/src/pages/student/StudentPage.tsx` 的 `CLOSED` 階段改為顯示 `StudentResultBoard`，`showUnsentNotice` 取自 `AnswerDraftStore.hasUnsent(identity.activityId, identity.groupId)`；在 `apps/web/tests/StudentPage.test.tsx` 加測試：推送 `CLOSED`（含 `results`）後自動顯示結果；`OPEN` 時有一題輸入內容未送出，推送 `CLOSED` 後結果上方顯示「搶答已結束，尚未送出的答案不會被採計」，沒有未送出內容時不顯示（FR-018）；以同一份 `CLOSED` 檢視重新掛載（模擬重新整理）仍顯示相同結果且沒有「離開組別」
 - [ ] T037 [US3] 品質關卡：`npm run typecheck`、`npm run lint`、`npm run format:check`、`npm test` 全部通過，回報指令與結果
 
 **Checkpoint**: 三個 user story 都可獨立運作
