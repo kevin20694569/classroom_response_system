@@ -65,7 +65,9 @@ export function SubmissionBoard({ view }: { view: TeacherView }) {
                     const won = record.groupId === result?.winnerGroupId;
                     return (
                       <li key={record.id} className={won ? 'font-semibold text-green-700' : ''}>
-                        第 {i + 1} 位・{groupLabel(view, record.groupId)}：
+                        第 {i + 1} 位・{groupLabel(view, record.groupId)}
+                        {/* 送出者暱稱（004 FR-026）；004 之前的紀錄沒有送出者時只顯示組別 */}
+                        {record.submitterNickname !== null && `・${record.submitterNickname}`}：
                         <AnswerText answers={record.answers} isGroup={isGroup} />
                         <TimeHint receivedAt={record.receivedAt} openedAt={view.openedAt} />
                         {won && (

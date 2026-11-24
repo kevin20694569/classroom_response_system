@@ -11,11 +11,22 @@ import { validateAnswers } from './validateAnswers.js';
  * 「結束搶答」也經過同一把鎖，因此結束之後處理的送出必定看到「已結束」而被拒絕。
  * 被拒絕的送出不產生作答紀錄、不消耗 sequence。
  */
+/** 送出者身分：一律取自已驗證的學生 token（004 FR-023）。 */
+export interface Submitter {
+  groupId: GroupId;
+  memberId: string;
+  nickname: string;
+}
+
 export class SubmissionService {
   constructor(private readonly sessions: QuizSessionService) {}
 
-  /** groupId 一律取自送出者的 token，請求內容無法指定組別。 */
-  async submit(groupId: GroupId, request: SubmitRequest): Promise<SubmitResponse> {
+  /**
+   * 組別與送出者暱稱一律取自送出者的 token，請求內容無法指定（原則 I）。
+   * 送出者暱稱只用於顯示，不影響順位與搶答判定（004 FR-020）。
+   */
+  async submit(submitter: Submitter, request: SubmitRequest): Promise<SubmitResponse> {
+    const { groupId } = submitter;
     const { logger, now, uuid } = this.sessions.deps;
     try {
       const submission = await this.sessions.mutate((current) => {
@@ -48,7 +59,7 @@ export class SubmissionService {
           answers,
           sequence: current.nextSequence,
           receivedAt: now().toISOString(),
-          submitterNickname: null,
+          submitterNickname: submitter.nickname,
         };
         return {
           next: {
@@ -65,6 +76,8 @@ export class SubmissionService {
           event: 'submission.accepted',
           questionNumber: submission.questionNumber,
           groupId,
+          // 以 memberId 辨識送出者；log 不記錄暱稱（004 FR-022）
+          memberId: submitter.memberId,
           sequence: submission.sequence,
         },
         '已接受送出',

@@ -192,3 +192,49 @@ describe('有作答紀錄時重啟伺服器（SC-010）', () => {
     expect(app.service.getSession().submissions.at(-1)?.sequence).toBe(3);
   });
 });
+
+describe('004：送出者暱稱（FR-023）', () => {
+  it('送出紀錄的送出者為 token 的暱稱；log 不含暱稱', async () => {
+    const { a } = await openGroupExample();
+    const token = await joinStudent(a, 1, '送出者小明');
+    expect((await submitAnswers(a, token, 3, ['0'])).statusCode).toBe(200);
+    expect(a.service.getSession().submissions.at(-1)?.submitterNickname).toBe('送出者小明');
+    const logs = a.logLines.join('\n');
+    expect(logs).toContain('submission.accepted');
+    expect(logs).not.toContain('送出者小明');
+  });
+
+  it('請求附帶名字欄位時回 400，不產生紀錄', async () => {
+    const { a } = await openGroupExample();
+    const token = await joinStudent(a, 1, 'Milo');
+    const res = await call(a, 'POST', '/api/submissions', token, {
+      questionNumber: 3,
+      answers: [{ blankIndex: 1, text: '0' }],
+      nickname: '冒名',
+    });
+    expect(res.statusCode).toBe(400);
+    expect(a.service.getSession().submissions).toHaveLength(0);
+  });
+
+  it('被拒絕的送出不產生紀錄，也不記錄送出者', async () => {
+    const { a } = await openGroupExample();
+    const first = await joinStudent(a, 1, '先送的人');
+    const second = await joinStudent(a, 1, '後送的人');
+    expect((await submitAnswers(a, first, 3, ['0'])).statusCode).toBe(200);
+    expect((await submitAnswers(a, second, 3, ['1'])).statusCode).toBe(409);
+    const submissions = a.service.getSession().submissions;
+    expect(submissions).toHaveLength(1);
+    expect(submissions[0]?.submitterNickname).toBe('先送的人');
+  });
+
+  it('伺服器重新啟動後送出者仍保留', async () => {
+    dataDir = await mkdtemp(path.join(tmpdir(), 'crs-submitter-'));
+    app = await startTestApp({ repository: new LocalSessionRepository(dataDir) });
+    const teacher = await teacherWithImport(app, 'group-example', 2);
+    await call(app, 'POST', '/api/session/open', teacher);
+    const token = await joinStudent(app, 2, 'Leo');
+    await submitAnswers(app, token, 3, ['0']);
+    app = await restartApp(app, dataDir);
+    expect(app.service.getSession().submissions[0]?.submitterNickname).toBe('Leo');
+  });
+});

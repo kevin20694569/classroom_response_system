@@ -152,30 +152,45 @@ describe('planExport：答案＋組別時間欄（002 FR-019）', () => {
     const results = writes
       .filter((w) => w.columnIndex >= 8)
       .map((w) => [w.rowIndex, w.columnIndex, w.text]);
+    // 004：結果欄為「搶答組別」「提交時間」「搶答送出者」三欄；送出者為 null（舊紀錄）寫入空字串
     expect(results).toEqual([
       [3, 8, '搶答組別'],
       [3, 9, '提交時間'],
+      [3, 10, '搶答送出者'],
       [4, 8, '第 2 組'],
       [4, 9, T1],
+      [4, 10, ''],
       [7, 8, ''],
       [7, 9, ''],
+      [7, 10, ''],
       [10, 8, '第 1 組'],
       [10, 9, T2],
+      [10, 10, ''],
       [12, 8, ''],
       [12, 9, ''],
+      [12, 10, ''],
     ]);
   });
 
-  it('沿用既有的結果欄，不重複新增；舊值被本次結果覆寫', () => {
+  it('沿用既有的「搶答組別」「提交時間」欄；只缺「搶答送出者」時只新增這一欄（004 FR-027）', () => {
     const doc = loadFixture('exported-columns');
     const { writes } = plan(groupResults(), doc, 'answers-with-columns');
-    expect(writes.some((w) => w.rowIndex === 3)).toBe(false);
+    expect(writes.filter((w) => w.rowIndex === 3).map((w) => [w.columnIndex, w.text])).toEqual([
+      [10, '搶答送出者'],
+    ]);
     expect(writes.filter((w) => w.rowIndex === 4 && w.columnIndex >= 8).map((w) => w.text)).toEqual(
-      ['第 2 組', T1],
+      ['第 2 組', T1, ''],
     );
   });
 
-  it('只缺一欄時只新增那一欄', () => {
+  it('三欄都已存在時不新增任何表頭；舊值被本次結果覆寫', () => {
+    const doc = loadFixture('exported-columns');
+    apply(doc, plan(groupResults(), doc, 'answers-with-columns').writes);
+    const { writes } = plan(groupResults(), doc, 'answers-with-columns');
+    expect(writes.some((w) => w.rowIndex === 3)).toBe(false);
+  });
+
+  it('缺少的欄依序新增，不覆蓋既有內容', () => {
     const doc = loadFixture('exported-columns');
     const header = doc.sheets[0]?.cells[3];
     if (header === undefined) throw new Error('fixture 缺少表頭列');
@@ -184,6 +199,7 @@ describe('planExport：答案＋組別時間欄（002 FR-019）', () => {
     const { writes } = plan(groupResults(), doc, 'answers-with-columns');
     expect(writes.filter((w) => w.rowIndex === 3).map((w) => [w.columnIndex, w.text])).toEqual([
       [9, '提交時間'],
+      [10, '搶答送出者'],
     ]);
   });
 
@@ -192,7 +208,7 @@ describe('planExport：答案＋組別時間欄（002 FR-019）', () => {
     const { writes } = plan(session, loadFixture('single-example'), 'answers-with-columns');
     expect(writes.find((w) => w.text === '搶答組別')?.columnIndex).toBe(8);
     expect(writes.filter((w) => w.rowIndex === 6 && w.columnIndex >= 8).map((w) => w.text)).toEqual(
-      ['第 1 組', '2026/11/23 08:00:01.000'],
+      ['第 1 組', '2026/11/23 08:00:01.000', ''],
     );
   });
 });
@@ -280,6 +296,77 @@ describe('planExport：三種模式共通', () => {
       ).toEqual(
         base.questions.map((q) => [q.number, q.kind, q.blanks.map((b) => [b.label, b.location])]),
       );
+    }
+  });
+});
+
+describe('planExport：送出者暱稱（004 FR-027、SC-008）', () => {
+  /** 第 1 題由第 2 組 Milo 搶到；第 3 題第 1 組 Ava 搶到，第 2 組 Leo 未搶到。 */
+  function withSubmitters(fixture: string): QuizSession {
+    return closedSessionFor(fixture, [
+      submission(1, 2, 1, ['CPU', '作業系統'], 'Milo'),
+      submission(3, 1, 2, ['0'], 'Ava'),
+      submission(3, 2, 3, ['1'], 'Leo'),
+    ]);
+  }
+
+  it.each(['group-example', 'exported-note-line'])(
+    '%s：附註行為「〔第 N 組｜暱稱｜時間〕」，未搶到的送出者不寫入',
+    (fixture) => {
+      const { writes } = plan(
+        withSubmitters(fixture),
+        loadFixture(fixture),
+        'answers-with-note-line',
+      );
+      expect(writes.find((w) => w.rowIndex === 5)?.text).toBe(`作業系統\n〔第 2 組｜Milo｜${T1}〕`);
+      expect(writes.find((w) => w.rowIndex === 10)?.text).toBe(`0\n〔第 1 組｜Ava｜${T2}〕`);
+      expect(writes.some((w) => w.text.includes('Leo'))).toBe(false);
+    },
+  );
+
+  it.each(['group-example', 'exported-columns'])(
+    '%s：「搶答送出者」欄寫入搶答成功答案的送出者；無人搶答留空；未搶到的送出者不寫入',
+    (fixture) => {
+      const { writes } = plan(
+        withSubmitters(fixture),
+        loadFixture(fixture),
+        'answers-with-columns',
+      );
+      const submitterColumn = writes.find((w) => w.text === '搶答送出者')?.columnIndex ?? 10;
+      const bySubmitterColumn = writes
+        .filter((w) => w.columnIndex === submitterColumn && w.rowIndex !== 3)
+        .map((w) => [w.rowIndex, w.text]);
+      expect(bySubmitterColumn).toEqual([
+        [4, 'Milo'],
+        [7, ''],
+        [10, 'Ava'],
+        [12, ''],
+      ]);
+      expect(writes.some((w) => w.text.includes('Leo'))).toBe(false);
+    },
+  );
+
+  it('單題範例：附註行與送出者欄同樣寫入暱稱', () => {
+    const session = closedSessionFor('single-example', [submission(1, 2, 1, ['CPU'], '小明')]);
+    const note = plan(session, loadFixture('single-example'), 'answers-with-note-line');
+    expect(note.writes[0]?.text).toBe('CPU\n〔第 2 組｜小明｜2026/11/23 08:00:01.000〕');
+    expect(note.writes[0]?.mutedFrom).toBe(3);
+    const columns = plan(session, loadFixture('single-example'), 'answers-with-columns');
+    expect(
+      columns.writes.filter((w) => w.rowIndex === 4 && w.columnIndex >= 8).map((w) => w.text),
+    ).toEqual(['第 2 組', '2026/11/23 08:00:01.000', '小明']);
+  });
+
+  it('重複匯出時寫入內容完全相同', () => {
+    for (const mode of ['answers-with-note-line', 'answers-with-columns'] as const) {
+      const doc = loadFixture('group-example');
+      const first = plan(withSubmitters('group-example'), doc, mode);
+      apply(doc, first.writes);
+      const second = plan(withSubmitters('group-example'), doc, mode);
+      expect(second.writes.filter((w) => w.rowIndex !== 3)).toEqual(
+        first.writes.filter((w) => w.rowIndex !== 3),
+      );
+      expect(second.writes.some((w) => w.rowIndex === 3)).toBe(false);
     }
   });
 });

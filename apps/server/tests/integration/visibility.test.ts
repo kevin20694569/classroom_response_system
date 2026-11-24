@@ -229,3 +229,58 @@ describe('可見性', () => {
     expect(everything).toContain('（1）');
   });
 });
+
+describe('004：送出者的可見性（FR-024～FR-026、SC-008）', () => {
+  it('同組看得到送出者；搶答進行中他組收不到；結束後所有學生都看到搶答成功答案的送出者', async () => {
+    app = await startTestApp();
+    const teacher = await teacherWithImport(app, 'group-example', 2);
+    const [milo, ava, leo] = await Promise.all([
+      joinStudent(app, 1, '第一組的Milo'),
+      joinStudent(app, 1, 'Ava'),
+      joinStudent(app, 2, '第二組的Leo'),
+    ]);
+    const [avaSocket, leoSocket] = await Promise.all([
+      connectSocket(app.url, ava),
+      connectSocket(app.url, leo),
+    ]);
+    sockets.push(avaSocket, leoSocket);
+    const opened = [avaSocket, leoSocket].map((s) =>
+      s.nextState((p) => p.view.status === 'OPEN', 1000),
+    );
+    await call(app, 'POST', '/api/session/open', teacher);
+    await Promise.all(opened);
+
+    const avaSees = avaSocket.nextState(
+      (p) => p.view.viewer === 'student' && p.view.ownSubmissions.length === 1,
+      1000,
+    );
+    expect((await submitAnswers(app, milo, 3, ['0'])).statusCode).toBe(200);
+    const avaView = (await avaSees).view;
+    if (avaView.viewer !== 'student') throw new Error('應為學生檢視');
+    expect(avaView.ownSubmissions[0]?.submitterNickname).toBe('第一組的Milo');
+    expect((await submitAnswers(app, leo, 3, ['1'])).statusCode).toBe(200);
+
+    // 老師在搶答進行中就看得到所有送出者
+    const teacherOpen = (await call(app, 'GET', '/api/session', teacher)).body;
+    expect(teacherOpen).toContain('第一組的Milo');
+    expect(teacherOpen).toContain('第二組的Leo');
+
+    // 搶答進行中第 2 組收到的所有資料都不含第 1 組的送出者
+    const leoBeforeClose = [
+      (await call(app, 'GET', '/api/session', leo)).body,
+      ...leoSocket.states.map((p) => JSON.stringify(p)),
+    ].join('\n');
+    expect(leoBeforeClose).not.toContain('第一組的Milo');
+
+    const closed = leoSocket.nextState((p) => p.view.status === 'CLOSED', 1000);
+    await call(app, 'POST', '/api/session/close', teacher);
+    const leoView = (await closed).view;
+    if (leoView.viewer !== 'student') throw new Error('應為學生檢視');
+    const q3 = leoView.results?.find((r) => r.questionNumber === 3);
+    expect(q3).toMatchObject({ winnerGroupId: 1, submitterNickname: '第一組的Milo' });
+    expect(leoView.ownSubmissions[0]?.submitterNickname).toBe('第二組的Leo');
+    // 未搶到的他組送出者不會出現在第 1 組的資料中
+    const avaAfter = (await call(app, 'GET', '/api/session', ava)).body;
+    expect(avaAfter).not.toContain('第二組的Leo');
+  });
+});

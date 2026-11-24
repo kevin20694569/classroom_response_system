@@ -155,18 +155,18 @@ US4（送出者，P2）。
 
 ### Tests for User Story 4（先寫，預期失敗）
 
-- [ ] T041 [P] [US4] 更新 `apps/server/tests/integration/submissions.test.ts`：送出後 `Submission.submitterNickname` 為 token 的暱稱；請求附帶名字欄位回 400（strict）；被拒絕的送出不產生紀錄；重新啟動後送出者仍保留（FR-023）；送出時寫出的 log 不含暱稱（FR-022）
-- [ ] T042 [P] [US4] 更新 `apps/server/tests/integration/visibility.test.ts`：OPEN 時同組 StudentView 的 `ownSubmissions[].submitterNickname` 有值；他組收到的所有資料不含該暱稱；CLOSED 後所有學生的 `results[].submitterNickname` 為搶答成功答案的送出者；老師檢視任何階段都含所有送出者；舊資料（`submitterNickname` 為 null）顯示為 null（FR-024～FR-026、SC-008）
-- [ ] T043 [P] [US4] 更新 `apps/server/tests/unit/exportPlan.test.ts` 與 `apps/server/tests/unit/guidedNotesParser.test.ts`，用兩份版面不同的測試文件（`apps/server/tests/fixtures/guided-notes/` 既有的兩份）：附註行為「〔第 N 組｜暱稱｜時間〕」、送出者為 null 時與 002 相同；組別時間欄模式辨識與新增「搶答送出者」表頭（已有兩欄只缺送出者時只新增一欄）、無人搶答或 null 寫入空字串；重複匯出寫入內容相同；未搶到的送出者不出現在任何寫入（contracts/guided-notes-export.md §4、FR-027）；同步更新 `apps/server/tests/integration/export.test.ts`
-- [ ] T044 [P] [US4] 更新 `apps/web/tests/QuestionAnswerForm.test.tsx`、`StudentResultBoard.test.tsx`、`SubmissionBoard.test.tsx`：已送出顯示「已送出（暱稱）」、null 時「已送出」；結果的搶答成功答案顯示「第 N 組・暱稱」、本組未搶到顯示「本組（暱稱）」；老師送出列表顯示「第 N 組・暱稱」
+- [X] T041 [P] [US4] 更新 `apps/server/tests/integration/submissions.test.ts`：送出後 `Submission.submitterNickname` 為 token 的暱稱；請求附帶名字欄位回 400（strict）；被拒絕的送出不產生紀錄；重新啟動後送出者仍保留（FR-023）；送出時寫出的 log 不含暱稱（FR-022）
+- [X] T042 [P] [US4] 更新 `apps/server/tests/integration/visibility.test.ts`：OPEN 時同組 StudentView 的 `ownSubmissions[].submitterNickname` 有值；他組收到的所有資料不含該暱稱；CLOSED 後所有學生的 `results[].submitterNickname` 為搶答成功答案的送出者；老師檢視任何階段都含所有送出者；舊資料（`submitterNickname` 為 null）顯示為 null（FR-024～FR-026、SC-008）
+- [X] T043 [P] [US4] 更新 `apps/server/tests/unit/exportPlan.test.ts` 與 `apps/server/tests/unit/guidedNotesParser.test.ts`，用兩份版面不同的測試文件（`apps/server/tests/fixtures/guided-notes/` 既有的兩份）：附註行為「〔第 N 組｜暱稱｜時間〕」、送出者為 null 時與 002 相同；組別時間欄模式辨識與新增「搶答送出者」表頭（已有兩欄只缺送出者時只新增一欄）、無人搶答或 null 寫入空字串；重複匯出寫入內容相同；未搶到的送出者不出現在任何寫入（contracts/guided-notes-export.md §4、FR-027）；同步更新 `apps/server/tests/integration/export.test.ts`
+- [X] T044 [P] [US4] 更新 `apps/web/tests/QuestionAnswerForm.test.tsx`、`StudentResultBoard.test.tsx`、`SubmissionBoard.test.tsx`：已送出顯示「已送出（暱稱）」、null 時「已送出」；結果的搶答成功答案顯示「第 N 組・暱稱」、本組未搶到顯示「本組（暱稱）」；老師送出列表顯示「第 N 組・暱稱」
 
 ### Implementation for User Story 4
 
-- [ ] T045 [US4] 修改 `apps/server/src/domain/submission/submissionService.ts`：`submit(identity, request)` 接收學生身分（`groupId`、`memberId`、`nickname`），建立的 `Submission` 加 `submitterNickname: identity.nickname`；log 不含暱稱；修改 `apps/server/src/transport/http/routes/submissionRoutes.ts` 傳入 `requireStudent` 取得的身分（research R9）
-- [ ] T046 [US4] 修改 `apps/server/src/domain/visibility/visibilityPolicy.ts`：`ownSubmissions` 與 `toResultView`（含老師的 `toTeacherResult`）帶 `submitterNickname`；學生的 `results` 仍只在 CLOSED 有值
-- [ ] T047 [US4] 修改 `apps/server/src/domain/guidedNotes/parser.ts` 與 `apps/server/src/domain/export/exportPlan.ts`：表頭辨識加「搶答送出者」（`resultColumns.submitterColumn`）；`attribution()` 有送出者時為 `〔第 N 組｜暱稱｜時間〕`；`resultColumnWrites` 依序確保三欄並寫入送出者（無人搶答或 null 為空字串）；更新相關註解（contracts/guided-notes-export.md）
-- [ ] T048 [US4] 修改 `apps/web/src/pages/student/QuestionAnswerForm.tsx`、`StudentResultBoard.tsx` 與 `apps/web/src/pages/teacher/SubmissionBoard.tsx` 顯示送出者（contracts/student-ui.md §4～§6）
-- [ ] T049 [US4] 品質關卡：`npm run typecheck`、`npm run lint`、`npm run format:check`、`npm test` 全部通過，回報指令與結果
+- [X] T045 [US4] 修改 `apps/server/src/domain/submission/submissionService.ts`：`submit(identity, request)` 接收學生身分（`groupId`、`memberId`、`nickname`），建立的 `Submission` 加 `submitterNickname: identity.nickname`；log 不含暱稱；修改 `apps/server/src/transport/http/routes/submissionRoutes.ts` 傳入 `requireStudent` 取得的身分（research R9）
+- [X] T046 [US4] 修改 `apps/server/src/domain/visibility/visibilityPolicy.ts`：`ownSubmissions` 與 `toResultView`（含老師的 `toTeacherResult`）帶 `submitterNickname`；學生的 `results` 仍只在 CLOSED 有值
+- [X] T047 [US4] 修改 `apps/server/src/domain/guidedNotes/parser.ts` 與 `apps/server/src/domain/export/exportPlan.ts`：表頭辨識加「搶答送出者」（`resultColumns.submitterColumn`）；`attribution()` 有送出者時為 `〔第 N 組｜暱稱｜時間〕`；`resultColumnWrites` 依序確保三欄並寫入送出者（無人搶答或 null 為空字串）；更新相關註解（contracts/guided-notes-export.md）
+- [X] T048 [US4] 修改 `apps/web/src/pages/student/QuestionAnswerForm.tsx`、`StudentResultBoard.tsx` 與 `apps/web/src/pages/teacher/SubmissionBoard.tsx` 顯示送出者（contracts/student-ui.md §4～§6）
+- [X] T049 [US4] 品質關卡：`npm run typecheck`、`npm run lint`、`npm run format:check`、`npm test` 全部通過，回報指令與結果
 
 **Checkpoint**: 送出者依角色與階段正確顯示；匯出寫入送出者
 

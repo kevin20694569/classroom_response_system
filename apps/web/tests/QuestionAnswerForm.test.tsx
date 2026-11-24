@@ -131,7 +131,7 @@ describe('QuestionAnswerForm — 送出（003 FR-014～FR-019）', () => {
         { blankIndex: 2, text: '作業系統' },
       ],
     });
-    expect(await screen.findByText('已送出')).toBeTruthy();
+    expect(await screen.findByText('已送出（Milo）')).toBeTruthy();
     expect(screen.getByText('CPU')).toBeTruthy();
     expect(screen.queryAllByRole('textbox')).toHaveLength(0);
     expect(screen.queryByText(/順位|搶答成功|第一/)).toBeNull();
@@ -155,7 +155,7 @@ describe('QuestionAnswerForm — 送出（003 FR-014～FR-019）', () => {
     expect(fetchMock).toHaveBeenCalledOnce();
     expect(screen.getByRole('button', { name: '送出中…' })).toBeTruthy();
     respond(new Response(JSON.stringify(OK), { status: 200 }));
-    expect(await screen.findByText('已送出')).toBeTruthy();
+    expect(await screen.findByText('已送出（Milo）')).toBeTruthy();
   });
 
   it('SESSION_NOT_OPEN：說明這次送出沒有被採計，停用作答並保留草稿', async () => {
@@ -313,5 +313,29 @@ describe('QuestionAnswerForm — 004 題目敘述（FR-016、FR-017）', () => {
     expect(items[0]?.textContent).toContain('答案一');
     expect(items[1]?.textContent).toContain('答案二');
     expect(screen.queryAllByRole('textbox')).toHaveLength(0);
+  });
+});
+
+describe('QuestionAnswerForm — 004 送出者（FR-024）', () => {
+  it('同組其他分頁送出時顯示「已送出（暱稱）」', () => {
+    renderForm({
+      submitted: {
+        questionNumber: 3,
+        answers: [{ blankIndex: 1, text: '0' }],
+        submitterNickname: 'Ava',
+      },
+    });
+    expect(screen.getByText('已送出（Ava）')).toBeTruthy();
+  });
+
+  it('沒有送出者的舊紀錄只顯示「已送出」', () => {
+    renderForm({
+      submitted: {
+        questionNumber: 3,
+        answers: [{ blankIndex: 1, text: '0' }],
+        submitterNickname: null,
+      },
+    });
+    expect(screen.getByText('已送出')).toBeTruthy();
   });
 });

@@ -138,13 +138,17 @@ describe('表頭列與結果欄資訊（002 research R9）', () => {
       const parsed = parseGuidedNotes(loadFixture(name));
       expect(parsed.headerRowIndex).toBe(3);
       expect(parsed.usedColumnCount).toBe(8);
-      expect(parsed.resultColumns).toEqual({ groupColumn: null, timeColumn: null });
+      expect(parsed.resultColumns).toEqual({
+        groupColumn: null,
+        timeColumn: null,
+        submitterColumn: null,
+      });
     }
   });
 
   it('已匯出過結果欄的文件：辨識 I、J 欄，題目判斷與題組範例相同（FR-023）', () => {
     const parsed = parseGuidedNotes(loadFixture('exported-columns'));
-    expect(parsed.resultColumns).toEqual({ groupColumn: 8, timeColumn: 9 });
+    expect(parsed.resultColumns).toEqual({ groupColumn: 8, timeColumn: 9, submitterColumn: null });
     expect(parsed.usedColumnCount).toBe(10);
     expect(parsed.questions.map((q) => [q.number, q.kind, q.blanks.length])).toEqual([
       [1, 'group', 2],
@@ -225,5 +229,19 @@ describe('作答區與填答格（002 contracts §A0，FR-025）', () => {
       const details = (error as { details: { code: string }[] }).details;
       expect(details.map((d) => d.code)).toContain('PARTIAL_BLANK_MARKERS');
     }
+  });
+});
+
+describe('結果欄：搶答送出者（004 FR-027）', () => {
+  it('表頭列有「搶答送出者」時辨識該欄，且不影響題目判斷', () => {
+    const doc = loadFixture('exported-columns');
+    const header = doc.sheets[0]?.cells[3];
+    if (header === undefined) throw new Error('fixture 缺少表頭列');
+    header[10] = '搶答送出者';
+    const parsed = parseGuidedNotes(doc);
+    expect(parsed.resultColumns).toEqual({ groupColumn: 8, timeColumn: 9, submitterColumn: 10 });
+    expect(parsed.questions.map((q) => q.number)).toEqual(
+      parseGuidedNotes(loadFixture('exported-columns')).questions.map((q) => q.number),
+    );
   });
 });
