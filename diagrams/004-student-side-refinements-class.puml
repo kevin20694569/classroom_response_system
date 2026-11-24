@@ -33,6 +33,15 @@ package "shared（契約）" {
     +prompt: string | null（只在 OPEN / CLOSED）
     +blankPrompts: (string | null)[] | null（只在 OPEN / CLOSED）
   }
+  class Submission {
+    +submitterNickname: string | null（新增：舊資料為 null）
+  }
+  class OwnSubmission {
+    +submitterNickname: string | null（新增：本組都看得到）
+  }
+  class ResultView {
+    +submitterNickname: string | null（新增：只在 CLOSED，搶答成功答案的送出者）
+  }
   class PublicView {
     +headcounts: GroupHeadcount[]（新增）
   }
@@ -49,6 +58,8 @@ package "shared（契約）" {
   StudentView *-- "0..*" GroupHeadcount
   StudentView *-- "0..*" GroupMember
   StudentView *-- "0..*" StudentQuestionView
+  StudentView *-- "0..*" OwnSubmission
+  StudentView *-- "0..*" ResultView
   PublicView *-- "0..*" GroupHeadcount
   StudentJoinRequest ..> NicknameRules
 }
@@ -80,11 +91,22 @@ package "server" {
   }
   note right of VisibilityPolicy
     READY 以前 prompt / blankPrompts = null；
-    members 只放 identity.groupId 的組員
+    members 只放 identity.groupId 的組員；
+    OPEN 時只給本組送出者，CLOSED 才給搶答成功答案的送出者
   end note
+  class SubmissionService {
+    +submit(identity, request): Submission（送出者取自 identity.nickname）
+  }
+  SubmissionService ..> Submission : 保存
   VisibilityPolicy ..> GroupRoster : 讀取
   VisibilityPolicy ..> StudentView : 產生
   VisibilityPolicy ..> PublicView : 產生
+}
+
+package "web（老師端）" {
+  class SubmissionBoard {
+    +submissions: Submission[]（每筆顯示送出者暱稱）
+  }
 }
 
 package "web（學生端）" {

@@ -51,6 +51,18 @@ RT --> PageC : PublicView（不含題目敘述）
 PageA -> PageA : QuestionContent 顯示題目敘述 +\n每個子題的輸入欄
 note over PageA : READY 以前收到的題目只有題號、\n題型與子題標記（FR-018）
 
+== 送出答案與送出者 ==
+A -> PageA : 送出第 3 題
+PageA -> Http : POST /api/submissions（token）
+Http -> Http : 送出者 = token 內的暱稱\n（不採用請求附帶的名字）
+Http --> PageA : 已送出
+RT --> PageA : StudentView（第 3 題「已送出（Milo）」）
+RT --> T : TeacherView（送出列表含送出者 Milo）
+RT --> PageB : StudentView（同組也顯示「已送出（Milo）」）
+note over PageC : 其他組與未選組分頁\n在 OPEN 時收不到送出者
+T -> RT : 結束搶答（status = CLOSED）
+RT --> PageC : 結束後各組 StudentView 的 results\n都含搶答成功答案的送出者
+
 == 待開始時離開組別 ==
 A -> PageA : 離開組別（只限 READY）
 PageA -> RT : 通知離開組別
