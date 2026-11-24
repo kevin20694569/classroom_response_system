@@ -46,21 +46,42 @@ describe('useStudentAuth（003 US1、research R2、R4）', () => {
     },
   );
 
-  it('leave 清除身分與所有草稿，不顯示失效訊息', () => {
+  it('leave 先通知伺服器，成功後清除身分與所有草稿，不顯示失效訊息（004 research R5）', async () => {
+    const { calls } = mockFetch([{ status: 204, body: null }]);
+    sessionStorage.setItem('crs.nickname', 'Milo');
     setToken('token-2');
     setStudentIdentity(identity(FUTURE));
     sessionStorage.setItem(`crs.draft.${ACTIVITY}.2.1`, '["草稿"]');
     sessionStorage.setItem('other', 'keep');
     const { result } = renderHook(() => useStudentAuth());
     expect(result.current.identity?.groupId).toBe(2);
-    act(() => {
-      result.current.leave();
-    });
+    await act(() => result.current.leave());
+    expect(calls[0]?.url).toBe('/api/auth/student/leave');
+    expect(bodyOf(calls[0]?.init)).toEqual({});
     expect(result.current.token).toBeNull();
     expect(result.current.identity).toBeNull();
     expect(result.current.notice).toBeNull();
     expect(sessionStorage.getItem(`crs.draft.${ACTIVITY}.2.1`)).toBeNull();
     expect(sessionStorage.getItem('other')).toBe('keep');
+    // 暱稱保留（004 FR-006）
+    expect(sessionStorage.getItem('crs.nickname')).toBe('Milo');
+  });
+
+  it('leave 被伺服器拒絕時拋出訊息，身分與草稿都保留', async () => {
+    mockFetch([
+      {
+        status: 409,
+        body: { error: { code: 'LEAVE_NOT_ALLOWED', message: '搶答已開始，無法離開組別。' } },
+      },
+    ]);
+    setToken('token-2');
+    setStudentIdentity(identity(FUTURE));
+    sessionStorage.setItem(`crs.draft.${ACTIVITY}.2.1`, '["草稿"]');
+    const { result } = renderHook(() => useStudentAuth());
+    await expect(act(() => result.current.leave())).rejects.toThrow('搶答已開始，無法離開組別。');
+    expect(result.current.token).toBe('token-2');
+    expect(getToken()).toBe('token-2');
+    expect(sessionStorage.getItem(`crs.draft.${ACTIVITY}.2.1`)).toBe('["草稿"]');
   });
 
   it.each(['NEW_ACTIVITY', 'EXPIRED'] as const)(

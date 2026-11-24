@@ -5,6 +5,7 @@ import Fastify, { LogController, type FastifyBaseLogger, type FastifyInstance } 
 import type { Logger } from 'pino';
 import { AuthService } from './auth/authService.js';
 import { FirstSubmissionStrategy } from './domain/ranking/firstSubmissionStrategy.js';
+import { GroupRoster } from './domain/roster/groupRoster.js';
 import { QuizSessionService } from './domain/session/quizSessionService.js';
 import { SubmissionService } from './domain/submission/submissionService.js';
 import type { SessionRepository } from './infrastructure/persistence/sessionRepository.js';
@@ -26,12 +27,15 @@ export interface BuildAppOptions {
   uuid?: () => string;
   /** 前端建置後的目錄；存在時由同一個埠提供網頁 */
   webDistDir?: string;
+  /** 組員斷線後仍算在組內的時間（預設 30 秒；測試可縮短，004 FR-012） */
+  rosterGraceMs?: number;
 }
 
 export interface BuiltApp {
   app: FastifyInstance;
   service: QuizSessionService;
   auth: AuthService;
+  roster: GroupRoster;
   realtime: RealtimeGateway;
 }
 
@@ -58,12 +62,18 @@ export async function buildApp(options: BuildAppOptions): Promise<BuiltApp> {
   });
   await service.init();
 
-  const auth = new AuthService(options.sessionSecret, options.teacherPassword, now);
+  // 組員名冊只在記憶體（004 research R4）；已離開的組員由身分服務視為失效
+  const roster = new GroupRoster(
+    options.rosterGraceMs === undefined ? {} : { graceMs: options.rosterGraceMs },
+  );
+  const auth = new AuthService(options.sessionSecret, options.teacherPassword, now, {
+    isMemberLeft: (memberId) => roster.hasLeft(memberId),
+  });
 
   registerErrorHandler(app);
   registerAuth(app, auth, service);
-  registerAuthRoutes(app, auth, service);
-  registerSessionRoutes(app, service);
+  registerAuthRoutes(app, auth, service, roster);
+  registerSessionRoutes(app, service, roster);
   registerSubmissionRoutes(app, new SubmissionService(service));
 
   const webDistDir = options.webDistDir;
@@ -87,10 +97,10 @@ export async function buildApp(options: BuildAppOptions): Promise<BuiltApp> {
     return reply.status(404).send(body);
   });
 
-  const realtime = new RealtimeGateway(app.server, service, auth, options.logger);
+  const realtime = new RealtimeGateway(app.server, service, auth, roster, options.logger);
   app.addHook('preClose', async () => {
     await realtime.close();
   });
 
-  return { app, service, auth, realtime };
+  return { app, service, auth, roster, realtime };
 }

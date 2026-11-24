@@ -5,7 +5,15 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { LocalSessionRepository } from '../../src/infrastructure/persistence/localSessionRepository.js';
 import { FakeGuidedNotesGateway } from '../fakes/fakeGuidedNotesGateway.js';
 import { loadFixture } from '../helpers/fixtures.js';
-import { loginTeacher, restartApp, startTestApp, type TestApp } from '../helpers/testApp.js';
+import type { StudentView } from '@crs/shared';
+import {
+  connectSocket,
+  joinStudent,
+  loginTeacher,
+  restartApp,
+  startTestApp,
+  type TestApp,
+} from '../helpers/testApp.js';
 
 /**
  * 伺服器重啟恢復（FR-028、SC-010）：以同一個資料目錄重建伺服器，狀態與重啟前完全相同。
@@ -132,5 +140,27 @@ describe('伺服器重啟恢復', () => {
     expect(view.status).toBe('OPEN');
     expect(view.openedAt).toBe(openedAt);
     expect(Date.parse(view.serverNow)).toBeGreaterThan(Date.parse(view.openedAt));
+  });
+
+  it('004：重啟後學生以原 token 重新連線即回到名冊，暱稱與組別相同（FR-013）', async () => {
+    const { a } = await startWithDisk();
+    const token = await joinStudent(a, 2, 'Milo');
+    const before = await connectSocket(a.url, token);
+    expect((before.states[0]?.view as StudentView).members.map((m) => m.nickname)).toEqual([
+      'Milo',
+    ]);
+    before.socket.close();
+    app = await restartApp(a, dataDir);
+    // 名冊只在記憶體：重啟後是空的，直到學生重新連線
+    expect(app.roster.membersOf(2)).toEqual([]);
+    const after = await connectSocket(app.url, token);
+    try {
+      const view = after.states[0]?.view as StudentView;
+      expect(view.groupId).toBe(2);
+      expect(view.members.map((m) => m.nickname)).toEqual(['Milo']);
+      expect(view.headcounts.find((h) => h.groupId === 2)?.memberCount).toBe(1);
+    } finally {
+      after.socket.close();
+    }
   });
 });

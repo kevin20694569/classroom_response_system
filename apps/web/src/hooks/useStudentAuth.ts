@@ -1,5 +1,6 @@
 import { AuthResponseSchema, type StudentJoinRequest } from '@crs/shared';
 import { useCallback, useEffect, useState } from 'react';
+import { z } from 'zod';
 import { apiRequest } from '../api/http';
 import {
   clearIdentity,
@@ -27,7 +28,8 @@ export interface StudentAuth {
   notice: string | null;
   /** 加入組別；004 起必須帶已確認的暱稱（research R3） */
   join: (groupId: number, nickname: string) => Promise<void>;
-  leave: () => void;
+  /** 離開組別：先通知伺服器（004 research R5），成功後才清除身分；失敗時拋出 ApiError */
+  leave: () => Promise<void>;
   onInvalidated: (reason: InvalidationReason) => void;
 }
 
@@ -79,7 +81,9 @@ export function useStudentAuth(): StudentAuth {
     setState({ identity: result.identity, token: result.token, notice: null });
   }, []);
 
-  const leave = useCallback(() => {
+  const leave = useCallback(async () => {
+    // 伺服器回 204（沒有內容）；失敗時 apiRequest 拋出錯誤，身分保留，畫面與名冊不會不一致
+    await apiRequest('/api/auth/student/leave', z.null(), { method: 'POST', body: {} });
     clearIdentity();
     AnswerDraftStore.clearAll();
     setState({ identity: null, token: null, notice: null });

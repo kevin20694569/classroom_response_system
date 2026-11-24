@@ -1,4 +1,5 @@
 import {
+  EmptyRequestSchema,
   NICKNAME_RULE_MESSAGE,
   StudentJoinRequestSchema,
   TeacherLoginRequestSchema,
@@ -6,7 +7,9 @@ import {
 } from '@crs/shared';
 import type { FastifyInstance } from 'fastify';
 import type { AuthService } from '../../../auth/authService.js';
+import { requireStudent } from '../../../auth/roleGuard.js';
 import { DomainError } from '../../../domain/errors.js';
+import type { GroupRoster } from '../../../domain/roster/groupRoster.js';
 import type { QuizSessionService } from '../../../domain/session/quizSessionService.js';
 
 /** 身分 API（contracts/http-api.md「身分」）。 */
@@ -14,6 +17,7 @@ export function registerAuthRoutes(
   app: FastifyInstance,
   auth: AuthService,
   service: QuizSessionService,
+  roster: GroupRoster,
 ): void {
   app.post('/api/auth/teacher', (request, reply) => {
     const body = TeacherLoginRequestSchema.parse(request.body ?? {});
@@ -61,5 +65,23 @@ export function registerAuthRoutes(
       );
     }
     return reply.send(response);
+  });
+
+  /**
+   * 學生離開組別（004 research R5）：只在「待開始」接受，伺服器也檢查，與畫面只在待開始提供按鈕一致。
+   * 成功後立即移出名冊並記為已離開，該身分之後的連線與送出都視為失效；人數與名冊立即推播。
+   */
+  app.post('/api/auth/student/leave', (request, reply) => {
+    const identity = requireStudent(request.identity);
+    EmptyRequestSchema.parse(request.body ?? {});
+    if (service.getSession().status !== 'READY') {
+      throw new DomainError('LEAVE_NOT_ALLOWED', '搶答已開始，無法離開組別。');
+    }
+    roster.leave(identity.memberId, identity.groupId);
+    request.log.info(
+      { event: 'student.left', groupId: identity.groupId, memberId: identity.memberId },
+      '學生離開組別',
+    );
+    return reply.status(204).send();
   });
 }

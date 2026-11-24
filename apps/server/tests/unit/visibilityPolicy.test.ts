@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { FirstSubmissionStrategy } from '../../src/domain/ranking/firstSubmissionStrategy.js';
+import { GroupRoster } from '../../src/domain/roster/groupRoster.js';
 import {
   toPublicView,
   toStudentView,
@@ -8,6 +9,7 @@ import {
 import { readySession, submission } from '../helpers/builders.js';
 
 const strategy = new FirstSubmissionStrategy();
+const roster = new GroupRoster();
 const openSession = readySession({
   status: 'OPEN',
   submissions: [
@@ -19,14 +21,14 @@ const openSession = readySession({
 
 describe('VisibilityPolicy', () => {
   it('未登入檢視只有狀態、組別與題號', () => {
-    const view = toPublicView(openSession);
+    const view = toPublicView(openSession, roster);
     expect(view.viewer).toBe('public');
     expect(JSON.stringify(view)).not.toContain('秘密答案');
     expect(view.questions.map((q) => q.blankCount)).toEqual([1, 1, 2]);
   });
 
   it('結束前學生只看到自己組別的答案，沒有 sequence、順位或結果', () => {
-    const view = toStudentView(openSession, 2, strategy);
+    const view = toStudentView(openSession, 2, strategy, roster);
     const json = JSON.stringify(view);
     expect(json).toContain('第二組的秘密答案');
     expect(json).not.toContain('第一組的秘密答案');
@@ -36,7 +38,7 @@ describe('VisibilityPolicy', () => {
   });
 
   it('結束後學生看得到每題結果', () => {
-    const view = toStudentView({ ...openSession, status: 'CLOSED' }, 2, strategy);
+    const view = toStudentView({ ...openSession, status: 'CLOSED' }, 2, strategy, roster);
     expect(view.results?.[0]?.winnerGroupId).toBe(1);
   });
 
@@ -67,7 +69,10 @@ describe('VisibilityPolicy', () => {
   it('學生與公開檢視不含任何題目敘述（SC-009）', () => {
     for (const status of ['OPEN', 'CLOSED'] as const) {
       const session = { ...openSession, status };
-      for (const view of [toPublicView(session), toStudentView(session, 1, strategy)]) {
+      for (const view of [
+        toPublicView(session, roster),
+        toStudentView(session, 1, strategy, roster),
+      ]) {
         const json = JSON.stringify(view);
         expect(json).not.toContain('敘述');
         expect(json).not.toContain('prompt');
@@ -78,8 +83,8 @@ describe('VisibilityPolicy', () => {
   it('三種檢視的題目都有子題標記原文，學生資料不含敘述（003 FR-012、FR-022、SC-004）', () => {
     const closed = { ...openSession, status: 'CLOSED' as const };
     const views = [
-      toPublicView(closed),
-      toStudentView(closed, 1, strategy),
+      toPublicView(closed, roster),
+      toStudentView(closed, 1, strategy, roster),
       toTeacherView(closed, strategy, new Date()),
     ];
     for (const view of views) {
@@ -92,5 +97,35 @@ describe('VisibilityPolicy', () => {
     for (const view of views.slice(0, 2)) {
       expect(JSON.stringify(view)).not.toContain('敘述');
     }
+  });
+});
+
+describe('VisibilityPolicy — 004 人數與本組成員（FR-009、FR-010、FR-014）', () => {
+  const withMembers = new GroupRoster();
+  withMembers.connected('a1', 1, '第一組的小明');
+  withMembers.connected('a2', 1, 'Ava');
+  withMembers.connected('b1', 2, 'Leo');
+
+  it('公開檢視有各組人數，沒有任何成員名單', () => {
+    const view = toPublicView(openSession, withMembers);
+    expect(view.headcounts).toEqual([
+      { groupId: 1, memberCount: 2 },
+      { groupId: 2, memberCount: 1 },
+    ]);
+    expect(JSON.stringify(view)).not.toContain('小明');
+    expect(JSON.stringify(view)).not.toContain('Leo');
+  });
+
+  it('學生檢視有各組人數與只有本組的成員名單', () => {
+    const view = toStudentView(openSession, 2, strategy, withMembers);
+    expect(view.headcounts.map((h) => h.memberCount)).toEqual([2, 1]);
+    expect(view.members).toEqual([{ memberId: 'b1', nickname: 'Leo' }]);
+    expect(JSON.stringify(view)).not.toContain('第一組的小明');
+  });
+
+  it('老師檢視不含人數與成員名單', () => {
+    const view = toTeacherView(openSession, strategy, new Date());
+    expect(Object.keys(view)).not.toContain('headcounts');
+    expect(Object.keys(view)).not.toContain('members');
   });
 });
