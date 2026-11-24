@@ -66,7 +66,7 @@ US4（送出者，P2）。
 - [ ] T010 [P] 修改 `apps/web/src/api/identity.ts` 的學生身分型別與驗證（含 `memberId`、`nickname`，沿用 `IdentitySummarySchema`）；更新 `apps/web/tests/identity.test.ts`；更新 `apps/web/tests/viewBuilders.ts`：`publicView()`、`studentView()` 補 `headcounts`（預設每組 0）、`members`（預設空）、題目 `content: null`；`ownSubmissions`、`results` 補 `submitterNickname`；新增 `withContent()` 輔助，把 `teacherView()` 的題目敘述轉成 `content`
 - [ ] T011 品質關卡：`npm run typecheck`、`npm run lint`、`npm run format:check`、`npm test` 全部通過（伺服器回傳的新欄位此時可先填空值：`headcounts` 每組 0、`members` 空、`content` null、`submitterNickname` null），回報指令與結果
 
-**Checkpoint**: 契約、身分與測試輔助就緒；既有功能行為不變
+**Checkpoint**: 契約、身分與測試輔助就緒；自動化測試全部通過。注意：本 Phase 起加入組別的請求必須帶暱稱，前端要到 US1（T019）才會送出暱稱，因此實際啟動時學生端無法加入組別，US1 完成後恢復；Phase 1～3 為 MVP，應一起完成後再實際操作
 
 ---
 
