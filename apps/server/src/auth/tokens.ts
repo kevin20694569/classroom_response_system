@@ -20,6 +20,13 @@ export const TabIdentitySchema = z.discriminatedUnion('role', [
     groupId: GroupIdSchema,
     /** 綁定加入時的活動；老師重新匯入後舊的學生身分自動失效 */
     activityId: z.string(),
+    /**
+     * 組員身分（004 research R3）：加入時產生，同一分頁重新整理或重連都是同一位組員。
+     * 004 之前簽發的學生 token 沒有 memberId 與 nickname，驗證失敗，學生需重新選組。
+     */
+    memberId: z.uuid(),
+    /** 加入時的暱稱（已正規化）；送出者暱稱只採用這個值，不相信請求內容（FR-023） */
+    nickname: z.string(),
     issuedAt: z.string(),
     expiresAt: z.string(),
   }),

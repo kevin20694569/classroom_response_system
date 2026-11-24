@@ -40,17 +40,20 @@ function errorCode(res: { body: string }): string {
 describe('學生加入（POST /api/auth/student）', () => {
   it('尚未匯入時 NO_ACTIVE_ACTIVITY；組別不存在時 INVALID_GROUP', async () => {
     app = await startTestApp();
-    const early = await call(app, 'POST', '/api/auth/student', null, { groupId: 1 });
+    const early = await call(app, 'POST', '/api/auth/student', null, {
+      groupId: 1,
+      nickname: '測試',
+    });
     expect(early.statusCode).toBe(409);
     expect(errorCode(early)).toBe('NO_ACTIVE_ACTIVITY');
 
     await teacherWithImport(app, 'single-example', 2);
     for (const groupId of [0, 3, 21]) {
-      const res = await call(app, 'POST', '/api/auth/student', null, { groupId });
+      const res = await call(app, 'POST', '/api/auth/student', null, { groupId, nickname: '測試' });
       expect(res.statusCode).toBe(400);
       expect(errorCode(res)).toBe('INVALID_GROUP');
     }
-    const ok = await call(app, 'POST', '/api/auth/student', null, { groupId: 2 });
+    const ok = await call(app, 'POST', '/api/auth/student', null, { groupId: 2, nickname: '測試' });
     expect(ok.json()).toMatchObject({ identity: { role: 'student', groupId: 2 } });
   });
 });

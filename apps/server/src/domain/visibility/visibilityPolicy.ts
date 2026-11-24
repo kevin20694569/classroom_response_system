@@ -37,11 +37,16 @@ function toResultView(result: QuestionResult): ResultView {
     questionNumber: result.questionNumber,
     winnerGroupId: result.winner?.groupId ?? null,
     answers: result.winner?.answers ?? null,
+    submitterNickname: result.winner?.submitterNickname ?? null,
   };
 }
 
 export function toPublicView(session: QuizSession): PublicView {
-  return { viewer: 'public', ...base(session) };
+  return {
+    viewer: 'public',
+    ...base(session),
+    headcounts: session.groups.map((g) => ({ groupId: g.id, memberCount: 0 })),
+  };
 }
 
 /**
@@ -57,10 +62,17 @@ export function toStudentView(
   return {
     viewer: 'student',
     ...base(session),
+    questions: base(session).questions.map((q) => ({ ...q, content: null })),
+    headcounts: session.groups.map((g) => ({ groupId: g.id, memberCount: 0 })),
+    members: [],
     groupId,
     ownSubmissions: session.submissions
       .filter((s) => s.groupId === groupId)
-      .map((s) => ({ questionNumber: s.questionNumber, answers: s.answers })),
+      .map((s) => ({
+        questionNumber: s.questionNumber,
+        answers: s.answers,
+        submitterNickname: s.submitterNickname,
+      })),
     results:
       session.status === 'CLOSED' ? deriveResults(session, strategy).map(toResultView) : null,
   };

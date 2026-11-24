@@ -16,6 +16,8 @@ const identity = {
   role: 'student' as const,
   groupId: 2,
   activityId: ACTIVITY,
+  memberId: '3f0b2c1e-1111-4222-8333-444455556666',
+  nickname: 'Milo',
   expiresAt: '2999-01-01T00:00:00.000Z',
 };
 
@@ -122,7 +124,13 @@ describe('StudentPage — US2 作答與送出', () => {
     socket.sendState(
       studentView({
         status: 'OPEN',
-        ownSubmissions: [{ questionNumber: 3, answers: [{ blankIndex: 1, text: '本組的答案' }] }],
+        ownSubmissions: [
+          {
+            questionNumber: 3,
+            answers: [{ blankIndex: 1, text: '本組的答案' }],
+            submitterNickname: null,
+          },
+        ],
       }),
     );
     expect(screen.getByText('本組的答案')).toBeTruthy();
@@ -135,12 +143,23 @@ describe('StudentPage — US3 結果檢視', () => {
   const closedView = () =>
     studentView({
       status: 'CLOSED',
-      ownSubmissions: [{ questionNumber: 3, answers: [{ blankIndex: 1, text: '本組的答案' }] }],
+      ownSubmissions: [
+        {
+          questionNumber: 3,
+          answers: [{ blankIndex: 1, text: '本組的答案' }],
+          submitterNickname: null,
+        },
+      ],
       results: [
-        { questionNumber: 1, winnerGroupId: null, answers: null },
-        { questionNumber: 2, winnerGroupId: null, answers: null },
-        { questionNumber: 3, winnerGroupId: 2, answers: [{ blankIndex: 1, text: '本組的答案' }] },
-        { questionNumber: 4, winnerGroupId: null, answers: null },
+        { questionNumber: 1, winnerGroupId: null, answers: null, submitterNickname: null },
+        { questionNumber: 2, winnerGroupId: null, answers: null, submitterNickname: null },
+        {
+          questionNumber: 3,
+          winnerGroupId: 2,
+          answers: [{ blankIndex: 1, text: '本組的答案' }],
+          submitterNickname: null,
+        },
+        { questionNumber: 4, winnerGroupId: null, answers: null, submitterNickname: null },
       ],
     });
 

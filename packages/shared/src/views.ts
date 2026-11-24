@@ -36,11 +36,51 @@ export const QuestionSummarySchema = z
   .refine(labelsMatchBlankCount, LABELS_MISMATCH);
 export type QuestionSummary = z.infer<typeof QuestionSummarySchema>;
 
-/** 每題結果的顯示資料：搶答成功組別與答案；無人搶答時皆為 null。 */
+/**
+ * 學生端的題目敘述（004 FR-016、research R7）：prompt 為題目敘述或題組說明，
+ * blankPrompts 依子題序號排列（長度等於 blankCount）；文件沒有敘述時為 null。
+ */
+export const QuestionTextsSchema = z.object({
+  prompt: z.string().nullable(),
+  blankPrompts: z.array(z.string().nullable()),
+});
+export type QuestionTexts = z.infer<typeof QuestionTextsSchema>;
+
+/**
+ * 學生端的題目：在 QuestionSummary 上加 content。
+ * content 只在「搶答進行中」「已結束」時有值，其他階段為 null（004 FR-018、FR-019）。
+ */
+export const StudentQuestionViewSchema = z
+  .object({ ...QuestionSummaryShape, content: QuestionTextsSchema.nullable() })
+  .refine(labelsMatchBlankCount, LABELS_MISMATCH)
+  .refine((q) => q.content === null || q.content.blankPrompts.length === q.blankCount, {
+    message: 'blankPrompts 的數量必須等於 blankCount',
+  });
+export type StudentQuestionView = z.infer<typeof StudentQuestionViewSchema>;
+
+/** 各組目前的組員數（004 FR-009）：所有學生端與未登入分頁都看得到。 */
+export const GroupHeadcountSchema = z.object({
+  groupId: GroupIdSchema,
+  memberCount: z.number().int().nonnegative(),
+});
+export type GroupHeadcount = z.infer<typeof GroupHeadcountSchema>;
+
+/** 本組成員（004 FR-010）：只傳給同組學生，依加入先後排列。 */
+export const GroupMemberSchema = z.object({
+  memberId: z.uuid(),
+  nickname: z.string(),
+});
+export type GroupMember = z.infer<typeof GroupMemberSchema>;
+
+/**
+ * 每題結果的顯示資料：搶答成功組別、答案與送出者；無人搶答時皆為 null。
+ * 送出者為 null 也可能是 004 之前保存的送出紀錄（004 FR-025）。
+ */
 export const ResultViewSchema = z.object({
   questionNumber: z.number().int().positive(),
   winnerGroupId: GroupIdSchema.nullable(),
   answers: z.array(BlankAnswerSchema).nullable(),
+  submitterNickname: z.string().nullable(),
 });
 export type ResultView = z.infer<typeof ResultViewSchema>;
 
@@ -77,6 +117,7 @@ const BaseViewShape = {
 export const PublicViewSchema = z.object({
   viewer: z.literal('public'),
   ...BaseViewShape,
+  headcounts: z.array(GroupHeadcountSchema),
 });
 export type PublicView = z.infer<typeof PublicViewSchema>;
 
@@ -84,12 +125,18 @@ export type PublicView = z.infer<typeof PublicViewSchema>;
 export const OwnSubmissionSchema = z.object({
   questionNumber: z.number().int().positive(),
   answers: z.array(BlankAnswerSchema),
+  /** 本組這一題的送出者暱稱（004 FR-024）；舊紀錄為 null */
+  submitterNickname: z.string().nullable(),
 });
 export type OwnSubmission = z.infer<typeof OwnSubmissionSchema>;
 
 export const StudentViewSchema = z.object({
   viewer: z.literal('student'),
   ...BaseViewShape,
+  questions: z.array(StudentQuestionViewSchema),
+  headcounts: z.array(GroupHeadcountSchema),
+  /** 只有本組成員（004 FR-014） */
+  members: z.array(GroupMemberSchema),
   groupId: GroupIdSchema,
   ownSubmissions: z.array(OwnSubmissionSchema),
   /** 只有活動「已結束」後才有值 */

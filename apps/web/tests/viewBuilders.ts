@@ -3,6 +3,7 @@ import {
   type PublicView,
   type QuestionSummary,
   type SessionStatus,
+  type StudentQuestionView,
   type StudentView,
   type TeacherView,
 } from '@crs/shared';
@@ -65,6 +66,7 @@ export function teacherView(overrides: Partial<TeacherView> = {}): TeacherView {
           questionNumber: n,
           winnerGroupId: null,
           answers: null,
+          submitterNickname: null,
           receivedAt: null,
         }))
       : [],
@@ -95,6 +97,7 @@ export function publicView(overrides: Partial<PublicView> = {}): PublicView {
     status,
     groups: imported ? [1, 2, 3].map((id) => ({ id, name: groupName(id) })) : [],
     questions: imported ? questionSummaries() : [],
+    headcounts: imported ? [1, 2, 3].map((groupId) => ({ groupId, memberCount: 0 })) : [],
     ...overrides,
   };
 }
@@ -105,10 +108,28 @@ export function studentView(overrides: Partial<StudentView> = {}): StudentView {
     viewer: 'student',
     status: 'READY',
     groups: [1, 2, 3].map((id) => ({ id, name: groupName(id) })),
-    questions: questionSummaries(),
+    questions: questionSummaries().map((q) => ({ ...q, content: null })),
+    headcounts: [1, 2, 3].map((groupId) => ({ groupId, memberCount: 0 })),
+    members: [],
     groupId: 2,
     ownSubmissions: [],
     results: null,
     ...overrides,
   };
+}
+
+/**
+ * 學生端題目加上題目敘述（004 research R7）：把 teacherView() 的敘述轉成 content，
+ * 模擬伺服器在「搶答進行中」「已結束」時提供的資料。
+ */
+export function withContent(): StudentQuestionView[] {
+  return teacherView().questions.map(
+    ({ number, kind, blankCount, blankLabels, prompt, blanks }) => ({
+      number,
+      kind,
+      blankCount,
+      blankLabels,
+      content: { prompt, blankPrompts: blanks.map((b) => b.prompt) },
+    }),
+  );
 }

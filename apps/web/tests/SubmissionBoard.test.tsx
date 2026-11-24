@@ -17,6 +17,7 @@ function record(
     answers: texts.map((text, i) => ({ blankIndex: i + 1, text })),
     sequence,
     receivedAt: '2026-11-23T08:00:00.000Z',
+    submitterNickname: null,
   };
 }
 
@@ -26,10 +27,34 @@ describe('SubmissionBoard（US3）', () => {
       status: 'OPEN',
       submissions: [record(1, 2, 2, ['GPU', 'Linux']), record(1, 1, 1, ['CPU', '作業系統'])],
       results: [
-        { questionNumber: 1, winnerGroupId: 1, answers: [], receivedAt: null },
-        { questionNumber: 2, winnerGroupId: null, answers: null, receivedAt: null },
-        { questionNumber: 3, winnerGroupId: null, answers: null, receivedAt: null },
-        { questionNumber: 4, winnerGroupId: null, answers: null, receivedAt: null },
+        {
+          questionNumber: 1,
+          winnerGroupId: 1,
+          answers: [],
+          receivedAt: null,
+          submitterNickname: null,
+        },
+        {
+          questionNumber: 2,
+          winnerGroupId: null,
+          answers: null,
+          receivedAt: null,
+          submitterNickname: null,
+        },
+        {
+          questionNumber: 3,
+          winnerGroupId: null,
+          answers: null,
+          receivedAt: null,
+          submitterNickname: null,
+        },
+        {
+          questionNumber: 4,
+          winnerGroupId: null,
+          answers: null,
+          receivedAt: null,
+          submitterNickname: null,
+        },
       ],
     });
     render(<SubmissionBoard view={view} />);
@@ -49,15 +74,34 @@ describe('SubmissionBoard（US3）', () => {
       status: 'CLOSED',
       submissions: [record(3, 2, 1, ['0'])],
       results: [
-        { questionNumber: 1, winnerGroupId: null, answers: null, receivedAt: null },
-        { questionNumber: 2, winnerGroupId: null, answers: null, receivedAt: null },
+        {
+          questionNumber: 1,
+          winnerGroupId: null,
+          answers: null,
+          receivedAt: null,
+          submitterNickname: null,
+        },
+        {
+          questionNumber: 2,
+          winnerGroupId: null,
+          answers: null,
+          receivedAt: null,
+          submitterNickname: null,
+        },
         {
           questionNumber: 3,
           winnerGroupId: 2,
           answers: [{ blankIndex: 1, text: '0' }],
           receivedAt: '2026-11-23T02:00:12.340Z',
+          submitterNickname: null,
         },
-        { questionNumber: 4, winnerGroupId: null, answers: null, receivedAt: null },
+        {
+          questionNumber: 4,
+          winnerGroupId: null,
+          answers: null,
+          receivedAt: null,
+          submitterNickname: null,
+        },
       ],
     });
     render(<SubmissionBoard view={view} />);
@@ -84,6 +128,7 @@ describe('SubmissionBoard（US3）', () => {
         winnerGroupId: n === 1 ? 1 : null,
         answers: null,
         receivedAt: null,
+        submitterNickname: null,
       })),
     });
     render(<SubmissionBoard view={view} />);
@@ -105,15 +150,34 @@ describe('SubmissionBoard（US3）', () => {
       openedAt: '2026-11-23T08:00:00.000Z',
       submissions: [{ ...record(3, 2, 1, ['0']), receivedAt: '2026-11-23T08:00:12.340Z' }],
       results: [
-        { questionNumber: 1, winnerGroupId: null, answers: null, receivedAt: null },
-        { questionNumber: 2, winnerGroupId: null, answers: null, receivedAt: null },
+        {
+          questionNumber: 1,
+          winnerGroupId: null,
+          answers: null,
+          receivedAt: null,
+          submitterNickname: null,
+        },
+        {
+          questionNumber: 2,
+          winnerGroupId: null,
+          answers: null,
+          receivedAt: null,
+          submitterNickname: null,
+        },
         {
           questionNumber: 3,
           winnerGroupId: 2,
           answers: [{ blankIndex: 1, text: '0' }],
           receivedAt: '2026-11-23T08:00:12.340Z',
+          submitterNickname: null,
         },
-        { questionNumber: 4, winnerGroupId: null, answers: null, receivedAt: null },
+        {
+          questionNumber: 4,
+          winnerGroupId: null,
+          answers: null,
+          receivedAt: null,
+          submitterNickname: null,
+        },
       ],
     });
     render(<SubmissionBoard view={view} />);
@@ -135,15 +199,34 @@ describe('SubmissionBoard（US3）', () => {
         { ...record(3, 1, 1, ['0']), receivedAt: '2026-11-23T08:00:05.000Z' },
       ],
       results: [
-        { questionNumber: 1, winnerGroupId: null, answers: null, receivedAt: null },
-        { questionNumber: 2, winnerGroupId: null, answers: null, receivedAt: null },
+        {
+          questionNumber: 1,
+          winnerGroupId: null,
+          answers: null,
+          receivedAt: null,
+          submitterNickname: null,
+        },
+        {
+          questionNumber: 2,
+          winnerGroupId: null,
+          answers: null,
+          receivedAt: null,
+          submitterNickname: null,
+        },
         {
           questionNumber: 3,
           winnerGroupId: 1,
           answers: [{ blankIndex: 1, text: '0' }],
           receivedAt: '2026-11-23T08:00:05.000Z',
+          submitterNickname: null,
         },
-        { questionNumber: 4, winnerGroupId: null, answers: null, receivedAt: null },
+        {
+          questionNumber: 4,
+          winnerGroupId: null,
+          answers: null,
+          receivedAt: null,
+          submitterNickname: null,
+        },
       ],
     });
     render(<SubmissionBoard view={view} />);

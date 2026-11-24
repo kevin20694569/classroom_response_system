@@ -162,18 +162,39 @@ describe('可見性', () => {
     ];
     for (const view of views) {
       expect(Object.keys(view).sort()).toEqual(
-        ['groupId', 'groups', 'ownSubmissions', 'questions', 'results', 'status', 'viewer'].sort(),
+        [
+          'groupId',
+          'groups',
+          'headcounts',
+          'members',
+          'ownSubmissions',
+          'questions',
+          'results',
+          'status',
+          'viewer',
+        ].sort(),
       );
       const questions = view.questions as Record<string, unknown>[];
       for (const q of questions) {
-        expect(Object.keys(q).sort()).toEqual(['blankCount', 'blankLabels', 'kind', 'number']);
+        expect(Object.keys(q).sort()).toEqual([
+          'blankCount',
+          'blankLabels',
+          'content',
+          'kind',
+          'number',
+        ]);
         expect((q.blankLabels as unknown[]).length).toBe(q.blankCount);
       }
       expect(view.ownSubmissions).toEqual([]);
       if (view.status !== 'CLOSED') expect(view.results).toBeNull();
       else {
         for (const r of view.results as Record<string, unknown>[]) {
-          expect(Object.keys(r).sort()).toEqual(['answers', 'questionNumber', 'winnerGroupId']);
+          expect(Object.keys(r).sort()).toEqual([
+            'answers',
+            'questionNumber',
+            'submitterNickname',
+            'winnerGroupId',
+          ]);
         }
       }
     }

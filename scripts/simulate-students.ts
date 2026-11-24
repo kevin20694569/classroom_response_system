@@ -114,8 +114,10 @@ async function main(): Promise<void> {
   const tokens = new Map<number, string>();
   for (const groupId of options.groups) {
     try {
+      // 004：加入時必須帶暱稱（research R12）
       const auth = await post(options.baseUrl, '/api/auth/student', AuthResponseSchema, {
         groupId,
+        nickname: `Sim-${groupId}`,
       });
       tokens.set(groupId, auth.token);
     } catch (error) {

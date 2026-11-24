@@ -65,6 +65,7 @@ export function submission(
   groupId: number,
   sequence: number,
   texts: string[] = ['答案'],
+  submitterNickname: string | null = null,
 ): Submission {
   return {
     id: randomUUID(),
@@ -73,5 +74,6 @@ export function submission(
     answers: texts.map((text, i) => ({ blankIndex: i + 1, text })),
     sequence,
     receivedAt: new Date(Date.UTC(2026, 10, 23, 0, 0, sequence)).toISOString(),
+    submitterNickname,
   };
 }
