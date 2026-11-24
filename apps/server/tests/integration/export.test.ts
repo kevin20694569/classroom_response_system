@@ -244,15 +244,21 @@ describe('匯出模式（002 US4）', () => {
     expect(app.gateway.writeLog).toHaveLength(0);
   });
 
-  it('答案＋組別時間欄：新增兩欄、題目區塊第一列寫入結果；重複匯出文件不變', async () => {
+  it('答案＋組別時間欄：新增三欄（含 004 搶答送出者）、題目區塊第一列寫入結果；重複匯出文件不變', async () => {
     app = await startTestApp();
     const teacher = await groupActivity(app);
     const res = await exportWith(app, teacher, { mode: 'answers-with-columns' });
     expect(res.statusCode).toBe(200);
     expect(res.json()).toMatchObject({ mode: 'answers-with-columns', writtenQuestionCount: 2 });
     const doc = cells(app);
-    expect([doc[3]?.[8], doc[3]?.[9]]).toEqual(['搶答組別', '提交時間']);
+    expect([doc[3]?.[8], doc[3]?.[9], doc[3]?.[10]]).toEqual([
+      '搶答組別',
+      '提交時間',
+      '搶答送出者',
+    ]);
     expect(doc[4]?.[8]).toBe('第 2 組');
+    // 送出者取自加入時的暱稱（測試輔助預設「測試」）；無人搶答的題目留空
+    expect([doc[4]?.[10], doc[10]?.[10], doc[7]?.[10]]).toEqual(['測試', '測試', '']);
     expect(doc[4]?.[9]).toMatch(TIME_PATTERN);
     expect(doc[10]?.[8]).toBe('第 1 組');
     expect([doc[7]?.[8], doc[12]?.[8]]).toEqual(['', '']);
@@ -272,8 +278,8 @@ describe('匯出模式（002 US4）', () => {
     let doc = cells(app);
     expect([doc[4]?.[6], doc[5]?.[6]]).toEqual(['（1）', '（2）']);
     expect(doc[4]?.[7]).toBe('CPU');
-    expect(doc[5]?.[7]).toMatch(/^作業系統\n〔第 2 組｜.+〕$/);
-    expect(doc[10]?.[6]).toMatch(/^0\n〔第 1 組｜.+〕$/);
+    expect(doc[5]?.[7]).toMatch(/^作業系統\n〔第 2 組｜測試｜.+〕$/);
+    expect(doc[10]?.[6]).toMatch(/^0\n〔第 1 組｜測試｜.+〕$/);
     expect(app.gateway.formatAt('學習單', 5, 7)).toBe('作業系統'.length);
     expect(app.gateway.formatAt('學習單', 4, 7)).toBeNull();
 

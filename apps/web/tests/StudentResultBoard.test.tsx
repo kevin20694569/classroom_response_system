@@ -121,3 +121,35 @@ describe('StudentResultBoard — 004 題目敘述（FR-016、SC-007）', () => {
     expect(screen.queryByText('文件未提供題目敘述')).toBeNull();
   });
 });
+
+describe('StudentResultBoard — 004 送出者（FR-025）', () => {
+  it('搶答成功答案旁顯示「第 N 組・暱稱」；本組未搶到時標示「本組（暱稱）」', () => {
+    render(
+      <StudentResultBoard
+        questions={questions}
+        results={[
+          {
+            questionNumber: 3,
+            winnerGroupId: 1,
+            answers: [{ blankIndex: 1, text: '0' }],
+            submitterNickname: 'Milo',
+          },
+        ]}
+        ownSubmissions={[
+          { questionNumber: 3, answers: [{ blankIndex: 1, text: '1' }], submitterNickname: 'Leo' },
+        ]}
+        groupId={2}
+        showUnsentNotice={false}
+      />,
+    );
+    const third = within(card(3));
+    expect(third.getByText('搶答成功：第 1 組・Milo')).toBeTruthy();
+    expect(third.getByText('本組（Leo）')).toBeTruthy();
+  });
+
+  it('送出者為 null 時只顯示組別', () => {
+    renderBoard();
+    expect(within(card(3)).getByText('搶答成功：第 1 組')).toBeTruthy();
+    expect(within(card(3)).getByText('本組答案')).toBeTruthy();
+  });
+});

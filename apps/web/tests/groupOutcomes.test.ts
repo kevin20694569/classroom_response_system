@@ -28,6 +28,8 @@ describe('groupOutcomes（003 FR-024、FR-025、research R11）', () => {
       ownAnswers: a('本組的答案一'),
       winnerGroupId: 2,
       winnerAnswers: a('本組的答案一'),
+      winnerSubmitter: null,
+      ownSubmitter: null,
     });
   });
 
@@ -38,6 +40,8 @@ describe('groupOutcomes（003 FR-024、FR-025、research R11）', () => {
       ownAnswers: a('本組的答案三'),
       winnerGroupId: 1,
       winnerAnswers: a('第一組的答案'),
+      winnerSubmitter: null,
+      ownSubmitter: null,
     });
   });
 
@@ -48,6 +52,8 @@ describe('groupOutcomes（003 FR-024、FR-025、research R11）', () => {
       ownAnswers: null,
       winnerGroupId: null,
       winnerAnswers: null,
+      winnerSubmitter: null,
+      ownSubmitter: null,
     });
     expect(outcomes[3]?.kind).toBe('NOT_SUBMITTED');
   });
@@ -57,5 +63,27 @@ describe('groupOutcomes（003 FR-024、FR-025、research R11）', () => {
     expect(wonCount(groupOutcomes(results, [], 2))).toBe(1);
     expect(wonCount(groupOutcomes(results, [], 5))).toBe(0);
     expect(wonCount([])).toBe(0);
+  });
+});
+
+describe('groupOutcomes — 004 送出者（FR-024、FR-025）', () => {
+  it('帶出搶答成功答案與本組答案的送出者', () => {
+    const [outcome] = groupOutcomes(
+      [
+        {
+          questionNumber: 3,
+          winnerGroupId: 1,
+          answers: [{ blankIndex: 1, text: '0' }],
+          submitterNickname: 'Milo',
+        },
+      ],
+      [{ questionNumber: 3, answers: [{ blankIndex: 1, text: '1' }], submitterNickname: 'Leo' }],
+      2,
+    );
+    expect(outcome).toMatchObject({
+      kind: 'SUBMITTED_NOT_WON',
+      winnerSubmitter: 'Milo',
+      ownSubmitter: 'Leo',
+    });
   });
 });

@@ -26,11 +26,14 @@ const HEADER_ANSWER = '作答';
 
 const HEADER_RESULT_GROUP = '搶答組別';
 const HEADER_RESULT_TIME = '提交時間';
+/** 004 FR-027：搶答成功答案的送出者暱稱欄 */
+const HEADER_RESULT_SUBMITTER = '搶答送出者';
 
-/** 「答案＋組別時間欄」匯出模式使用的結果欄（002 contracts §B.3）；沒有對應表頭時為 null。 */
+/** 「答案＋組別時間欄」匯出模式使用的結果欄（002 contracts §B.3、004 FR-027）；沒有對應表頭時為 null。 */
 export interface ResultColumns {
   groupColumn: number | null;
   timeColumn: number | null;
+  submitterColumn: number | null;
 }
 
 export interface ParsedGuidedNotes {
@@ -58,14 +61,18 @@ function usedColumnCountOf(grid: SheetGrid): number {
   return count;
 }
 
-/** 表頭列中先前匯出時新增的「搶答組別」「提交時間」欄；這兩欄不參與題目辨識（002 FR-023）。 */
+/** 表頭列中先前匯出時新增的「搶答組別」「提交時間」「搶答送出者」欄；這些欄不參與題目辨識（002 FR-023、004 FR-027）。 */
 function resultColumnsOf(grid: SheetGrid, headerRowIndex: number): ResultColumns {
   const cells = grid.cells[headerRowIndex] ?? [];
   const find = (text: string) => {
     const index = cells.findIndex((c) => c.trim() === text);
     return index >= 0 ? index : null;
   };
-  return { groupColumn: find(HEADER_RESULT_GROUP), timeColumn: find(HEADER_RESULT_TIME) };
+  return {
+    groupColumn: find(HEADER_RESULT_GROUP),
+    timeColumn: find(HEADER_RESULT_TIME),
+    submitterColumn: find(HEADER_RESULT_SUBMITTER),
+  };
 }
 
 interface HeaderRow {

@@ -22,6 +22,7 @@ export interface ExportPlan {
 
 const HEADER_RESULT_GROUP = '搶答組別';
 const HEADER_RESULT_TIME = '提交時間';
+const HEADER_RESULT_SUBMITTER = '搶答送出者';
 
 /**
  * 答案值（三種模式共用，contracts §B.2、FR-025）：
@@ -35,11 +36,15 @@ function answerValue(question: Question, blank: Blank, answer: BlankAnswer): str
 }
 
 /**
- * 附註行（「答案＋格內附註行」模式，FR-020）：以全形括號與「｜」包住組別與時間，
+ * 附註行（「答案＋格內附註行」模式，FR-020）：以全形括號與「｜」包住組別、送出者與時間，
  * 加上較小灰色字（mutedFrom），在文字與樣式上都和答案明顯不同（FR-018）。
+ * 004 FR-027：有送出者時為「〔第 N 組｜暱稱｜時間〕」；004 之前的送出沒有送出者，維持「〔第 N 組｜時間〕」。
  */
 function attribution(winner: Submission): string {
-  return `〔${groupName(winner.groupId)}｜${formatSubmittedAt(winner.receivedAt)}〕`;
+  const parts = [groupName(winner.groupId)];
+  if (winner.submitterNickname !== null) parts.push(winner.submitterNickname);
+  parts.push(formatSubmittedAt(winner.receivedAt));
+  return `〔${parts.join('｜')}〕`;
 }
 
 interface Located {
@@ -125,10 +130,11 @@ export function planExport(
 }
 
 /**
- * 「答案＋組別時間欄」模式（FR-019）：
- * - 沿用表頭列既有的「搶答組別」「提交時間」欄；缺少的欄依序新增在使用範圍之後（不覆蓋任何內容）。
+ * 「答案＋組別時間欄」模式（FR-019；004 FR-027 加上送出者欄）：
+ * - 沿用表頭列既有的「搶答組別」「提交時間」「搶答送出者」欄；缺少的欄依序新增在使用範圍之後（不覆蓋任何內容）。
  * - 每題寫在題目區塊第一列（該題作答格最上方的列）；題組只寫一次。
- * - 搶答成功寫入組別與提交時間；無人搶答清空這兩格（避免留下上一場的結果）。
+ * - 搶答成功寫入組別、提交時間與送出者；無人搶答清空這三格（避免留下上一場的結果）；
+ *   送出者為 null（004 之前的送出）時送出者格寫入空字串。只寫搶答成功答案的送出者。
  */
 function resultColumnWrites(fresh: ParsedGuidedNotes, located: readonly Located[]): CellWrite[] {
   const writes: CellWrite[] = [];
@@ -148,6 +154,10 @@ function resultColumnWrites(fresh: ParsedGuidedNotes, located: readonly Located[
   };
   const groupColumn = ensureColumn(fresh.resultColumns.groupColumn, HEADER_RESULT_GROUP);
   const timeColumn = ensureColumn(fresh.resultColumns.timeColumn, HEADER_RESULT_TIME);
+  const submitterColumn = ensureColumn(
+    fresh.resultColumns.submitterColumn,
+    HEADER_RESULT_SUBMITTER,
+  );
 
   for (const { question, winner } of located) {
     const firstRow = Math.min(...question.blanks.map((b) => b.location.rowIndex));
@@ -161,6 +171,7 @@ function resultColumnWrites(fresh: ParsedGuidedNotes, located: readonly Located[
     writes.push(
       cell(groupColumn, winner === null ? '' : groupName(winner.groupId)),
       cell(timeColumn, winner === null ? '' : formatSubmittedAt(winner.receivedAt)),
+      cell(submitterColumn, winner?.submitterNickname ?? ''),
     );
   }
   return writes;

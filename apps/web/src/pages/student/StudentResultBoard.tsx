@@ -112,13 +112,17 @@ export function StudentResultBoard({
               <div className="space-y-1">
                 <p className="text-sm text-slate-500">
                   搶答成功：{groupName(outcome.winnerGroupId)}
+                  {/* 結束後所有學生都看得到搶答成功答案的送出者（004 FR-025） */}
+                  {outcome.winnerSubmitter !== null && `・${outcome.winnerSubmitter}`}
                 </p>
                 <AnswerList question={question} answers={outcome.winnerAnswers} />
               </div>
             )}
             {outcome.kind === 'SUBMITTED_NOT_WON' && outcome.ownAnswers !== null && (
               <div className="space-y-1 border-t border-slate-100 pt-2">
-                <p className="text-sm text-slate-500">本組答案</p>
+                <p className="text-sm text-slate-500">
+                  {outcome.ownSubmitter === null ? '本組答案' : `本組（${outcome.ownSubmitter}）`}
+                </p>
                 <AnswerList question={question} answers={outcome.ownAnswers} />
               </div>
             )}

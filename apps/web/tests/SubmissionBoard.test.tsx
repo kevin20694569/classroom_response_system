@@ -241,3 +241,19 @@ describe('SubmissionBoard（US3）', () => {
     expect(screen.getAllByText('無人搶答')).toHaveLength(3);
   });
 });
+
+describe('SubmissionBoard — 004 送出者（FR-026）', () => {
+  it('每筆送出顯示「第 N 組・暱稱」；沒有送出者時只顯示組別', () => {
+    const view = teacherView({
+      status: 'OPEN',
+      submissions: [
+        { ...record(3, 1, 1, ['0']), submitterNickname: 'Milo' },
+        record(3, 2, 2, ['1']),
+      ],
+    });
+    render(<SubmissionBoard view={view} />);
+    const items = within(screen.getByRole('article', { name: '第 3 題' })).getAllByRole('listitem');
+    expect(items[0]?.textContent).toContain('第 1 位・第 1 組・Milo：0');
+    expect(items[1]?.textContent).toContain('第 2 位・第 2 組：1');
+  });
+});

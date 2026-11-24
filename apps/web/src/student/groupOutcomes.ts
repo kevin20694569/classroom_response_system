@@ -11,6 +11,10 @@ export interface GroupOutcome {
   /** 搶答成功組別；無人搶答為 null */
   winnerGroupId: GroupId | null;
   winnerAnswers: BlankAnswer[] | null;
+  /** 搶答成功答案的送出者暱稱（004 FR-025）；無人搶答或舊紀錄為 null */
+  winnerSubmitter: string | null;
+  /** 本組這一題的送出者暱稱（004 FR-024）；未送出或舊紀錄為 null */
+  ownSubmitter: string | null;
 }
 
 /**
@@ -22,11 +26,12 @@ export function groupOutcomes(
   ownSubmissions: readonly OwnSubmission[],
   groupId: GroupId,
 ): GroupOutcome[] {
-  const own = new Map(ownSubmissions.map((s) => [s.questionNumber, s.answers]));
+  const own = new Map(ownSubmissions.map((s) => [s.questionNumber, s]));
   return [...results]
     .sort((a, b) => a.questionNumber - b.questionNumber)
     .map((result) => {
-      const ownAnswers = own.get(result.questionNumber) ?? null;
+      const ownSubmission = own.get(result.questionNumber);
+      const ownAnswers = ownSubmission?.answers ?? null;
       const kind: OutcomeKind =
         result.winnerGroupId === groupId
           ? 'WON'
@@ -39,6 +44,8 @@ export function groupOutcomes(
         ownAnswers,
         winnerGroupId: result.winnerGroupId,
         winnerAnswers: result.answers,
+        winnerSubmitter: result.submitterNickname,
+        ownSubmitter: ownSubmission?.submitterNickname ?? null,
       };
     });
 }

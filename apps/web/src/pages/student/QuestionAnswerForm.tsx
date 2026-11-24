@@ -162,11 +162,13 @@ export function QuestionAnswerForm({
   const showLabels = question.content === null;
 
   if (answers !== null) {
+    // 同組成員都看得到送出者（004 FR-024）；本分頁剛送出、推播尚未到達時以自己的暱稱顯示
+    const submitter = submitted === null ? identity.nickname : submitted.submitterNickname;
     const byIndex = new Map(answers.map((a) => [a.blankIndex, a.text]));
     return (
       <div className="space-y-2">
         <p className="inline-block rounded-full bg-green-100 px-3 py-1 text-sm font-semibold text-green-800">
-          已送出
+          {submitter === null ? '已送出' : `已送出（${submitter}）`}
         </p>
         <WithContent
           question={question}
