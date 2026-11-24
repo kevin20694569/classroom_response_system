@@ -131,17 +131,17 @@ US4（送出者，P2）。
 
 ### Tests for User Story 3（先寫，預期失敗）
 
-- [ ] T033 [P] [US3] 更新 `apps/server/tests/unit/visibilityPolicy.test.ts`：學生檢視在 NOT_IMPORTED／READY 時每題 `content === null`，`JSON.stringify` 不含任何敘述文字；OPEN、CLOSED 時 `content.prompt`、`content.blankPrompts` 與匯入的題目相同（含 `null` 的敘述）；PublicView 任何階段都不含敘述
-- [ ] T034 [P] [US3] 更新 `apps/server/tests/integration/visibility.test.ts`：把「學生收不到題目敘述」改為「READY 以前學生與未登入分頁收到的所有推播與回應都不含敘述；OPEN 後學生（已加入）收到敘述、未登入分頁仍收不到」（FR-018、FR-019、SC-006）
-- [ ] T035 [P] [US3] 新增 `apps/web/tests/QuestionContent.test.tsx`：單題顯示「第 N 題」「單題」與敘述（保留換行）；題組顯示「題組（K 子題）」、題組說明、子題標記（沒有標記時「（序號）」）與子題敘述；敘述為 `null` 時顯示「文件未提供題目敘述」；`renderBlank(index)` 的內容出現在對應子題下方；更新 `apps/web/tests/QuestionList.test.tsx`（老師端預覽改用共用元件後畫面不變）
-- [ ] T036 [US3] 更新 `apps/web/tests/QuestionAnswerForm.test.tsx`、`AnswerSheet.test.tsx`、`StudentResultBoard.test.tsx`：`content` 有值時顯示敘述且每個子題輸入欄在該子題敘述下方；`content` 為 `null`（READY）時與 003 相同；已送出時敘述仍顯示；結果畫面每題顯示敘述（SC-007）
+- [X] T033 [P] [US3] 更新 `apps/server/tests/unit/visibilityPolicy.test.ts`：學生檢視在 NOT_IMPORTED／READY 時每題 `content === null`，`JSON.stringify` 不含任何敘述文字；OPEN、CLOSED 時 `content.prompt`、`content.blankPrompts` 與匯入的題目相同（含 `null` 的敘述）；PublicView 任何階段都不含敘述
+- [X] T034 [P] [US3] 更新 `apps/server/tests/integration/visibility.test.ts`：把「學生收不到題目敘述」改為「READY 以前學生與未登入分頁收到的所有推播與回應都不含敘述；OPEN 後學生（已加入）收到敘述、未登入分頁仍收不到」（FR-018、FR-019、SC-006）
+- [X] T035 [P] [US3] 新增 `apps/web/tests/QuestionContent.test.tsx`：單題顯示「第 N 題」「單題」與敘述（保留換行）；題組顯示「題組（K 子題）」、題組說明、子題標記（沒有標記時「（序號）」）與子題敘述；敘述為 `null` 時顯示「文件未提供題目敘述」；`renderBlank(index)` 的內容出現在對應子題下方；更新 `apps/web/tests/QuestionList.test.tsx`（老師端預覽改用共用元件後畫面不變）
+- [X] T036 [US3] 更新 `apps/web/tests/QuestionAnswerForm.test.tsx`、`AnswerSheet.test.tsx`、`StudentResultBoard.test.tsx`：`content` 有值時顯示敘述且每個子題輸入欄在該子題敘述下方；`content` 為 `null`（READY）時與 003 相同；已送出時敘述仍顯示；結果畫面每題顯示敘述（SC-007）
 
 ### Implementation for User Story 3
 
-- [ ] T037 [US3] 修改 `apps/server/src/domain/visibility/visibilityPolicy.ts`：`toStudentView` 只在 `status` 為 `OPEN`、`CLOSED` 時為每題填入 `content: { prompt, blankPrompts }`（依子題序號），其他階段 `null`；`toPublicView` 的題目維持 `QuestionSummary`（不含 `content`）；更新檔案開頭的註解（取代 003 的「學生不含敘述」說明，research R7）
-- [ ] T038 [US3] 新增 `apps/web/src/components/QuestionContent.tsx`（props：`number`、`kind`、`blankCount`、`prompt`、`blanks: { label, prompt }[]`、選用 `renderBlank(index)`），版面取自現有 `QuestionPreview`；修改 `apps/web/src/components/QuestionPreview.tsx` 改用 `QuestionContent`，老師端畫面不變（research R8）
-- [ ] T039 [US3] 修改 `apps/web/src/pages/student/QuestionAnswerForm.tsx`、`AnswerSheet.tsx`、`StudentResultBoard.tsx`：`question.content` 有值時以 `QuestionContent` 呈現，並以 `renderBlank` 在每個子題下方放輸入欄（作答）或答案（結果）；`content` 為 `null` 時維持 003 的版面（contracts/student-ui.md §4、§5）
-- [ ] T040 [US3] 品質關卡：`npm run typecheck`、`npm run lint`、`npm run format:check`、`npm test` 全部通過，回報指令與結果
+- [X] T037 [US3] 修改 `apps/server/src/domain/visibility/visibilityPolicy.ts`：`toStudentView` 只在 `status` 為 `OPEN`、`CLOSED` 時為每題填入 `content: { prompt, blankPrompts }`（依子題序號），其他階段 `null`；`toPublicView` 的題目維持 `QuestionSummary`（不含 `content`）；更新檔案開頭的註解（取代 003 的「學生不含敘述」說明，research R7）
+- [X] T038 [US3] 新增 `apps/web/src/components/QuestionContent.tsx`（props：`number`、`kind`、`blankCount`、`prompt`、`blanks: { label, prompt }[]`、選用 `renderBlank(index)`），版面取自現有 `QuestionPreview`；修改 `apps/web/src/components/QuestionPreview.tsx` 改用 `QuestionContent`，老師端畫面不變（research R8）
+- [X] T039 [US3] 修改 `apps/web/src/pages/student/QuestionAnswerForm.tsx`、`AnswerSheet.tsx`、`StudentResultBoard.tsx`：`question.content` 有值時以 `QuestionContent` 呈現，並以 `renderBlank` 在每個子題下方放輸入欄（作答）或答案（結果）；`content` 為 `null` 時維持 003 的版面（contracts/student-ui.md §4、§5）
+- [X] T040 [US3] 品質關卡：`npm run typecheck`、`npm run lint`、`npm run format:check`、`npm test` 全部通過，回報指令與結果
 
 **Checkpoint**: 搶答開始後學生看得到題目敘述；開始前伺服器不傳敘述
 

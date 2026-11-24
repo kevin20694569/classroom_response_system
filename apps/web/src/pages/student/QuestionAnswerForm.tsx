@@ -5,8 +5,10 @@ import {
   type BlankAnswer,
   type OwnSubmission,
   type QuestionSummary,
+  type StudentQuestionView,
 } from '@crs/shared';
-import { useRef, useState } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
+import { QuestionContent } from '../../components/QuestionContent';
 import { ApiError, apiRequest } from '../../api/http';
 import type { StudentIdentity } from '../../api/identity';
 import type { InvalidationReason } from '../../hooks/useSessionState';
@@ -14,7 +16,8 @@ import * as AnswerDraftStore from '../../student/answerDraftStore';
 import { blankLabelOf, validateDraft, type SubmitOutcome } from '../../student/validateDraft';
 
 export interface QuestionAnswerFormProps {
-  question: QuestionSummary;
+  /** content 不為 null（搶答進行中）時以老師端預覽相同的版面顯示題目敘述（004 FR-016、FR-017） */
+  question: StudentQuestionView;
   /** 本組已被採計的送出（伺服器推播）；未送出為 null */
   submitted: OwnSubmission | null;
   /** 只有「搶答進行中」可以作答（FR-011） */
@@ -35,6 +38,37 @@ const REJECTION_MESSAGE: Partial<Record<string, string>> = {
 function inputLabel(question: QuestionSummary, index: number): string {
   const label = blankLabelOf(question, index);
   return label === null ? `第 ${question.number} 題答案` : `第 ${question.number} 題${label}`;
+}
+
+/**
+ * 題目敘述與每個子題下方的內容（004 research R8）：有敘述時以 QuestionContent 呈現，
+ * 每個子題（單題為題目）下方放輸入欄或答案；沒有敘述（「待開始」）時沿用 003 的版面，由呼叫端顯示題號。
+ */
+function WithContent({
+  question,
+  renderBlank,
+}: {
+  question: StudentQuestionView;
+  renderBlank: (index: number) => ReactNode;
+}) {
+  const { content } = question;
+  if (content === null) {
+    return <>{question.blankLabels.map((_, i) => renderBlank(i + 1))}</>;
+  }
+  return (
+    <QuestionContent
+      number={question.number}
+      kind={question.kind}
+      blankCount={question.blankCount}
+      prompt={content.prompt}
+      blanks={question.blankLabels.map((label, i) => ({
+        label,
+        prompt: content.blankPrompts[i] ?? null,
+      }))}
+      titleAs="h2"
+      renderBlank={renderBlank}
+    />
+  );
 }
 
 /**
@@ -124,23 +158,30 @@ export function QuestionAnswerForm({
     }
   }
 
+  // 有題目敘述時子題標記已顯示在敘述旁，輸入欄與答案前不再重複
+  const showLabels = question.content === null;
+
   if (answers !== null) {
+    const byIndex = new Map(answers.map((a) => [a.blankIndex, a.text]));
     return (
       <div className="space-y-2">
         <p className="inline-block rounded-full bg-green-100 px-3 py-1 text-sm font-semibold text-green-800">
           已送出
         </p>
-        <ul className="space-y-1">
-          {answers.map((answer) => {
-            const label = blankLabelOf(question, answer.blankIndex);
+        <WithContent
+          question={question}
+          renderBlank={(index) => {
+            const text = byIndex.get(index);
+            if (text === undefined) return null;
+            const label = showLabels ? blankLabelOf(question, index) : null;
             return (
-              <li key={answer.blankIndex} className="flex gap-2">
+              <p key={index} className="flex gap-2 text-base">
                 {label !== null && <span className="text-slate-500">{label}</span>}
-                <span>{answer.text}</span>
-              </li>
+                <span>{text}</span>
+              </p>
             );
-          })}
-        </ul>
+          }}
+        />
         {message !== null && <p className="text-sm text-slate-600">{message}</p>}
       </div>
     );
@@ -154,33 +195,36 @@ export function QuestionAnswerForm({
         void submit();
       }}
     >
-      {texts.map((text, i) => {
-        const index = i + 1;
-        const label = blankLabelOf(question, index);
-        const issue = issues.get(index);
-        return (
-          <div key={index} className="space-y-1">
-            <div className="flex items-center gap-2">
-              {label !== null && <span className="w-10 shrink-0 text-slate-500">{label}</span>}
-              <input
-                type="text"
-                aria-label={inputLabel(question, index)}
-                aria-invalid={issue !== undefined}
-                value={text}
-                disabled={!editable}
-                onChange={(event) => {
-                  change(index, event.target.value);
-                }}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 disabled:bg-slate-100"
-              />
-              <span className="w-16 shrink-0 text-right text-xs text-slate-500">
-                {unicodeLength(text.trim())}／{ANSWER_MAX_LENGTH}
-              </span>
+      <WithContent
+        question={question}
+        renderBlank={(index) => {
+          const text = texts[index - 1] ?? '';
+          const label = showLabels ? blankLabelOf(question, index) : null;
+          const issue = issues.get(index);
+          return (
+            <div key={index} className="space-y-1 text-base">
+              <div className="flex items-center gap-2">
+                {label !== null && <span className="w-10 shrink-0 text-slate-500">{label}</span>}
+                <input
+                  type="text"
+                  aria-label={inputLabel(question, index)}
+                  aria-invalid={issue !== undefined}
+                  value={text}
+                  disabled={!editable}
+                  onChange={(event) => {
+                    change(index, event.target.value);
+                  }}
+                  className="w-full rounded-md border border-slate-300 px-3 py-2 disabled:bg-slate-100"
+                />
+                <span className="w-16 shrink-0 text-right text-xs text-slate-500">
+                  {unicodeLength(text.trim())}／{ANSWER_MAX_LENGTH}
+                </span>
+              </div>
+              {issue !== undefined && <p className="text-sm text-red-700">{issue}</p>}
             </div>
-            {issue !== undefined && <p className="text-sm text-red-700">{issue}</p>}
-          </div>
-        );
-      })}
+          );
+        }}
+      />
       {message !== null && (
         <p role="alert" className="text-sm text-red-700">
           {message}

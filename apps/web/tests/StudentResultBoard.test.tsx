@@ -2,7 +2,7 @@ import type { OwnSubmission, ResultView } from '@crs/shared';
 import { render, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { StudentResultBoard } from '../src/pages/student/StudentResultBoard';
-import { studentView } from './viewBuilders';
+import { studentView, withContent } from './viewBuilders';
 
 const { questions } = studentView();
 const results: ResultView[] = [
@@ -97,5 +97,27 @@ describe('StudentResultBoard（003 FR-024、FR-025、FR-018）', () => {
   it('不顯示送出順序或時間', () => {
     renderBoard();
     expect(document.body.textContent).not.toMatch(/順位|第 \d+ 名|提交時間|:\d\d/);
+  });
+});
+
+describe('StudentResultBoard — 004 題目敘述（FR-016、SC-007）', () => {
+  it('每題結果旁顯示題目敘述，文字與老師端預覽相同', () => {
+    render(
+      <StudentResultBoard
+        questions={withContent()}
+        results={results}
+        ownSubmissions={own}
+        groupId={2}
+        showUnsentNotice={false}
+      />,
+    );
+    expect(within(card(1)).getByText('電腦的「大腦」英文簡稱是什麼？')).toBeTruthy();
+    expect(within(card(3)).getByText('二進位由數字 1 和哪一個數字構成？')).toBeTruthy();
+    expect(within(card(4)).getByText('文件未提供題目敘述')).toBeTruthy();
+  });
+
+  it('沒有題目敘述的資料（content 為 null）不顯示敘述', () => {
+    renderBoard();
+    expect(screen.queryByText('文件未提供題目敘述')).toBeNull();
   });
 });

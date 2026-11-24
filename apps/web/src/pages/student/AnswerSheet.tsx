@@ -1,4 +1,4 @@
-import type { OwnSubmission, QuestionSummary, SessionStatus } from '@crs/shared';
+import type { OwnSubmission, SessionStatus, StudentQuestionView } from '@crs/shared';
 import { useEffect } from 'react';
 import type { StudentIdentity } from '../../api/identity';
 import type { InvalidationReason } from '../../hooks/useSessionState';
@@ -6,7 +6,7 @@ import * as AnswerDraftStore from '../../student/answerDraftStore';
 import { QuestionAnswerForm } from './QuestionAnswerForm';
 
 export interface AnswerSheetProps {
-  questions: readonly QuestionSummary[];
+  questions: readonly StudentQuestionView[];
   ownSubmissions: readonly OwnSubmission[];
   status: SessionStatus;
   connected: boolean;
@@ -75,12 +75,15 @@ export function AnswerSheet({
           aria-label={`第 ${q.number} 題`}
           className="space-y-3 rounded-xl bg-white p-4 shadow"
         >
-          <h2 className="flex items-center gap-2 text-lg font-semibold">
-            第 {q.number} 題
-            <span className="text-sm font-normal text-slate-500">
-              {q.kind === 'group' ? `題組（${q.blankCount} 子題）` : '單題'}
-            </span>
-          </h2>
+          {q.content === null && (
+            // 「待開始」沒有題目敘述，只顯示題號與題型；有敘述時由 QuestionContent 顯示（004 FR-016）
+            <h2 className="flex items-center gap-2 text-lg font-semibold">
+              第 {q.number} 題
+              <span className="text-sm font-normal text-slate-500">
+                {q.kind === 'group' ? `題組（${q.blankCount} 子題）` : '單題'}
+              </span>
+            </h2>
+          )}
           <QuestionAnswerForm
             question={q}
             submitted={submittedByNumber.get(q.number) ?? null}

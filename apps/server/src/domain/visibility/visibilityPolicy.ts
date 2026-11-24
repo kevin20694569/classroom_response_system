@@ -2,6 +2,7 @@ import type {
   GroupId,
   PublicView,
   QuestionResult,
+  QuestionTexts,
   QuizSession,
   ResultView,
   StudentView,
@@ -16,7 +17,9 @@ import { deriveResults } from '../ranking/results.js';
 /**
  * 可見性政策（FR-020、constitution 原則 I）：伺服器依角色產生不同的資料，
  * 學生不該看到的資料根本不會被送出，而不是只靠前端隱藏。
- * 題目敘述（002 FR-007）只放進老師檢視，學生與公開檢視沿用只有題號的 QuestionSummary。
+ * 題目敘述：老師檢視任何階段都有（002 FR-007）；學生檢視只在「搶答進行中」「已結束」才有，
+ * 讓所有組別在老師開啟搶答的同一刻才看到題目（004 FR-018、FR-019，取代 003「學生不含敘述」的規定）；
+ * 公開檢視（尚未選組）任何階段都沒有敘述。
  */
 
 function base(session: QuizSession): Pick<PublicView, 'status' | 'groups' | 'questions'> {
@@ -27,10 +30,19 @@ function base(session: QuizSession): Pick<PublicView, 'status' | 'groups' | 'que
       number: q.number,
       kind: q.kind,
       blankCount: q.blanks.length,
-      // 只取子題標記原文，敘述（prompt）不會進入學生與公開資料（003 FR-022、research R5）
+      // 只取子題標記原文；敘述另由 studentContent 依階段決定是否提供（004 research R7）
       blankLabels: q.blanks.map((b) => b.label),
     })),
   };
+}
+
+/** 學生端在這個階段能不能看到題目敘述（004 FR-016、FR-018）。 */
+const showsContent = (status: QuizSession['status']): boolean =>
+  status === 'OPEN' || status === 'CLOSED';
+
+/** 學生端的題目敘述：題目敘述或題組說明，與依子題序號排列的子題敘述。 */
+function studentContent(question: QuizSession['questions'][number]): QuestionTexts {
+  return { prompt: question.prompt, blankPrompts: question.blanks.map((b) => b.prompt) };
 }
 
 function toResultView(result: QuestionResult): ResultView {
@@ -66,7 +78,14 @@ export function toStudentView(
   return {
     viewer: 'student',
     ...base(session),
-    questions: base(session).questions.map((q) => ({ ...q, content: null })),
+    questions: base(session).questions.map((summary, i) => {
+      const question = session.questions[i];
+      return {
+        ...summary,
+        content:
+          question !== undefined && showsContent(session.status) ? studentContent(question) : null,
+      };
+    }),
     headcounts: roster.headcounts(session.groups),
     members: roster.membersOf(groupId),
     groupId,
