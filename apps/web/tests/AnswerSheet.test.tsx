@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { StudentIdentity } from '../src/api/identity';
 import { AnswerSheet } from '../src/pages/student/AnswerSheet';
 import * as AnswerDraftStore from '../src/student/answerDraftStore';
-import { studentView } from './viewBuilders';
+import { studentView, withContent } from './viewBuilders';
 
 const identity: StudentIdentity = {
   role: 'student',
@@ -100,5 +100,36 @@ describe('AnswerSheet（003 FR-011～FR-013、Clarifications Q4）', () => {
     expect(within(region).getByRole<HTMLButtonElement>('button', { name: '送出' }).disabled).toBe(
       true,
     );
+  });
+});
+
+describe('AnswerSheet — 004 題目敘述（FR-016、FR-017、SC-007）', () => {
+  it('搶答進行中每題顯示與老師端預覽相同的敘述，子題輸入欄在子題敘述下方', () => {
+    render(
+      <AnswerSheet
+        questions={withContent()}
+        ownSubmissions={[]}
+        status="OPEN"
+        connected
+        identity={identity}
+        onInvalidated={vi.fn()}
+      />,
+    );
+    const first = within(screen.getByRole('region', { name: '第 1 題' }));
+    expect(first.getByRole('heading', { name: /第 1 題/ }).textContent).toContain('題組（2 子題）');
+    const items = first.getAllByRole('listitem');
+    expect(items[0]?.textContent).toContain('電腦的「大腦」英文簡稱是什麼？');
+    expect(items[0]?.querySelector('input')).not.toBeNull();
+    const third = within(screen.getByRole('region', { name: '第 3 題' }));
+    expect(third.getByText('二進位由數字 1 和哪一個數字構成？')).toBeTruthy();
+    expect(
+      within(screen.getByRole('region', { name: '第 4 題' })).getByText('文件未提供題目敘述'),
+    ).toBeTruthy();
+  });
+
+  it('待開始（content 為 null）時只有題號與題型，沒有敘述', () => {
+    renderSheet('READY');
+    expect(screen.queryByText('文件未提供題目敘述')).toBeNull();
+    expect(screen.queryByText('電腦的「大腦」英文簡稱是什麼？')).toBeNull();
   });
 });

@@ -4,12 +4,14 @@ import {
   type OwnSubmission,
   type QuestionSummary,
   type ResultView,
+  type StudentQuestionView,
 } from '@crs/shared';
+import { QuestionContent } from '../../components/QuestionContent';
 import { groupOutcomes, wonCount, type OutcomeKind } from '../../student/groupOutcomes';
 import { blankLabelOf } from '../../student/validateDraft';
 
 export interface StudentResultBoardProps {
-  questions: readonly QuestionSummary[];
+  questions: readonly StudentQuestionView[];
   results: readonly ResultView[];
   ownSubmissions: readonly OwnSubmission[];
   groupId: number;
@@ -75,6 +77,7 @@ export function StudentResultBoard({
       <p className="text-lg font-semibold">本組搶答成功 {wonCount(outcomes)} 題</p>
       {outcomes.map((outcome) => {
         const question = questionByNumber.get(outcome.questionNumber);
+        const content = question?.content ?? null;
         return (
           <section
             key={outcome.questionNumber}
@@ -89,6 +92,20 @@ export function StudentResultBoard({
                 {OUTCOME_LABEL[outcome.kind]}
               </span>
             </div>
+            {question !== undefined && content !== null && (
+              // 已結束時每題結果旁一併顯示題目敘述（004 FR-016、contracts/student-ui.md §5）
+              <QuestionContent
+                number={question.number}
+                kind={question.kind}
+                blankCount={question.blankCount}
+                prompt={content.prompt}
+                blanks={question.blankLabels.map((label, i) => ({
+                  label,
+                  prompt: content.blankPrompts[i] ?? null,
+                }))}
+                hideTitle
+              />
+            )}
             {outcome.winnerGroupId === null || outcome.winnerAnswers === null ? (
               <p className="text-slate-500">無人搶答</p>
             ) : (

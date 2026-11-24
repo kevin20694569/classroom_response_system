@@ -87,7 +87,7 @@ describe('可見性', () => {
     expect(anon.states.map((p) => JSON.stringify(p)).join('')).not.toContain(SECRET_1);
   });
 
-  it('題目敘述只出現在老師端資料，學生與未登入分頁收不到（002 FR-007、SC-009）', async () => {
+  it('題目敘述：「待開始」以前學生與未登入分頁都收不到；開啟後只有已加入的學生收得到（004 FR-018、FR-019、SC-006）', async () => {
     app = await startTestApp();
     const fixture = loadFixture('group-example');
     const prompts = (fixture.sheets[0]?.cells ?? [])
@@ -104,6 +104,15 @@ describe('可見性', () => {
       connectSocket(app.url),
     ]);
     sockets.push(teacherSocket, studentSocket, anonSocket);
+    // 「待開始」：學生與未登入分頁收到的推播與回應都不含敘述
+    const beforeOpen = [
+      (await call(app, 'GET', '/api/session', student)).body,
+      (await call(app, 'GET', '/api/session', null)).body,
+      ...studentSocket.states.map((p) => JSON.stringify(p)),
+      ...anonSocket.states.map((p) => JSON.stringify(p)),
+    ].join('\n');
+    for (const text of prompts) expect(beforeOpen).not.toContain(text);
+    expect(beforeOpen).not.toContain('prompt');
 
     const opened = [teacherSocket, studentSocket, anonSocket].map((s) =>
       s.nextState((p) => p.view.status === 'OPEN', 1000),
@@ -122,17 +131,25 @@ describe('可見性', () => {
     ].join('\n');
     for (const text of prompts) expect(teacherData).toContain(text);
 
-    const others = [
+    // 開啟後（含已結束）已加入的學生收到敘述，與老師端相同的文字
+    const studentAfterOpen = [
       (await call(app, 'GET', '/api/session', student)).body,
+      ...studentSocket.states
+        .filter((p) => p.view.status !== 'READY')
+        .map((p) => JSON.stringify(p)),
+    ].join('\n');
+    for (const text of prompts) expect(studentAfterOpen).toContain(text);
+
+    // 未登入分頁任何時候都收不到
+    const anonymous = [
       (await call(app, 'GET', '/api/session', null)).body,
-      ...studentSocket.states.map((p) => JSON.stringify(p)),
       ...anonSocket.states.map((p) => JSON.stringify(p)),
     ].join('\n');
-    for (const text of prompts) expect(others).not.toContain(text);
-    expect(others).not.toContain('prompt');
+    for (const text of prompts) expect(anonymous).not.toContain(text);
+    expect(anonymous).not.toContain('prompt');
   });
 
-  it('各階段學生收到的資料只含允許的欄位，題目含子題標記、不含敘述（003 FR-021、FR-022、SC-004）', async () => {
+  it('各階段學生收到的資料只含允許的欄位，題目含子題標記；敘述只在開啟後出現（003 FR-021、004 FR-018）', async () => {
     app = await startTestApp();
     const teacher = await teacherWithImport(app, 'group-example', 2);
     const [g1, g2] = await Promise.all([joinStudent(app, 1), joinStudent(app, 2)]);
@@ -206,7 +223,9 @@ describe('可見性', () => {
       ...s2.states.filter((p) => p.view.status !== 'CLOSED').map((p) => JSON.stringify(p)),
     ].join('\n');
     expect(beforeClose).not.toContain(SECRET_1);
-    expect(everything).not.toMatch(/sequence|receivedAt|prompt/);
+    expect(everything).not.toMatch(/sequence|receivedAt/);
+    // 「待開始」時的資料不含敘述（004 FR-018）
+    expect(httpBodies[0]).not.toContain('prompt');
     expect(everything).toContain('（1）');
   });
 });

@@ -1,4 +1,4 @@
-import type { OwnSubmission, QuestionSummary } from '@crs/shared';
+import type { OwnSubmission, StudentQuestionView } from '@crs/shared';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
@@ -15,18 +15,31 @@ const identity: StudentIdentity = {
   nickname: 'Milo',
   expiresAt: '2999-01-01T00:00:00.000Z',
 };
-const single: QuestionSummary = { number: 3, kind: 'single', blankCount: 1, blankLabels: [null] };
-const group: QuestionSummary = {
+const single: StudentQuestionView = {
+  number: 3,
+  kind: 'single',
+  blankCount: 1,
+  blankLabels: [null],
+  content: null,
+};
+const group: StudentQuestionView = {
   number: 1,
   kind: 'group',
   blankCount: 2,
   blankLabels: ['（1）', '（2）'],
+  content: null,
 };
-const unlabeled: QuestionSummary = {
+const unlabeled: StudentQuestionView = {
   number: 2,
   kind: 'group',
   blankCount: 2,
   blankLabels: [null, null],
+  content: null,
+};
+/** 搶答進行中的題組：有題組說明與子題敘述（004 FR-016） */
+const groupWithContent: StudentQuestionView = {
+  ...group,
+  content: { prompt: '閱讀下列敘述\n回答問題', blankPrompts: ['第一小題敘述', null] },
 };
 const OK = {
   submissionId: '0b8d2c33-5f0e-4d0a-9a8e-2f2b1f1d0c11',
@@ -35,7 +48,7 @@ const OK = {
 
 function renderForm(
   overrides: Partial<{
-    question: QuestionSummary;
+    question: StudentQuestionView;
     submitted: OwnSubmission | null;
     enabled: boolean;
     canSubmit: boolean;
@@ -256,5 +269,49 @@ describe('QuestionAnswerForm — 送出（003 FR-014～FR-019）', () => {
     await userEvent.click(submitButton());
     expect(await screen.findByText('系統發生錯誤，請稍後再試。')).toBeTruthy();
     expect(document.body.textContent).not.toContain('/Users/');
+  });
+});
+
+describe('QuestionAnswerForm — 004 題目敘述（FR-016、FR-017）', () => {
+  it('content 有值時顯示題號、題型與敘述（保留換行），每個子題輸入欄在該子題敘述下方', () => {
+    renderForm({ question: groupWithContent });
+    expect(screen.getByRole('heading', { name: /第 1 題/ }).textContent).toContain(
+      '題組（2 子題）',
+    );
+    const prompt = screen.getByText(/閱讀下列敘述/);
+    expect(prompt.textContent).toBe('閱讀下列敘述\n回答問題');
+    expect(prompt.className).toContain('whitespace-pre-wrap');
+    const items = screen.getAllByRole('listitem');
+    expect(items[0]?.textContent).toContain('第一小題敘述');
+    expect(items[0]?.querySelector('input')?.getAttribute('aria-label')).toBe('第 1 題（1）');
+    expect(items[1]?.textContent).toContain('文件未提供題目敘述');
+    expect(items[1]?.querySelector('input')?.getAttribute('aria-label')).toBe('第 1 題（2）');
+  });
+
+  it('content 為 null（待開始）時與 003 相同，沒有任何敘述', () => {
+    renderForm({ question: group, enabled: false });
+    expect(screen.queryByText('文件未提供題目敘述')).toBeNull();
+    expect(screen.queryByRole('heading')).toBeNull();
+    expect(screen.getAllByRole('textbox')).toHaveLength(2);
+  });
+
+  it('已送出時敘述仍顯示，答案在對應子題下方', () => {
+    renderForm({
+      question: groupWithContent,
+      submitted: {
+        questionNumber: 1,
+        answers: [
+          { blankIndex: 1, text: '答案一' },
+          { blankIndex: 2, text: '答案二' },
+        ],
+        submitterNickname: null,
+      },
+    });
+    expect(screen.getByText(/閱讀下列敘述/)).toBeTruthy();
+    const items = screen.getAllByRole('listitem');
+    expect(items[0]?.textContent).toContain('第一小題敘述');
+    expect(items[0]?.textContent).toContain('答案一');
+    expect(items[1]?.textContent).toContain('答案二');
+    expect(screen.queryAllByRole('textbox')).toHaveLength(0);
   });
 });

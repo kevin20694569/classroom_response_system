@@ -66,21 +66,35 @@ describe('VisibilityPolicy', () => {
     expect(view.results[1]?.receivedAt).toBeNull();
   });
 
-  it('學生與公開檢視不含任何題目敘述（SC-009）', () => {
-    for (const status of ['OPEN', 'CLOSED'] as const) {
-      const session = { ...openSession, status };
-      for (const view of [
-        toPublicView(session, roster),
-        toStudentView(session, 1, strategy, roster),
-      ]) {
-        const json = JSON.stringify(view);
-        expect(json).not.toContain('敘述');
-        expect(json).not.toContain('prompt');
-      }
+  it('公開檢視任何階段都不含題目敘述（004 FR-018、FR-019）', () => {
+    for (const status of ['READY', 'OPEN', 'CLOSED'] as const) {
+      const json = JSON.stringify(toPublicView({ ...openSession, status }, roster));
+      expect(json).not.toContain('敘述');
+      expect(json).not.toContain('prompt');
+      expect(json).not.toContain('content');
     }
   });
 
-  it('三種檢視的題目都有子題標記原文，學生資料不含敘述（003 FR-012、FR-022、SC-004）', () => {
+  it('學生檢視在「待開始」以前每題 content 為 null，資料不含任何敘述（004 FR-018）', () => {
+    for (const status of ['NOT_IMPORTED', 'READY'] as const) {
+      const view = toStudentView({ ...openSession, status }, 1, strategy, roster);
+      for (const q of view.questions) expect(q.content).toBeNull();
+      expect(JSON.stringify(view)).not.toContain('敘述');
+    }
+  });
+
+  it('學生檢視在「搶答進行中」「已結束」有題目敘述，與匯入的題目相同（004 FR-016）', () => {
+    for (const status of ['OPEN', 'CLOSED'] as const) {
+      const view = toStudentView({ ...openSession, status }, 1, strategy, roster);
+      expect(view.questions[0]?.content).toEqual({ prompt: '第 1 題的敘述', blankPrompts: [null] });
+      expect(view.questions[2]?.content).toEqual({
+        prompt: openSession.questions[2]?.prompt ?? null,
+        blankPrompts: ['第 3 題子題一的敘述', '第 3 題子題二的敘述'],
+      });
+    }
+  });
+
+  it('三種檢視的題目都有子題標記原文，公開資料不含敘述（003 FR-012、004 FR-019）', () => {
     const closed = { ...openSession, status: 'CLOSED' as const };
     const views = [
       toPublicView(closed, roster),
@@ -94,9 +108,8 @@ describe('VisibilityPolicy', () => {
         ['（1）', '（2）'],
       ]);
     }
-    for (const view of views.slice(0, 2)) {
-      expect(JSON.stringify(view)).not.toContain('敘述');
-    }
+    // 公開檢視不含敘述；學生檢視在已結束時才有敘述（004）
+    expect(JSON.stringify(views[0])).not.toContain('敘述');
   });
 });
 
