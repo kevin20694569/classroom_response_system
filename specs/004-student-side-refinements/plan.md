@@ -150,7 +150,7 @@ apps/server/tests/
 └── integration/{auth,roster,visibility,submissions,export,restart}.test.ts  ＋／～
 
 apps/web/src/
-├── App.tsx                      ～ 不變的路徑；首頁連結不變（暱稱頁在 /student 內）
+├── App.tsx                      ～ 路徑與首頁連結不變（暱稱頁在 /student 內）；學生端改為延遲載入（research R1）
 ├── api/identity.ts              ～ 學生身分含 memberId、nickname
 ├── components/QuestionContent.tsx ＋ 共用題目版面
 ├── components/QuestionPreview.tsx ～ 改用 QuestionContent

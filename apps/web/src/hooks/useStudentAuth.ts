@@ -1,4 +1,4 @@
-import { AuthResponseSchema } from '@crs/shared';
+import { AuthResponseSchema, type StudentJoinRequest } from '@crs/shared';
 import { useCallback, useEffect, useState } from 'react';
 import { apiRequest } from '../api/http';
 import {
@@ -25,7 +25,8 @@ export interface StudentAuth {
   token: string | null;
   /** 身分失效的說明；加入成功或離開組別後清空 */
   notice: string | null;
-  join: (groupId: number) => Promise<void>;
+  /** 加入組別；004 起必須帶已確認的暱稱（research R3） */
+  join: (groupId: number, nickname: string) => Promise<void>;
   leave: () => void;
   onInvalidated: (reason: InvalidationReason) => void;
 }
@@ -66,10 +67,11 @@ export function useStudentAuth(): StudentAuth {
     setState({ identity: null, token: null, notice: INVALIDATION_NOTICE[reason] });
   }, []);
 
-  const join = useCallback(async (groupId: number) => {
+  const join = useCallback(async (groupId: number, nickname: string) => {
+    const body: StudentJoinRequest = { groupId, nickname };
     const result = await apiRequest('/api/auth/student', AuthResponseSchema, {
       method: 'POST',
-      body: { groupId },
+      body,
     });
     if (result.identity.role !== 'student') throw new Error('伺服器回傳的身分不正確。');
     setToken(result.token);

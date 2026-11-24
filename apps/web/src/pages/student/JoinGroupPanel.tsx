@@ -7,11 +7,22 @@ export interface JoinGroupPanelProps {
   groups: readonly Group[];
   /** 身分失效的說明（research R4） */
   notice: string | null;
+  /** 目前已確認的暱稱（004 FR-008） */
+  nickname: string;
+  /** 回到暱稱頁修改暱稱（004 FR-007：只在尚未加入組別時提供） */
+  onEditNickname: () => void;
   onJoin: (groupId: number) => Promise<void>;
 }
 
-/** 等待匯入／選擇組別（003 FR-001、FR-002、contracts/student-ui.md §1）。 */
-export function JoinGroupPanel({ status, groups, notice, onJoin }: JoinGroupPanelProps) {
+/** 等待匯入／選擇組別（003 FR-001、FR-002；004 contracts/student-ui.md §2）。 */
+export function JoinGroupPanel({
+  status,
+  groups,
+  notice,
+  nickname,
+  onEditNickname,
+  onJoin,
+}: JoinGroupPanelProps) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -29,6 +40,17 @@ export function JoinGroupPanel({ status, groups, notice, onJoin }: JoinGroupPane
   return (
     <main className="mx-auto mt-16 max-w-md space-y-4 p-6 text-center">
       <h1 className="text-2xl font-bold">課堂搶答 — 學生端</h1>
+      <p className="flex items-center justify-center gap-3 text-slate-700">
+        <span>暱稱：{nickname}</span>
+        <button
+          type="button"
+          onClick={onEditNickname}
+          disabled={pending}
+          className="text-sm text-indigo-700 underline disabled:opacity-50"
+        >
+          修改暱稱
+        </button>
+      </p>
       {notice !== null && (
         <p role="status" className="rounded-md bg-amber-50 p-3 text-amber-800">
           {notice}

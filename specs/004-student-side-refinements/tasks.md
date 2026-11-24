@@ -78,18 +78,18 @@ US4（送出者，P2）。
 
 ### Tests for User Story 1（先寫，預期失敗）
 
-- [ ] T012 [P] [US1] 新增 `apps/web/tests/randomNickname.test.ts`：連續產生 200 次都符合 `/^[A-Za-z]{3,10}$/`；20 次至少 15 個不同（SC-002）；`randomNickname(exclude)` 不回傳 `exclude`
-- [ ] T013 [P] [US1] 新增 `apps/web/tests/nicknameStore.test.ts`：存取 `sessionStorage['crs.nickname']`；內容不合格（空白、超過 20 字）時 `load()` 回 `null`；`clearIdentity()` 不會清除暱稱（FR-006）
-- [ ] T014 [P] [US1] 新增 `apps/web/tests/NicknamePanel.test.tsx`：預填隨機名字；「換一個」換成不同名字；字數顯示「N / 20」；清空或輸入 21 字按確認顯示「暱稱需為 1～20 字，且不能只有空白。」且不呼叫 `onConfirm`；按 Enter 等同確認；以 `initial` 進入時顯示目前暱稱並有「取消」
-- [ ] T015 [US1] 更新 `apps/web/tests/StudentPage.test.tsx` 與 `apps/web/tests/useStudentAuth.test.tsx`：沒有暱稱時先顯示暱稱頁（直接開 `/student` 也一樣，FR-001）；確認後顯示選組畫面與「暱稱：…」；重新整理保留暱稱；選組時加入請求帶 `nickname`；尚未加入時「修改暱稱」回到暱稱頁、已加入時沒有「修改暱稱」（FR-007）；身分失效、離開組別後暱稱保留；老師身分分頁不顯示暱稱頁（003 FR-008）；既有 003 測試在設好暱稱的前提下照常通過
+- [X] T012 [P] [US1] 新增 `apps/web/tests/randomNickname.test.ts`：連續產生 200 次都符合 `/^[A-Za-z]{3,10}$/`；20 次至少 15 個不同（SC-002）；`randomNickname(exclude)` 不回傳 `exclude`
+- [X] T013 [P] [US1] 新增 `apps/web/tests/nicknameStore.test.ts`：存取 `sessionStorage['crs.nickname']`；內容不合格（空白、超過 20 字）時 `load()` 回 `null`；`clearIdentity()` 不會清除暱稱（FR-006）
+- [X] T014 [P] [US1] 新增 `apps/web/tests/NicknamePanel.test.tsx`：預填隨機名字；「換一個」換成不同名字；字數顯示「N / 20」；清空或輸入 21 字按確認顯示「暱稱需為 1～20 字，且不能只有空白。」且不呼叫 `onConfirm`；按 Enter 等同確認；以 `initial` 進入時顯示目前暱稱並有「取消」
+- [X] T015 [US1] 更新 `apps/web/tests/StudentPage.test.tsx` 與 `apps/web/tests/useStudentAuth.test.tsx`：沒有暱稱時先顯示暱稱頁（直接開 `/student` 也一樣，FR-001）；確認後顯示選組畫面與「暱稱：…」；重新整理保留暱稱；選組時加入請求帶 `nickname`；尚未加入時「修改暱稱」回到暱稱頁、已加入時沒有「修改暱稱」（FR-007）；身分失效、離開組別後暱稱保留；老師身分分頁不顯示暱稱頁（003 FR-008）；既有 003 測試在設好暱稱的前提下照常通過
 
 ### Implementation for User Story 1
 
-- [ ] T016 [P] [US1] 新增 `apps/web/src/student/randomNickname.ts`：只從 `@faker-js/faker/locale/en` 匯入 `faker`（不得匯入整包多語系的 `@faker-js/faker`），`randomNickname(exclude?: string): string` 以 `faker.person.firstName()` 重複產生，直到符合 `/^[A-Za-z]{3,10}$/` 且不等於 `exclude`；不合格的名字直接丟棄重新產生，只有「合格但等於 `exclude`」才計入嘗試次數，達到上限時回傳該合格名字（research R1）
-- [ ] T017 [P] [US1] 新增 `apps/web/src/student/nicknameStore.ts`：`load(): string | null`（以 `NicknameSchema` 驗證）、`save(nickname)`；只保存已確認的暱稱（research R2）
-- [ ] T018 [US1] 新增 `apps/web/src/pages/student/NicknamePanel.tsx`（props：`initial: string | null`、`onConfirm(nickname)`、`onCancel?()`），文字與版面依 contracts/student-ui.md §1；驗證共用 `NicknameSchema`
-- [ ] T019 [US1] 修改 `apps/web/src/hooks/useStudentAuth.ts`：`join(groupId, nickname)` 送出 `{ groupId, nickname }` 並保存回應的 identity（含 memberId、nickname）；修改 `apps/web/src/pages/student/StudentPage.tsx`：非老師分頁且 `nicknameStore.load()` 為 `null` 時顯示 `NicknamePanel`，確認後 `save` 並進入選組；選組畫面可「修改暱稱」（只在未加入時）；修改 `apps/web/src/pages/student/JoinGroupPanel.tsx` 顯示「暱稱：…」與「修改暱稱」按鈕（新增 props `nickname`、`onEditNickname`）；修改 `apps/web/src/pages/student/PhaseBanner.tsx` 顯示「第 N 組・暱稱」
-- [ ] T020 [US1] 品質關卡：`npm run typecheck`、`npm run lint`、`npm run format:check`、`npm test` 全部通過，回報指令與結果；以 3000 以外的埠和暫存 `DATA_DIR` 啟動伺服器，瀏覽器實際操作暱稱頁一次
+- [X] T016 [P] [US1] 新增 `apps/web/src/student/randomNickname.ts`：只從 `@faker-js/faker/locale/en` 匯入 `faker`（不得匯入整包多語系的 `@faker-js/faker`），`randomNickname(exclude?: string): string` 以 `faker.person.firstName()` 重複產生，直到符合 `/^[A-Za-z]{3,10}$/` 且不等於 `exclude`；不合格的名字直接丟棄重新產生，只有「合格但等於 `exclude`」才計入嘗試次數，達到上限時回傳該合格名字（research R1）
+- [X] T017 [P] [US1] 新增 `apps/web/src/student/nicknameStore.ts`：`load(): string | null`（以 `NicknameSchema` 驗證）、`save(nickname)`；只保存已確認的暱稱（research R2）
+- [X] T018 [US1] 新增 `apps/web/src/pages/student/NicknamePanel.tsx`（props：`initial: string | null`、`onConfirm(nickname)`、`onCancel?()`），文字與版面依 contracts/student-ui.md §1；驗證共用 `NicknameSchema`
+- [X] T019 [US1] 修改 `apps/web/src/hooks/useStudentAuth.ts`：`join(groupId, nickname)` 送出 `{ groupId, nickname }` 並保存回應的 identity（含 memberId、nickname）；修改 `apps/web/src/pages/student/StudentPage.tsx`：非老師分頁且 `nicknameStore.load()` 為 `null` 時顯示 `NicknamePanel`，確認後 `save` 並進入選組；選組畫面可「修改暱稱」（只在未加入時）；修改 `apps/web/src/pages/student/JoinGroupPanel.tsx` 顯示「暱稱：…」與「修改暱稱」按鈕（新增 props `nickname`、`onEditNickname`）；修改 `apps/web/src/pages/student/PhaseBanner.tsx` 顯示「第 N 組・暱稱」
+- [X] T020 [US1] 品質關卡：`npm run typecheck`、`npm run lint`、`npm run format:check`、`npm test` 全部通過，回報指令與結果；以 3000 以外的埠和暫存 `DATA_DIR` 啟動伺服器，瀏覽器實際操作暱稱頁一次
 
 **Checkpoint**: 暱稱頁可用；選組加入帶暱稱；003 流程不受影響
 
