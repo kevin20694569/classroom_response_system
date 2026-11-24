@@ -33,12 +33,23 @@ export class FakeSocket {
     });
   }
 
-  connect(): void {
+  /** 前端主動呼叫 socket.connect() 的次數（003 T042：伺服器主動中斷後重新連線）。 */
+  connectCalls = 0;
+
+  /** 前端主動重新連線（對應 Socket.IO 的 socket.connect()）；只記錄次數，不觸發任何事件。 */
+  connect(): this {
+    this.connectCalls += 1;
+    return this;
+  }
+
+  /** 模擬伺服器接受連線。 */
+  serverConnect(): void {
     this.emitServer('connect');
   }
 
-  disconnect(): void {
-    this.emitServer('disconnect');
+  /** 模擬連線中斷；reason 同 Socket.IO（伺服器主動中斷為 'io server disconnect'）。 */
+  serverDisconnect(reason = 'transport close'): void {
+    this.emitServer('disconnect', reason);
   }
 
   connectError(message: string): void {

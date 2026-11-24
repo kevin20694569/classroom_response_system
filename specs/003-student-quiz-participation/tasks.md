@@ -239,3 +239,12 @@ Task: "T027 validateDraft.ts"
 - 每個 Phase 品質關卡通過後 commit
 - 實作若需偏離 plan、contracts 或圖表：需求改變 → 先改 spec 與圖表；只是程式寫錯 → 直接修程式（constitution 開發流程）
 - 避免：模糊任務、多個任務同時修改同一檔案、破壞 story 獨立性的跨 story 相依
+
+---
+
+## Phase 7: Convergence
+
+- [X] T042 [US1] 在 `apps/web/tests/fakeSocket.ts` 讓 `disconnect` 可帶原因（例如 `'io server disconnect'`、`'transport close'`），並記錄前端主動呼叫的 `socket.connect()`（與模擬伺服器觸發 `connect` 事件的方法分開命名）；新增 `apps/web/tests/useSessionState.test.tsx`（預期失敗）：伺服器主動中斷（`'io server disconnect'`）且之前沒有收到 `session:reset` 時，hook 會呼叫 `socket.connect()` 重新連線、`connected` 先變 `false`；收到 `session:reset` 後的中斷不重連（交給新 token 建立新連線）；元件卸載後的中斷不重連 per FR-010、US1/AC4 (contradicts)
+- [X] T043 [US1] 修正 `apps/web/src/hooks/useSessionState.ts`：`disconnect` 事件原因為 `'io server disconnect'`（伺服器關閉時 `realtimeGateway.close()` 以 `disconnectSockets(true)` 中斷，Socket.IO 不會自動重連）且這條連線沒有收到 `session:reset` 時，呼叫 `socket.connect()`，讓伺服器重新啟動後學生與老師分頁不用重新整理就能恢復；讓 T042 的測試通過，`StudentPage.test.tsx` 與老師端既有測試不受影響 per FR-010、US1/AC4、FR-003 (contradicts)
+- [X] T044 更新 `specs/003-student-quiz-participation/quickstart.md` §4 與 `checklists/manual-verification.md` 步驟 1 的準備方式：伺服器會依 001 FR-028 還原 `data/session.json` 的上一個活動，所以步驟 1 改為先以空的暫存資料夾啟動（例如 `DATA_DIR=<空資料夾> npm start`），整份驗證都用這個資料夾，不動 `data/`；步驟 14～15 註明停止與重新啟動時使用同一個 `DATA_DIR` per FR-002、T040 (partial)
+- [X] T045 品質關卡：`npm run typecheck`、`npm run lint`、`npm run format:check`、`npm test`、`npm run build` 全部通過；以 3000 以外的埠和暫存 `DATA_DIR` 啟動伺服器，瀏覽器開 `/student` 後停止並重新啟動伺服器，確認分頁不重新整理就恢復連線；若圖表畫到斷線重連，核對與程式一致 per FR-010、Constitution VI、VII (partial)
