@@ -48,6 +48,7 @@ node "本機伺服器" as Server {
     component "GroupRoster\n組員名冊、30 秒斷線緩衝" as Roster
     component "QuizSessionService\n狀態機" as SessionService #EEEEEE
     component "SubmissionService\n記錄送出者暱稱" as SubmissionService
+    component "exportPlan\n附註行 / 送出者欄寫入暱稱" as ExportPlan
   }
   package "外部服務存取層" {
     component "LocalSessionRepository" as LocalRepo #EEEEEE
@@ -84,6 +85,8 @@ SessionService --> Realtime : 狀態改變
 AnswerSheet --> HttpApi : 送出答案（token 決定組別與送出者）
 HttpApi --> SubmissionService
 SubmissionService --> LocalRepo : 連同送出者一起保存
+TeacherClient --> HttpApi : 匯出結果
+HttpApi --> ExportPlan : 搶答成功答案 + 送出者
 SessionService --> LocalRepo
 Realtime --> Visibility
 Realtime --> SessionHook : StudentView / PublicView

@@ -98,6 +98,12 @@ package "server" {
     +submit(identity, request): Submission（送出者取自 identity.nickname）
   }
   SubmissionService ..> Submission : 保存
+  class exportPlan <<module>> {
+    +planExport(session, results, mode): CellWrite[]
+    -attribution(winner): 〔第 N 組｜暱稱｜時間〕（修改）
+    -resultColumnWrites(): 組別欄、時間欄、送出者欄（新增一欄）
+  }
+  exportPlan ..> Submission : 讀取 submitterNickname
   VisibilityPolicy ..> GroupRoster : 讀取
   VisibilityPolicy ..> StudentView : 產生
   VisibilityPolicy ..> PublicView : 產生
