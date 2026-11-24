@@ -1,5 +1,6 @@
 import path from 'node:path';
 import { z } from 'zod';
+import { SESSION_SECRET_MIN_LENGTH } from './sessionSecret.js';
 
 /**
  * 環境變數設定（constitution 原則 VIII）：啟動時集中讀取並驗證，缺少或格式錯誤就中止啟動。
@@ -7,7 +8,8 @@ import { z } from 'zod';
  */
 const ConfigSchema = z.object({
   TEACHER_PASSWORD: z.string().min(8, '至少需要 8 個字'),
-  SESSION_SECRET: z.string().min(32, '至少需要 32 個字'),
+  // 選填：沒填時由 resolveSessionSecret 自動產生並保存在 DATA_DIR（填了就一律以填的為準）
+  SESSION_SECRET: z.string().min(SESSION_SECRET_MIN_LENGTH, '至少需要 32 個字').optional(),
   GOOGLE_SERVICE_ACCOUNT_KEY_FILE: z
     .string()
     .min(1, '必須填寫')
@@ -18,7 +20,8 @@ const ConfigSchema = z.object({
 
 export interface AppConfig {
   teacherPassword: string;
-  sessionSecret: string;
+  /** 使用者在環境變數指定的密鑰；undefined 代表要自動產生（見 resolveSessionSecret）。 */
+  sessionSecret: string | undefined;
   googleServiceAccountKeyFile: string;
   port: number;
   dataDir: string;

@@ -101,12 +101,12 @@ Google 帳號登入，也不需要設定 OAuth 同意畫面。啟用 Google Shee
 | 變數 | 說明 |
 |------|------|
 | `TEACHER_PASSWORD` | 老師端密碼（至少 8 字） |
-| `SESSION_SECRET` | 簽章 token 用的隨機字串（至少 32 字），可用 `openssl rand -hex 32` 產生 |
+| `SESSION_SECRET` | 選填。簽章 token 用的隨機字串（至少 32 字）；沒填時伺服器自動產生並保存在 `DATA_DIR/session-secret`，重啟後沿用同一把 |
 | `GOOGLE_SERVICE_ACCOUNT_KEY_FILE` | 金鑰 JSON 的完整路徑，例如 `/Users/<你的帳號>/.config/classroom-response-system/service-account.json` |
 | `PORT` | 選填，預設 3000 |
 | `DATA_DIR` | 選填，預設 `./data` |
 
-缺少必填變數或格式錯誤時，伺服器會拒絕啟動並說明是哪一個變數。`.env`、金鑰檔、`data/` 都不納入版控。
+缺少必填變數（`TEACHER_PASSWORD`、`GOOGLE_SERVICE_ACCOUNT_KEY_FILE`）或格式錯誤時，伺服器會拒絕啟動並說明是哪一個變數。`.env`、金鑰檔、`data/` 都不納入版控。
 
 ## 2. 安裝與啟動
 

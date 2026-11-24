@@ -19,6 +19,13 @@ describe('loadConfig', () => {
     expect(loadConfig({ ...valid, PORT: '', DATA_DIR: '' }).port).toBe(3000);
   });
 
+  it('SESSION_SECRET 是選填：沒填或空字串時不報錯，交由自動產生', () => {
+    const { SESSION_SECRET: _omit, ...rest } = valid;
+    expect(loadConfig(rest).sessionSecret).toBeUndefined();
+    expect(loadConfig({ ...rest, SESSION_SECRET: '' }).sessionSecret).toBeUndefined();
+    expect(loadConfig(valid).sessionSecret).toBe('s'.repeat(40));
+  });
+
   it('缺少必填變數時列出變數名稱', () => {
     const { TEACHER_PASSWORD: _omit, ...rest } = valid;
     try {

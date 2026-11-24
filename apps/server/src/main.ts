@@ -2,6 +2,7 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { buildApp } from './app.js';
 import { ConfigError, loadConfig } from './config/config.js';
+import { resolveSessionSecret } from './config/sessionSecret.js';
 import { createLogger } from './infrastructure/logger.js';
 import { LocalSessionRepository } from './infrastructure/persistence/localSessionRepository.js';
 import {
@@ -27,16 +28,19 @@ async function main(): Promise<void> {
     ]);
   }
 
+  const dataDir = path.resolve(repoRoot, config.dataDir);
+  const sessionSecret = await resolveSessionSecret(config.sessionSecret, dataDir);
+
   const logger = createLogger();
   const { app } = await buildApp({
     teacherPassword: config.teacherPassword,
-    sessionSecret: config.sessionSecret,
+    sessionSecret,
     gateway: new GoogleSheetsGateway(config.googleServiceAccountKeyFile, (error, operation) => {
       // 只記錄錯誤類型與狀態碼，不記錄金鑰路徑或回應內容
       const status = (error as { status?: unknown; code?: unknown }).status;
       logger.warn({ operation, status }, 'Google Sheets 存取失敗');
     }),
-    repository: new LocalSessionRepository(path.resolve(repoRoot, config.dataDir)),
+    repository: new LocalSessionRepository(dataDir),
     logger,
     webDistDir: path.join(repoRoot, 'apps/web/dist'),
   });
