@@ -27,7 +27,7 @@ US4（送出者，P2）。
 
 - 沿用 001～003 的約定：TypeScript `strict`、**不得使用 `any`**；共用型別與規則一律從 `@crs/shared` 匯入；
   測試不連線 Google 或真實伺服器（伺服器整合測試以 `apps/server/tests/helpers/testApp.ts` 啟動的本機測試伺服器為準）。
-- 唯一新增的相依套件是 `apps/web` 的 `unique-names-generator`（T002）；不得新增其他套件。
+- 唯一新增的相依套件是 `apps/web` 的 `@faker-js/faker`（T002）；不得新增其他套件。
 - 001～003 既有測試必須持續通過；契約或函式簽章改變時，同步更新既有測試、`viewBuilders`、`testApp` 輔助函式與呼叫端。
   其中 `apps/server/tests/integration/visibility.test.ts` 的「學生收不到題目敘述」改為 004 的規則（READY 以前收不到、
   OPEN／CLOSED 才有），屬於刻意變更（FR-019）。
@@ -44,7 +44,7 @@ US4（送出者，P2）。
 **Purpose**: 確認基準並加入相依套件
 
 - [ ] T001 在 `004-student-side-refinements` branch 執行 `npm run typecheck`、`npm run lint`、`npm run format:check`、`npm test`，確認 001～003 的基準全部通過並回報結果
-- [ ] T002 以 `npm install unique-names-generator -w @crs/web` 加入相依套件（寫入 `apps/web/package.json` 與根目錄 `package-lock.json`）；確認 `npm ci` 與 `npm run build` 仍成功（research R1）
+- [ ] T002 以 `npm install @faker-js/faker -w @crs/web` 加入相依套件（寫入 `apps/web/package.json` 與根目錄 `package-lock.json`）；確認 `npm ci` 與 `npm run build` 仍成功，並回報 web 打包大小的變化（research R1；constitution 禁止已停止維護的套件，不得改用 `unique-names-generator`）
 
 **Checkpoint**: 基準綠燈、相依套件可用
 
@@ -81,11 +81,11 @@ US4（送出者，P2）。
 - [ ] T012 [P] [US1] 新增 `apps/web/tests/randomNickname.test.ts`：連續產生 200 次都符合 `/^[A-Za-z]{3,10}$/`；20 次至少 15 個不同（SC-002）；`randomNickname(exclude)` 不回傳 `exclude`
 - [ ] T013 [P] [US1] 新增 `apps/web/tests/nicknameStore.test.ts`：存取 `sessionStorage['crs.nickname']`；內容不合格（空白、超過 20 字）時 `load()` 回 `null`；`clearIdentity()` 不會清除暱稱（FR-006）
 - [ ] T014 [P] [US1] 新增 `apps/web/tests/NicknamePanel.test.tsx`：預填隨機名字；「換一個」換成不同名字；字數顯示「N / 20」；清空或輸入 21 字按確認顯示「暱稱需為 1～20 字，且不能只有空白。」且不呼叫 `onConfirm`；按 Enter 等同確認；以 `initial` 進入時顯示目前暱稱並有「取消」
-- [ ] T015 [US1] 更新 `apps/web/tests/StudentPage.test.tsx` 與 `apps/web/tests/useStudentAuth.test.tsx`：沒有暱稱時先顯示暱稱頁（直接開 `/student` 也一樣，FR-001）；確認後顯示選組畫面與「暱稱：…」；重新整理保留暱稱；選組時加入請求帶 `nickname`；尚未加入時「修改暱稱」回到暱稱頁、已加入時沒有「修改暱稱」（FR-007）；身分失效、離開組別後暱稱保留；老師身分分頁不顯示暱稱頁（FR-008）；既有 003 測試在設好暱稱的前提下照常通過
+- [ ] T015 [US1] 更新 `apps/web/tests/StudentPage.test.tsx` 與 `apps/web/tests/useStudentAuth.test.tsx`：沒有暱稱時先顯示暱稱頁（直接開 `/student` 也一樣，FR-001）；確認後顯示選組畫面與「暱稱：…」；重新整理保留暱稱；選組時加入請求帶 `nickname`；尚未加入時「修改暱稱」回到暱稱頁、已加入時沒有「修改暱稱」（FR-007）；身分失效、離開組別後暱稱保留；老師身分分頁不顯示暱稱頁（003 FR-008）；既有 003 測試在設好暱稱的前提下照常通過
 
 ### Implementation for User Story 1
 
-- [ ] T016 [P] [US1] 新增 `apps/web/src/student/randomNickname.ts`：從 `unique-names-generator` 的 `names` 字典過濾出只含英文字母、3～10 字的名字（模組載入時過濾一次），`randomNickname(exclude?: string): string` 隨機挑選且不等於 `exclude`（research R1）
+- [ ] T016 [P] [US1] 新增 `apps/web/src/student/randomNickname.ts`：只從 `@faker-js/faker/locale/en` 匯入 `faker`（不得匯入整包多語系的 `@faker-js/faker`），`randomNickname(exclude?: string): string` 以 `faker.person.firstName()` 重複產生，直到符合 `/^[A-Za-z]{3,10}$/` 且不等於 `exclude`；設嘗試次數上限，超過時回傳最後一個合格的名字（research R1）
 - [ ] T017 [P] [US1] 新增 `apps/web/src/student/nicknameStore.ts`：`load(): string | null`（以 `NicknameSchema` 驗證）、`save(nickname)`；只保存已確認的暱稱（research R2）
 - [ ] T018 [US1] 新增 `apps/web/src/pages/student/NicknamePanel.tsx`（props：`initial: string | null`、`onConfirm(nickname)`、`onCancel?()`），文字與版面依 contracts/student-ui.md §1；驗證共用 `NicknameSchema`
 - [ ] T019 [US1] 修改 `apps/web/src/hooks/useStudentAuth.ts`：`join(groupId, nickname)` 送出 `{ groupId, nickname }` 並保存回應的 identity（含 memberId、nickname）；修改 `apps/web/src/pages/student/StudentPage.tsx`：非老師分頁且 `nicknameStore.load()` 為 `null` 時顯示 `NicknamePanel`，確認後 `save` 並進入選組；選組畫面可「修改暱稱」（只在未加入時）；修改 `apps/web/src/pages/student/JoinGroupPanel.tsx` 顯示「暱稱：…」與「修改暱稱」按鈕（新增 props `nickname`、`onEditNickname`）；修改 `apps/web/src/pages/student/PhaseBanner.tsx` 顯示「第 N 組・暱稱」
@@ -104,7 +104,7 @@ US4（送出者，P2）。
 ### Tests for User Story 2（先寫，預期失敗）
 
 - [ ] T021 [P] [US2] 新增 `apps/server/tests/unit/groupRoster.test.ts`（以注入的假計時器）：第一次 `connected` 加入名冊；同一 memberId 兩個連線只算一位；連線數歸零後 29 秒仍在、30 秒移除；30 秒內重連取消移除且 `joinedSeq` 不變；`leave` 立即移除並 `hasLeft` 為真、之後 `connected` 不會再加入；`clear` 清空名冊、已離開集合與計時器；`headcounts(groups)` 對沒有人的組回 0；`membersOf` 依加入先後排序、重複暱稱都列出；名冊改變時 `onChange` 被呼叫（加入、移除、離開、清空各一次，重複連線不呼叫）
-- [ ] T022 [P] [US2] 新增 `apps/server/tests/integration/roster.test.ts`（真實 Socket.IO 用戶端，`connectSocket`）：學生連線後公開分頁與同組分頁收到新的 `headcounts`／`members`（1 秒內，SC-003）；同 token 斷線後立即重連人數不變（SC-004）；斷線 30 秒後移除（以可注入的較短緩衝時間或假計時器，不實際等待 30 秒）；`POST /api/auth/student/leave` 在 READY 回 204 且人數立即減 1、在 OPEN／CLOSED 回 409 `LEAVE_NOT_ALLOWED`、老師 token 回 403、無 token 回 401；離開後同一 token 連線收到 `UNAUTHORIZED`、送出回 401；重新匯入後名冊清空；學生收到的資料不含其他組的 `members`（FR-014、SC-006）
+- [ ] T022 [P] [US2] 新增 `apps/server/tests/integration/roster.test.ts`（真實 Socket.IO 用戶端，`connectSocket`）：學生連線後公開分頁與同組分頁收到新的 `headcounts`／`members`（1 秒內，SC-003）；同 token 連續斷線後立即重連 20 次，每次重連後人數都不變（SC-004）；斷線 30 秒後移除（以可注入的較短緩衝時間或假計時器，不實際等待 30 秒）；`POST /api/auth/student/leave` 在 READY 回 204 且人數立即減 1、在 OPEN／CLOSED 回 409 `LEAVE_NOT_ALLOWED`、老師 token 回 403、無 token 回 401；離開後同一 token 連線收到 `UNAUTHORIZED`、送出回 401；重新匯入後名冊清空；學生收到的資料不含其他組的 `members`（FR-014、SC-006）；加入、離開、斷線逾時移除時寫出的 log 都不含暱稱與 token（以 `testApp` 收集的 `logLines` 檢查，FR-022）
 - [ ] T023 [P] [US2] 更新 `apps/server/tests/integration/restart.test.ts`：伺服器重新啟動後，學生以原 token 重新連線即回到名冊，暱稱與組別相同（FR-013）
 - [ ] T024 [P] [US2] 新增 `apps/web/tests/GroupMemberList.test.tsx`：標題「本組成員（K 人）」、依順序列出暱稱、自己加「（你）」、重複暱稱都列出；更新 `apps/web/tests/JoinGroupPanel.test.tsx`：每組顯示「已加入：K 人」（含 0）
 - [ ] T025 [US2] 更新 `apps/web/tests/StudentPage.test.tsx` 與 `useStudentAuth.test.tsx`：推播的人數與成員更新時畫面同步；作答與結果畫面都有成員名單；「離開組別」先呼叫 `POST /api/auth/student/leave`，204 後才清除身分並回到選組；409 或網路錯誤時留在組內並顯示錯誤（contracts/student-ui.md §3）
@@ -155,7 +155,7 @@ US4（送出者，P2）。
 
 ### Tests for User Story 4（先寫，預期失敗）
 
-- [ ] T041 [P] [US4] 更新 `apps/server/tests/integration/submissions.test.ts`：送出後 `Submission.submitterNickname` 為 token 的暱稱；請求附帶名字欄位回 400（strict）；被拒絕的送出不產生紀錄；重新啟動後送出者仍保留（FR-023）
+- [ ] T041 [P] [US4] 更新 `apps/server/tests/integration/submissions.test.ts`：送出後 `Submission.submitterNickname` 為 token 的暱稱；請求附帶名字欄位回 400（strict）；被拒絕的送出不產生紀錄；重新啟動後送出者仍保留（FR-023）；送出時寫出的 log 不含暱稱（FR-022）
 - [ ] T042 [P] [US4] 更新 `apps/server/tests/integration/visibility.test.ts`：OPEN 時同組 StudentView 的 `ownSubmissions[].submitterNickname` 有值；他組收到的所有資料不含該暱稱；CLOSED 後所有學生的 `results[].submitterNickname` 為搶答成功答案的送出者；老師檢視任何階段都含所有送出者；舊資料（`submitterNickname` 為 null）顯示為 null（FR-024～FR-026、SC-008）
 - [ ] T043 [P] [US4] 更新 `apps/server/tests/unit/exportPlan.test.ts` 與 `apps/server/tests/unit/guidedNotesParser.test.ts`，用兩份版面不同的測試文件（`apps/server/tests/fixtures/guided-notes/` 既有的兩份）：附註行為「〔第 N 組｜暱稱｜時間〕」、送出者為 null 時與 002 相同；組別時間欄模式辨識與新增「搶答送出者」表頭（已有兩欄只缺送出者時只新增一欄）、無人搶答或 null 寫入空字串；重複匯出寫入內容相同；未搶到的送出者不出現在任何寫入（contracts/guided-notes-export.md §4、FR-027）；同步更新 `apps/server/tests/integration/export.test.ts`
 - [ ] T044 [P] [US4] 更新 `apps/web/tests/QuestionAnswerForm.test.tsx`、`StudentResultBoard.test.tsx`、`SubmissionBoard.test.tsx`：已送出顯示「已送出（暱稱）」、null 時「已送出」；結果的搶答成功答案顯示「第 N 組・暱稱」、本組未搶到顯示「本組（暱稱）」；老師送出列表顯示「第 N 組・暱稱」
