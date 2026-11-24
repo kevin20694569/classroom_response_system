@@ -9,8 +9,8 @@
 
 - **Decision**：web 端加入相依套件 `@faker-js/faker`（MIT、持續維護），只匯入英文語系
   （`import { faker } from '@faker-js/faker/locale/en'`），以 `faker.person.firstName()` 產生英文名字；
-  `randomNickname(exclude?)` 重複產生，直到名字「只含英文字母、3～10 字」且不等於 `exclude`（設嘗試次數上限，
-  超過時回傳最後一個合格的名字）；「換一個」時排除目前輸入欄的名字，避免看起來沒有變。
+  `randomNickname(exclude?)` 重複產生，直到名字「只含英文字母、3～10 字」且不等於 `exclude`；不合格的名字直接
+  丟棄重新產生，只有「合格但等於 `exclude`」才計入嘗試次數，達到上限時回傳該合格名字（一定有合格名字可回傳）；「換一個」時排除目前輸入欄的名字，避免看起來沒有變。
 - **Rationale**：使用者要求優先找現成套件，而 constitution「技術限制」規定 MUST NOT 使用已停止維護的套件。
   faker 持續發版（2026 年仍有新版本），英文名字清單足以滿足 SC-002（連按 20 次至少 15 個不同名字）；
   只匯入英文語系，打包時不會帶入其他語系的資料；不需要網路。只在瀏覽器端使用，伺服器不依賴它。

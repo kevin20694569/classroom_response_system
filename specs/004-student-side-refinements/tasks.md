@@ -85,7 +85,7 @@ US4（送出者，P2）。
 
 ### Implementation for User Story 1
 
-- [ ] T016 [P] [US1] 新增 `apps/web/src/student/randomNickname.ts`：只從 `@faker-js/faker/locale/en` 匯入 `faker`（不得匯入整包多語系的 `@faker-js/faker`），`randomNickname(exclude?: string): string` 以 `faker.person.firstName()` 重複產生，直到符合 `/^[A-Za-z]{3,10}$/` 且不等於 `exclude`；設嘗試次數上限，超過時回傳最後一個合格的名字（research R1）
+- [ ] T016 [P] [US1] 新增 `apps/web/src/student/randomNickname.ts`：只從 `@faker-js/faker/locale/en` 匯入 `faker`（不得匯入整包多語系的 `@faker-js/faker`），`randomNickname(exclude?: string): string` 以 `faker.person.firstName()` 重複產生，直到符合 `/^[A-Za-z]{3,10}$/` 且不等於 `exclude`；不合格的名字直接丟棄重新產生，只有「合格但等於 `exclude`」才計入嘗試次數，達到上限時回傳該合格名字（research R1）
 - [ ] T017 [P] [US1] 新增 `apps/web/src/student/nicknameStore.ts`：`load(): string | null`（以 `NicknameSchema` 驗證）、`save(nickname)`；只保存已確認的暱稱（research R2）
 - [ ] T018 [US1] 新增 `apps/web/src/pages/student/NicknamePanel.tsx`（props：`initial: string | null`、`onConfirm(nickname)`、`onCancel?()`），文字與版面依 contracts/student-ui.md §1；驗證共用 `NicknameSchema`
 - [ ] T019 [US1] 修改 `apps/web/src/hooks/useStudentAuth.ts`：`join(groupId, nickname)` 送出 `{ groupId, nickname }` 並保存回應的 identity（含 memberId、nickname）；修改 `apps/web/src/pages/student/StudentPage.tsx`：非老師分頁且 `nicknameStore.load()` 為 `null` 時顯示 `NicknamePanel`，確認後 `save` 並進入選組；選組畫面可「修改暱稱」（只在未加入時）；修改 `apps/web/src/pages/student/JoinGroupPanel.tsx` 顯示「暱稱：…」與「修改暱稱」按鈕（新增 props `nickname`、`onEditNickname`）；修改 `apps/web/src/pages/student/PhaseBanner.tsx` 顯示「第 N 組・暱稱」
