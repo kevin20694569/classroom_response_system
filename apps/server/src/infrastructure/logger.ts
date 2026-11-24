@@ -27,8 +27,13 @@ export const REDACT_PATHS = [
 ];
 
 export function createLogger(options: { level?: string } = {}): Logger {
-  return pino({
-    level: options.level ?? 'info',
-    redact: { paths: REDACT_PATHS, censor: '[已遮蔽]' },
-  });
+  // 明確以 process.stdout 為輸出目的地：pino 預設會直接對 fd 1 寫入 UTF-8 位元組，
+  // Windows 主控台（預設 cp950）會把中文 log 顯示成亂碼；經由 process.stdout 則由 Node 處理編碼。
+  return pino(
+    {
+      level: options.level ?? 'info',
+      redact: { paths: REDACT_PATHS, censor: '[已遮蔽]' },
+    },
+    process.stdout,
+  );
 }
