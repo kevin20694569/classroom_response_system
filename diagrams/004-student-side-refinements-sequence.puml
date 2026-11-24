@@ -1,0 +1,68 @@
+@startuml 004-student-side-refinements-sequence
+' 子功能 004：學生端細修 — 時序圖
+skinparam defaultFontName "PingFang TC"
+title 004 學生端細修 — 時序圖 (Sequence Diagram)
+
+actor "學生 A" as A
+participant "學生 A 分頁\nStudentPage" as PageA
+participant "NicknameStore\n（分頁內）" as Store
+participant "HttpApi" as Http
+participant "GroupRoster" as Roster
+participant "RealtimeGateway\n＋VisibilityPolicy" as RT
+participant "學生 B 分頁\n（第 2 組）" as PageB
+participant "選組中的分頁" as PageC
+actor "老師" as T
+
+== 取得暱稱 ==
+A -> PageA : 首頁按下「學生端」
+PageA -> Store : load()
+Store --> PageA : null（尚未有暱稱）
+PageA -> PageA : randomNickname() 預填「Milo」
+A -> PageA : 「換一個」/ 自行修改 / 確認
+PageA -> PageA : validateNickname()（1～20 字）
+PageA -> Store : save(nickname)
+PageA -> RT : 無 token 連線
+RT --> PageA : PublicView（組別 + 各組人數）
+
+== 加入組別 ==
+A -> PageA : 選擇第 2 組
+PageA -> Http : POST /api/auth/student {groupId: 2, nickname}
+Http -> Http : 驗證暱稱
+Http --> PageA : token（含 memberId、暱稱）
+PageA -> RT : 以 token 重新連線
+RT -> Roster : connected(memberId, 2, nickname)
+Roster -> RT : onChange
+RT --> PageA : StudentView（本組成員、各組人數）
+RT --> PageB : StudentView（第 2 組成員 +1）
+RT --> PageC : PublicView（第 2 組人數 +1）
+
+== 重新整理與斷線 ==
+A -> PageA : 重新整理
+PageA -> RT : 斷線
+RT -> Roster : disconnected(memberId)\n（開始 30 秒緩衝，人數不變）
+PageA -> RT : 以同一 token 重新連線
+RT -> Roster : connected(memberId, ...)\n（取消移除，不重複計算）
+note over PageA, PageC : 關閉分頁超過 30 秒才移除並推播新人數
+
+== 開啟搶答與題目敘述 ==
+T -> RT : 開啟搶答（status = OPEN）
+RT --> PageA : StudentView（questions 含 prompt、blankPrompts）
+RT --> PageC : PublicView（不含題目敘述）
+PageA -> PageA : QuestionContent 顯示題目敘述 +\n每個子題的輸入欄
+note over PageA : READY 以前收到的題目只有題號、\n題型與子題標記（FR-018）
+
+== 待開始時離開組別 ==
+A -> PageA : 離開組別（只限 READY）
+PageA -> RT : 通知離開組別
+RT -> Roster : leave(memberId)（立即移除，不等 30 秒）
+Roster -> RT : onChange
+RT --> PageB : 第 2 組成員 -1
+PageA -> PageA : 回到選組畫面，暱稱保留
+
+== 老師開始新的活動 ==
+T -> RT : 重新匯入
+RT -> Roster : clear()
+RT --> PageA : session:reset
+PageA -> Store : 暱稱保留
+PageA -> PageA : 回到選組畫面（各組 0 人）
+@enduml

@@ -1,0 +1,104 @@
+@startuml 004-student-side-refinements-component
+' 子功能 004：學生端細修（暱稱、組別人數與題目敘述）— 組件圖（灰色為沿用 001～003、本子功能預期不改動的元件）
+skinparam defaultFontName "PingFang TC"
+skinparam componentStyle uml2
+title 004 學生端細修 — 組件圖 (Component Diagram)
+
+actor "學生（各組）" as StudentActor
+actor "老師" as TeacherActor
+
+node "學生分頁（瀏覽器，每組可多個）" as StudentBrowser {
+  package "StudentClient（學生端畫面）" {
+    component "StudentPage\n暱稱 → 選組 → 作答 / 結果" as StudentPage
+    component "NicknamePanel\n預填隨機名字、換一個、確認" as NicknamePanel
+    component "randomNickname\n本機產生短英文名字" as RandomName
+    component "NicknameStore\n暱稱只存在該分頁" as NicknameStore
+    component "JoinGroupPanel\n組別 + 已加入：N 人" as JoinPanel
+    component "GroupMemberList\n本組成員（N 人）" as MemberList
+    component "AnswerSheet / QuestionAnswerForm\n題目敘述 + 子題輸入" as AnswerSheet
+    component "StudentResultBoard\n結果 + 題目敘述" as ResultBoard
+    component "PhaseBanner\n暱稱 / 組別 / 階段" as PhaseBanner
+    component "useStudentAuth\n加入時帶暱稱" as StudentAuth
+    component "useSessionState" as SessionHook #EEEEEE
+  }
+}
+
+node "老師分頁（瀏覽器）" as TeacherBrowser {
+  component "TeacherClient\n（001、002 完成）" as TeacherClient #EEEEEE
+}
+
+package "web/components（老師端、學生端共用畫面元件）" as WebShared {
+  component "QuestionContent\n題目預覽版面" as QuestionContent
+}
+
+package "shared（前後端共用契約）" as Shared {
+  component "Contracts\nStudentJoinRequest（暱稱）/ GroupHeadcount /\nGroupMember / StudentQuestionView" as Contracts
+  component "暱稱規則\nNICKNAME_MAX_LENGTH、暱稱驗證" as NicknameRules
+}
+
+node "本機伺服器" as Server {
+  package "傳輸層" {
+    component "HttpApi\nPOST /api/auth/student（groupId + 暱稱）" as HttpApi
+    component "RealtimeGateway\n連線 / 斷線通知名冊；\n名冊改變時推播" as Realtime
+  }
+  package "存取控制" {
+    component "VisibilityPolicy\n各組人數、本組成員；\nOPEN / CLOSED 才含題目敘述" as Visibility
+  }
+  package "領域層" {
+    component "GroupRoster\n組員名冊、30 秒斷線緩衝" as Roster
+    component "QuizSessionService\n狀態機" as SessionService #EEEEEE
+    component "SubmissionService" as SubmissionService #EEEEEE
+  }
+  package "外部服務存取層" {
+    component "LocalSessionRepository" as LocalRepo #EEEEEE
+  }
+}
+
+StudentActor --> NicknamePanel : 確認暱稱
+StudentActor --> JoinPanel : 選擇組別
+StudentActor --> AnswerSheet : 看題目、作答
+TeacherActor --> TeacherClient : 匯入 / 開啟 / 結束
+
+StudentPage --> NicknamePanel
+StudentPage --> JoinPanel
+StudentPage --> PhaseBanner
+StudentPage --> MemberList
+StudentPage --> AnswerSheet
+StudentPage --> ResultBoard
+StudentPage --> StudentAuth
+StudentPage --> SessionHook
+NicknamePanel --> RandomName
+NicknamePanel --> NicknameStore
+NicknamePanel ..> NicknameRules
+AnswerSheet ..> QuestionContent
+ResultBoard ..> QuestionContent
+TeacherClient ..> QuestionContent : 題目預覽改用共用版面
+
+StudentAuth --> HttpApi : 加入（groupId、暱稱）
+HttpApi ..> NicknameRules : 驗證暱稱
+HttpApi --> Roster : 加入 / 離開
+Realtime --> Roster : 連線 / 斷線
+Roster --> Realtime : 名冊改變
+SessionService --> Roster : 新的活動時清空
+SessionService --> Realtime : 狀態改變
+SubmissionService --> LocalRepo
+SessionService --> LocalRepo
+Realtime --> Visibility
+Realtime --> SessionHook : StudentView / PublicView
+StudentPage ..> Contracts
+HttpApi ..> Contracts
+
+note right of Visibility
+  未選組：只有各組人數；
+  學生：各組人數 + 本組成員暱稱，
+  不含其他組成員（FR-014）；
+  題目敘述只在 OPEN / CLOSED
+  傳給已加入組別的學生（FR-018、FR-019）
+end note
+
+note bottom of Roster
+  名冊只在記憶體；伺服器重新啟動後
+  由學生分頁重新連線時帶回
+  暱稱與組別重建（FR-013）
+end note
+@enduml
