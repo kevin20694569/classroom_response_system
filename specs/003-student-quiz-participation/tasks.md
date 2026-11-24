@@ -155,7 +155,7 @@ US3（檢視結果，P2）。
 - [X] T038 [P] 更新 `README.md`：子功能表 003 改為「已實作」並說明學生端網址 `/student`；第 55 行模擬指令說明改為「模擬學生送出（自動化與壓力測試用；學生畫面見 `/student`）」；人工驗證連結加上 003 quickstart §4；更新 `scripts/simulate-students.ts` 檔頭註解中「學生畫面於子功能 003 提供」的說法為「學生畫面已於子功能 003 提供，本腳本保留作為測試輔助」
 - [X] T039 圖表一致性驗證（原則 VI）：依 `plan.md`「圖表對應」逐一核對 `diagrams/003-student-quiz-participation-{component,class,sequence}.puml` 的元件、類別、欄位、方法與互動順序是否都存在於原始碼且名稱一致；結果寫入 `specs/003-student-quiz-participation/diagram-verification.md`（每列：圖表元素、原始碼位置、是否一致、說明）；若實作偏離圖表，先更新 `.puml` 並執行 `plantuml "./diagrams/*.puml"` 重新產生 PNG
 - [ ] T040 建立 `specs/003-student-quiz-participation/checklists/manual-verification.md`：依 `quickstart.md` §4 的 23 個步驟寫成可勾選的步驟清單（每步「操作 → 預期結果」，通過即勾選，不需截圖、日期或執行者），附「已完成功能與驗證對應」表；由組員以真實 Google Sheets 副本（單題範例、題組範例）親自執行並勾選
-- [ ] T041 最終品質關卡：`npm run typecheck`、`npm run lint`、`npm run format:check`、`npm test`、`npm run build` 全部通過；`npm run build` 後，以 3000 以外的埠和暫存資料夾作為 `DATA_DIR` 啟動伺服器，用瀏覽器開 `/student` 確認可以載入，結束後停止伺服器；回報指令與結果
+- [X] T041 最終品質關卡：`npm run typecheck`、`npm run lint`、`npm run format:check`、`npm test`、`npm run build` 全部通過；`npm run build` 後，以 3000 以外的埠和暫存資料夾作為 `DATA_DIR` 啟動伺服器，用瀏覽器開 `/student` 確認可以載入，結束後停止伺服器；回報指令與結果
 
 ---
 
