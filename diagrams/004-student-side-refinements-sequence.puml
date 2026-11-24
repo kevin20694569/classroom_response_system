@@ -65,11 +65,12 @@ RT --> PageC : 結束後各組 StudentView 的 results\n都含搶答成功答案
 
 == 待開始時離開組別 ==
 A -> PageA : 離開組別（只限 READY）
-PageA -> RT : 通知離開組別
-RT -> Roster : leave(memberId)（立即移除，不等 30 秒）
+PageA -> Http : POST /api/auth/student/leave（token）
+Http -> Roster : leave(memberId)（只在 READY；立即移除，不等 30 秒）
+Http --> PageA : 204
 Roster -> RT : onChange
 RT --> PageB : 第 2 組成員 -1
-PageA -> PageA : 回到選組畫面，暱稱保留
+PageA -> PageA : 清除 token，回到選組畫面，暱稱保留
 
 == 老師開始新的活動 ==
 T -> RT : 重新匯入

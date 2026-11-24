@@ -38,7 +38,7 @@ package "shared（前後端共用契約）" as Shared {
 
 node "本機伺服器" as Server {
   package "傳輸層" {
-    component "HttpApi\nPOST /api/auth/student（groupId + 暱稱）" as HttpApi
+    component "HttpApi\nPOST /api/auth/student（groupId + 暱稱）\nPOST /api/auth/student/leave" as HttpApi
     component "RealtimeGateway\n連線 / 斷線通知名冊；\n名冊改變時推播" as Realtime
   }
   package "存取控制" {
@@ -75,7 +75,7 @@ AnswerSheet ..> QuestionContent
 ResultBoard ..> QuestionContent
 TeacherClient ..> QuestionContent : 題目預覽改用共用版面
 
-StudentAuth --> HttpApi : 加入（groupId、暱稱）
+StudentAuth --> HttpApi : 加入（groupId、暱稱）/ 離開
 HttpApi ..> NicknameRules : 驗證暱稱
 HttpApi --> Roster : 加入 / 離開
 Realtime --> Roster : 連線 / 斷線
