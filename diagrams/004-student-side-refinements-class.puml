@@ -1,0 +1,142 @@
+@startuml 004-student-side-refinements-class
+' 子功能 004：學生端細修 — 類別圖（只列出本子功能新增或修改的成員；其餘沿用 001～003 類別圖）
+skinparam defaultFontName "PingFang TC"
+hide empty members
+title 004 學生端細修 — 類別圖 (Class Diagram)
+
+package "shared（契約）" {
+  class StudentJoinRequest {
+    +groupId: number
+    +nickname: string（新增：去除前後空白後 1～20 字）
+  }
+  class StudentIdentity {
+    +role: student
+    +groupId: number
+    +activityId: string
+    +expiresAt: string
+    +memberId: string（新增：同一分頁固定，重新整理不變）
+    +nickname: string（新增）
+  }
+  class GroupHeadcount {
+    +groupId: number
+    +memberCount: number
+  }
+  class GroupMember {
+    +memberId: string
+    +nickname: string
+  }
+  class StudentQuestionView {
+    +number: number
+    +kind: single | group
+    +blankCount: number
+    +blankLabels: (string | null)[]
+    +prompt: string | null（只在 OPEN / CLOSED）
+    +blankPrompts: (string | null)[] | null（只在 OPEN / CLOSED）
+  }
+  class PublicView {
+    +headcounts: GroupHeadcount[]（新增）
+  }
+  class StudentView {
+    +headcounts: GroupHeadcount[]（新增）
+    +members: GroupMember[]（新增：只有本組，依加入先後）
+    +questions: StudentQuestionView[]（修改）
+  }
+  class NicknameRules <<module>> {
+    +NICKNAME_MAX_LENGTH = 20
+    +normalizeNickname(raw): string
+    +validateNickname(raw): NicknameIssue | null
+  }
+  StudentView *-- "0..*" GroupHeadcount
+  StudentView *-- "0..*" GroupMember
+  StudentView *-- "0..*" StudentQuestionView
+  PublicView *-- "0..*" GroupHeadcount
+  StudentJoinRequest ..> NicknameRules
+}
+
+package "server" {
+  class GroupRoster {
+    -members: Map<memberId, RosterEntry>
+    +join(memberId, groupId, nickname): void
+    +leave(memberId): void
+    +connected(memberId, groupId, nickname): void
+    +disconnected(memberId): void（30 秒後才移除）
+    +headcounts(groupCount): GroupHeadcount[]
+    +membersOf(groupId): GroupMember[]
+    +clear(): void
+    +onChange(listener): void
+  }
+  class RosterEntry {
+    +memberId: string
+    +groupId: number
+    +nickname: string
+    +joinedSeq: number
+    +connections: number
+    +removeTimer: Timer | null
+  }
+  GroupRoster *-- "0..*" RosterEntry
+  class VisibilityPolicy <<module>> {
+    +toPublicView(session, roster): PublicView
+    +toStudentView(session, identity, strategy, roster): StudentView
+  }
+  note right of VisibilityPolicy
+    READY 以前 prompt / blankPrompts = null；
+    members 只放 identity.groupId 的組員
+  end note
+  VisibilityPolicy ..> GroupRoster : 讀取
+  VisibilityPolicy ..> StudentView : 產生
+  VisibilityPolicy ..> PublicView : 產生
+}
+
+package "web（學生端）" {
+  class StudentPage {
+    -nickname: string | null
+    -identity: StudentIdentity | null
+    -view: StudentView | PublicView | null
+    +render(): 暱稱 / 選組 / 作答 / 結果
+  }
+  class NicknamePanel {
+    +initial: string | null
+    +onConfirm(nickname): void
+    -draft: string
+    -issue: NicknameIssue | null
+    +shuffle(): void
+  }
+  class randomNickname <<function>> {
+    +randomNickname(): string（3～10 個英文字母）
+  }
+  class NicknameStore <<module>> {
+    +load(): string | null
+    +save(nickname): void
+  }
+  class JoinGroupPanel {
+    +groups: Group[]
+    +headcounts: GroupHeadcount[]（新增）
+    +nickname: string（新增）
+    +onJoin(groupId): void
+    +onEditNickname(): void（新增）
+  }
+  class GroupMemberList {
+    +members: GroupMember[]
+    +selfMemberId: string
+  }
+  class QuestionContent {
+    +number: number
+    +kind: single | group
+    +prompt: string | null
+    +blanks: {label, prompt}[]
+    +renderBlank?(index): ReactNode（學生端插入輸入欄或結果）
+  }
+  class QuestionAnswerForm {
+    +question: StudentQuestionView（修改）
+  }
+  class useStudentAuth <<hook>> {
+    +join(groupId, nickname): Promise<void>（修改）
+  }
+  StudentPage --> NicknamePanel
+  StudentPage --> JoinGroupPanel
+  StudentPage --> GroupMemberList
+  NicknamePanel ..> randomNickname
+  NicknamePanel ..> NicknameStore
+  QuestionAnswerForm ..> QuestionContent
+}
+@enduml
