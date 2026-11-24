@@ -10,6 +10,7 @@ import { Server, type Socket } from 'socket.io';
 import type { AuthService } from '../../auth/authService.js';
 import type { TabIdentity } from '../../auth/tokens.js';
 import type { DomainLogger } from '../../domain/logger.js';
+import type { GroupRoster, RosterChange } from '../../domain/roster/groupRoster.js';
 import type { QuizSessionService, SessionChange } from '../../domain/session/quizSessionService.js';
 import {
   toPublicView,
@@ -42,6 +43,7 @@ const groupRoom = (groupId: number): string => `group:${groupId}`;
 /**
  * 即時推播（contracts/realtime-events.md）：Socket.IO 只負責伺服器推播。
  * 學生只會加入自己組別的 room，因此伺服器不可能把他組資料送到該分頁（原則 I）。
+ * 004：學生連線、斷線時通知組員名冊；名冊改變時以目前的活動版本推播人數與本組成員（research R6）。
  */
 export class RealtimeGateway {
   readonly io: RealtimeServer;
@@ -50,6 +52,7 @@ export class RealtimeGateway {
     httpServer: HttpServer,
     private readonly service: QuizSessionService,
     private readonly auth: AuthService,
+    private readonly roster: GroupRoster,
     private readonly logger: DomainLogger,
   ) {
     this.io = new Server(httpServer, { serveClient: false });
@@ -77,18 +80,64 @@ export class RealtimeGateway {
     this.service.onChange((changes, version) => {
       this.broadcast(changes, version);
     });
+    this.roster.onChange((change) => {
+      this.onRosterChange(change);
+    });
   }
 
   private onConnection(socket: RealtimeSocket): void {
     const identity = socket.data.identity;
     if (identity === null) void socket.join(PUBLIC_ROOM);
     else if (identity.role === 'teacher') void socket.join(TEACHERS_ROOM);
-    else void socket.join(groupRoom(identity.groupId));
+    else {
+      // 先加入名冊（或取消斷線移除計時），第一份資料就包含自己（004 contracts/realtime-events.md）。
+      // 加入名冊的推播送給其他分頁；這個分頁還沒進組別 room，只會收到下方那一份完整狀態。
+      const { memberId } = identity;
+      this.roster.connected(memberId, identity.groupId, identity.nickname);
+      void socket.join(groupRoom(identity.groupId));
+      socket.on('disconnect', () => {
+        this.roster.disconnected(memberId);
+      });
+    }
     // 連線（含自動重連）後立即送出完整狀態，讓重新整理或斷線的分頁回到正確畫面（FR-014）
     socket.emit(SESSION_STATE, {
-      view: viewFor(identity, this.service),
+      view: viewFor(identity, this.service, this.roster),
       version: this.service.getVersion(),
     });
+  }
+
+  /**
+   * 名冊改變（加入、斷線逾時移除、離開組別、清空）：人數改變所有組都要更新，
+   * 推播公開檢視與每一組的學生檢視；老師端不顯示名冊，不推播。名冊不是活動狀態，版本不遞增。
+   */
+  private onRosterChange(change: RosterChange): void {
+    if (change.kind === 'removed') {
+      this.logger.info(
+        { event: 'student.roster.removed', groupId: change.groupId, memberId: change.memberId },
+        '學生斷線逾時，移出組別名冊',
+      );
+    }
+    if (change.kind === 'left') {
+      // 已離開的組員不應再收到本組資料：中斷它仍連著的連線（前端會改以未登入身分重連）
+      for (const socket of this.io.of('/').sockets.values()) {
+        const identity = socket.data.identity;
+        if (identity?.role === 'student' && identity.memberId === change.memberId) {
+          socket.disconnect(true);
+        }
+      }
+    }
+    const session = this.service.getSession();
+    const ranking = this.service.deps.ranking;
+    const version = this.service.getVersion();
+    this.io
+      .to(PUBLIC_ROOM)
+      .emit(SESSION_STATE, { view: toPublicView(session, this.roster), version });
+    for (const group of session.groups) {
+      this.io.to(groupRoom(group.id)).emit(SESSION_STATE, {
+        view: toStudentView(session, group.id, ranking, this.roster),
+        version,
+      });
+    }
   }
 
   private broadcast(changes: readonly SessionChange[], version: number): void {
@@ -103,17 +152,22 @@ export class RealtimeGateway {
             this.io.to(room).emit(SESSION_RESET, { reason: 'NEW_ACTIVITY' });
             this.io.in(room).disconnectSockets(true);
           }
+          // 各組人數與名冊從 0 重新計算（004 FR-015）
+          this.roster.clear();
           break;
         case 'state':
-          this.io.to(PUBLIC_ROOM).emit(SESSION_STATE, { view: toPublicView(session), version });
+          this.io
+            .to(PUBLIC_ROOM)
+            .emit(SESSION_STATE, { view: toPublicView(session, this.roster), version });
           this.io.to(TEACHERS_ROOM).emit(SESSION_STATE, {
             view: toTeacherView(session, ranking, this.service.deps.now()),
             version,
           });
           for (const group of session.groups) {
-            this.io
-              .to(groupRoom(group.id))
-              .emit(SESSION_STATE, { view: toStudentView(session, group.id, ranking), version });
+            this.io.to(groupRoom(group.id)).emit(SESSION_STATE, {
+              view: toStudentView(session, group.id, ranking, this.roster),
+              version,
+            });
           }
           break;
         case 'submission':
@@ -124,7 +178,7 @@ export class RealtimeGateway {
           });
           if (change.groupId !== undefined) {
             this.io.to(groupRoom(change.groupId)).emit(SESSION_STATE, {
-              view: toStudentView(session, change.groupId, ranking),
+              view: toStudentView(session, change.groupId, ranking, this.roster),
               version,
             });
           }

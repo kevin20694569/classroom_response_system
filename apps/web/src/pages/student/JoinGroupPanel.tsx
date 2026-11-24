@@ -1,10 +1,12 @@
-import type { Group, SessionStatus } from '@crs/shared';
+import type { Group, GroupHeadcount, SessionStatus } from '@crs/shared';
 import { useState } from 'react';
 import { ApiError } from '../../api/http';
 
 export interface JoinGroupPanelProps {
   status: SessionStatus;
   groups: readonly Group[];
+  /** 各組目前的人數（004 FR-009） */
+  headcounts: readonly GroupHeadcount[];
   /** 身分失效的說明（research R4） */
   notice: string | null;
   /** 目前已確認的暱稱（004 FR-008） */
@@ -18,6 +20,7 @@ export interface JoinGroupPanelProps {
 export function JoinGroupPanel({
   status,
   groups,
+  headcounts,
   notice,
   nickname,
   onEditNickname,
@@ -71,13 +74,17 @@ export function JoinGroupPanel({
               <button
                 key={group.id}
                 type="button"
+                aria-label={group.name}
                 disabled={pending}
                 onClick={() => {
                   void join(group.id);
                 }}
                 className="rounded-md bg-indigo-600 px-4 py-3 font-medium text-white disabled:opacity-50"
               >
-                {group.name}
+                <span className="block">{group.name}</span>
+                <span className="block text-sm font-normal text-indigo-100">
+                  已加入：{headcounts.find((h) => h.groupId === group.id)?.memberCount ?? 0} 人
+                </span>
               </button>
             ))}
           </div>

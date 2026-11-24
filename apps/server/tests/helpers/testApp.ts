@@ -28,6 +28,8 @@ export async function startTestApp(
     repository?: SessionRepository;
     gateway?: FakeGuidedNotesGateway;
     beforeListen?: (built: BuiltApp) => void;
+    /** 縮短組員斷線緩衝時間，測試不必實際等待 30 秒（004） */
+    rosterGraceMs?: number;
   } = {},
 ): Promise<TestApp> {
   const gateway = options.gateway ?? new FakeGuidedNotesGateway();
@@ -49,6 +51,7 @@ export async function startTestApp(
     gateway,
     repository,
     logger,
+    ...(options.rosterGraceMs === undefined ? {} : { rosterGraceMs: options.rosterGraceMs }),
   });
   options.beforeListen?.(built);
   await built.app.listen({ port: 0, host: '127.0.0.1' });

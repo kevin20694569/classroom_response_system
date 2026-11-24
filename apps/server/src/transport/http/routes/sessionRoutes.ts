@@ -9,18 +9,23 @@ import {
 import type { FastifyInstance } from 'fastify';
 import { requireTeacher } from '../../../auth/roleGuard.js';
 import { DomainError } from '../../../domain/errors.js';
+import type { RosterReader } from '../../../domain/roster/groupRoster.js';
 import type { QuizSessionService } from '../../../domain/session/quizSessionService.js';
 import { toTeacherView } from '../../../domain/visibility/visibilityPolicy.js';
 import { viewFor } from '../../views.js';
 
 /** 活動狀態與老師專屬操作 API（contracts/http-api.md）。 */
-export function registerSessionRoutes(app: FastifyInstance, service: QuizSessionService): void {
+export function registerSessionRoutes(
+  app: FastifyInstance,
+  service: QuizSessionService,
+  roster: RosterReader,
+): void {
   const teacherView = (): TeacherViewResponse => ({
     view: toTeacherView(service.getSession(), service.deps.ranking, service.deps.now()),
   });
 
   app.get('/api/session', (request, reply) => {
-    const response: SessionViewResponse = { view: viewFor(request.identity, service) };
+    const response: SessionViewResponse = { view: viewFor(request.identity, service, roster) };
     return reply.send(response);
   });
 

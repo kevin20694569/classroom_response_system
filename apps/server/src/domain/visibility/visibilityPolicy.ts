@@ -10,6 +10,7 @@ import type {
   TeacherView,
 } from '@crs/shared';
 import type { RankingStrategy } from '../ranking/rankingStrategy.js';
+import type { RosterReader } from '../roster/groupRoster.js';
 import { deriveResults } from '../ranking/results.js';
 
 /**
@@ -41,11 +42,12 @@ function toResultView(result: QuestionResult): ResultView {
   };
 }
 
-export function toPublicView(session: QuizSession): PublicView {
+/** 公開檢視：各組人數所有人都看得到，但不含任何成員名單（004 FR-009、FR-014）。 */
+export function toPublicView(session: QuizSession, roster: RosterReader): PublicView {
   return {
     viewer: 'public',
     ...base(session),
-    headcounts: session.groups.map((g) => ({ groupId: g.id, memberCount: 0 })),
+    headcounts: roster.headcounts(session.groups),
   };
 }
 
@@ -53,18 +55,20 @@ export function toPublicView(session: QuizSession): PublicView {
  * 學生檢視：活動結束前只拿得到自己組別送出的題號與答案，
  * 拿不到 sequence、順位、是否搶答成功與任何他組資料（這些都會透露他組的作答狀況）。
  * 活動結束後才提供每題結果。
+ * 004：加上各組人數與「只有本組」的成員名單，其他組的成員名單永遠不會傳給學生（FR-014）。
  */
 export function toStudentView(
   session: QuizSession,
   groupId: GroupId,
   strategy: RankingStrategy,
+  roster: RosterReader,
 ): StudentView {
   return {
     viewer: 'student',
     ...base(session),
     questions: base(session).questions.map((q) => ({ ...q, content: null })),
-    headcounts: session.groups.map((g) => ({ groupId: g.id, memberCount: 0 })),
-    members: [],
+    headcounts: roster.headcounts(session.groups),
+    members: roster.membersOf(groupId),
     groupId,
     ownSubmissions: session.submissions
       .filter((s) => s.groupId === groupId)

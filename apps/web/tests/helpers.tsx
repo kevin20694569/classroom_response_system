@@ -8,7 +8,8 @@ export function mockFetch(responses: { status: number; body: unknown }[]) {
     const next = responses.shift();
     if (next === undefined) return Promise.reject(new Error('沒有預設的回應'));
     return Promise.resolve(
-      new Response(JSON.stringify(next.body), {
+      // 204 不能有內容（Response 會拒絕），以 null body 模擬伺服器的空回應
+      new Response(next.status === 204 ? null : JSON.stringify(next.body), {
         status: next.status,
         headers: { 'Content-Type': 'application/json' },
       }),

@@ -12,6 +12,7 @@ describe('JoinGroupPanel（003 FR-001、FR-002）', () => {
       <JoinGroupPanel
         status={view.status}
         groups={view.groups}
+        headcounts={view.headcounts}
         notice={null}
         nickname="Milo"
         onEditNickname={vi.fn()}
@@ -30,6 +31,7 @@ describe('JoinGroupPanel（003 FR-001、FR-002）', () => {
       <JoinGroupPanel
         status={view.status}
         groups={view.groups}
+        headcounts={view.headcounts}
         notice={null}
         nickname="Milo"
         onEditNickname={vi.fn()}
@@ -38,8 +40,8 @@ describe('JoinGroupPanel（003 FR-001、FR-002）', () => {
     );
     const names = screen
       .getAllByRole('button')
-      .map((b) => b.textContent)
-      .filter((name) => name !== '修改暱稱');
+      .map((b) => b.getAttribute('aria-label'))
+      .filter((name) => name !== null);
     expect(names).toEqual(['第 1 組', '第 2 組', '第 3 組']);
     await userEvent.click(screen.getByRole('button', { name: '第 2 組' }));
     expect(onJoin).toHaveBeenCalledWith(2);
@@ -58,6 +60,7 @@ describe('JoinGroupPanel（003 FR-001、FR-002）', () => {
       <JoinGroupPanel
         status={view.status}
         groups={view.groups}
+        headcounts={view.headcounts}
         notice={null}
         nickname="Milo"
         onEditNickname={vi.fn()}
@@ -80,6 +83,7 @@ describe('JoinGroupPanel（003 FR-001、FR-002）', () => {
       <JoinGroupPanel
         status={view.status}
         groups={view.groups}
+        headcounts={view.headcounts}
         notice="老師已開始新的活動，請重新選擇組別。"
         nickname="Milo"
         onEditNickname={vi.fn()}
@@ -98,6 +102,7 @@ describe('JoinGroupPanel（003 FR-001、FR-002）', () => {
       <JoinGroupPanel
         status={view.status}
         groups={view.groups}
+        headcounts={view.headcounts}
         notice={null}
         nickname="小明"
         onEditNickname={onEditNickname}
@@ -107,5 +112,29 @@ describe('JoinGroupPanel（003 FR-001、FR-002）', () => {
     expect(screen.getByText('暱稱：小明')).toBeTruthy();
     await userEvent.click(screen.getByRole('button', { name: '修改暱稱' }));
     expect(onEditNickname).toHaveBeenCalledOnce();
+  });
+
+  it('每個組別顯示「已加入：K 人」，沒有人時顯示 0（004 FR-009）', () => {
+    const view = publicView({
+      headcounts: [
+        { groupId: 1, memberCount: 2 },
+        { groupId: 2, memberCount: 0 },
+        { groupId: 3, memberCount: 1 },
+      ],
+    });
+    render(
+      <JoinGroupPanel
+        status={view.status}
+        groups={view.groups}
+        headcounts={view.headcounts}
+        notice={null}
+        nickname="Milo"
+        onEditNickname={vi.fn()}
+        onJoin={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole('button', { name: '第 1 組' }).textContent).toContain('已加入：2 人');
+    expect(screen.getByRole('button', { name: '第 2 組' }).textContent).toContain('已加入：0 人');
+    expect(screen.getByRole('button', { name: '第 3 組' }).textContent).toContain('已加入：1 人');
   });
 });

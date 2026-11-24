@@ -1,9 +1,11 @@
 import { useState } from 'react';
+import { ApiError } from '../../api/http';
 import { useSessionState } from '../../hooks/useSessionState';
 import { useStudentAuth } from '../../hooks/useStudentAuth';
 import * as AnswerDraftStore from '../../student/answerDraftStore';
 import * as NicknameStore from '../../student/nicknameStore';
 import { AnswerSheet } from './AnswerSheet';
+import { GroupMemberList } from './GroupMemberList';
 import { JoinGroupPanel } from './JoinGroupPanel';
 import { NicknamePanel } from './NicknamePanel';
 import { PhaseBanner } from './PhaseBanner';
@@ -20,6 +22,21 @@ export function StudentPage() {
   const { view, connected } = useSessionState(auth.token, auth.onInvalidated);
   const [nickname, setNickname] = useState<string | null>(NicknameStore.load);
   const [editingNickname, setEditingNickname] = useState(false);
+  const [leaveError, setLeaveError] = useState<string | null>(null);
+
+  /** 離開組別失敗時留在組內並說明原因（004 contracts/student-ui.md §3）。 */
+  async function leaveGroup() {
+    setLeaveError(null);
+    try {
+      await auth.leave();
+    } catch (error) {
+      setLeaveError(
+        error instanceof ApiError && error.code !== 'NETWORK_ERROR'
+          ? error.message
+          : '離開組別失敗，請確認連線後再試一次。',
+      );
+    }
+  }
 
   function confirmNickname(next: string) {
     NicknameStore.save(next);
@@ -62,6 +79,7 @@ export function StudentPage() {
       <JoinGroupPanel
         status={view.status}
         groups={view.groups}
+        headcounts={view.headcounts}
         notice={auth.notice}
         nickname={nickname}
         onEditNickname={() => {
@@ -84,8 +102,16 @@ export function StudentPage() {
         nickname={identity.nickname}
         status={view.status}
         connected={connected}
-        onLeave={auth.leave}
+        onLeave={() => {
+          void leaveGroup();
+        }}
       />
+      {leaveError !== null && (
+        <p role="alert" className="rounded-md bg-red-50 p-3 text-red-800">
+          {leaveError}
+        </p>
+      )}
+      <GroupMemberList members={view.members} selfMemberId={identity.memberId} />
       {view.status === 'CLOSED' ? (
         <StudentResultBoard
           questions={view.questions}
