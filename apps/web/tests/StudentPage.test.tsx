@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { getToken, setStudentIdentity, setToken } from '../src/api/identity';
 import { StudentPage } from '../src/pages/student/StudentPage';
 import { currentSocket, resetSockets } from './fakeSocket';
-import { mockFetch } from './helpers';
+import { bodyOf, mockFetch } from './helpers';
 import { publicView, studentView, teacherView } from './viewBuilders';
 
 vi.mock('../src/api/socket', async () => ({
@@ -29,6 +29,8 @@ function joinedTab() {
 
 beforeEach(() => {
   resetSockets();
+  // 003 的情境都在「已確認暱稱」的前提下進行；暱稱頁另見下方 004 的測試
+  sessionStorage.setItem('crs.nickname', 'Milo');
 });
 
 describe('StudentPage — US1 選組加入與階段同步', () => {
@@ -192,5 +194,99 @@ describe('StudentPage — US3 結果檢視', () => {
     currentSocket().sendState(closedView());
     expect(screen.getByText('本組搶答成功 1 題')).toBeTruthy();
     expect(screen.queryByRole('button', { name: '離開組別' })).toBeNull();
+  });
+});
+
+describe('StudentPage — 004 US1 暱稱', () => {
+  beforeEach(() => {
+    sessionStorage.removeItem('crs.nickname');
+  });
+
+  it('還沒有暱稱時先顯示暱稱頁（直接開啟 /student 也一樣，FR-001）', () => {
+    render(<StudentPage />);
+    currentSocket().sendState(publicView());
+    expect(screen.getByRole('heading', { name: '輸入你的暱稱' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: '第 1 組' })).toBeNull();
+  });
+
+  it('確認暱稱後進入選組畫面並顯示暱稱；重新整理後暱稱保留', async () => {
+    const first = render(<StudentPage />);
+    currentSocket().sendState(publicView());
+    const input = screen.getByLabelText<HTMLInputElement>('暱稱');
+    await userEvent.clear(input);
+    await userEvent.type(input, '小明');
+    await userEvent.click(screen.getByRole('button', { name: '確認' }));
+    expect(screen.getByText('暱稱：小明')).toBeTruthy();
+    expect(screen.getByRole('button', { name: '第 1 組' })).toBeTruthy();
+    first.unmount();
+
+    resetSockets();
+    render(<StudentPage />);
+    currentSocket().sendState(publicView());
+    expect(screen.getByText('暱稱：小明')).toBeTruthy();
+    expect(screen.queryByRole('heading', { name: '輸入你的暱稱' })).toBeNull();
+  });
+
+  it('老師尚未匯入時也先完成暱稱，再顯示等待訊息與暱稱', async () => {
+    render(<StudentPage />);
+    currentSocket().sendState(publicView({ status: 'NOT_IMPORTED' }));
+    await userEvent.click(screen.getByRole('button', { name: '確認' }));
+    expect(screen.getByText('老師尚未匯入題目，請稍候')).toBeTruthy();
+    expect(screen.getByText(/^暱稱：[A-Za-z]{3,10}$/)).toBeTruthy();
+  });
+
+  it('選組時加入請求帶目前的暱稱', async () => {
+    sessionStorage.setItem('crs.nickname', '小明');
+    const { calls } = mockFetch([
+      { status: 200, body: { token: 'token-2', identity: { ...identity, nickname: '小明' } } },
+    ]);
+    render(<StudentPage />);
+    currentSocket().sendState(publicView());
+    await userEvent.click(screen.getByRole('button', { name: '第 2 組' }));
+    expect(bodyOf(calls[0]?.init)).toEqual({ groupId: 2, nickname: '小明' });
+  });
+
+  it('尚未加入時可「修改暱稱」回到暱稱頁，取消則回到選組（FR-007）', async () => {
+    sessionStorage.setItem('crs.nickname', '小明');
+    render(<StudentPage />);
+    currentSocket().sendState(publicView());
+    await userEvent.click(screen.getByRole('button', { name: '修改暱稱' }));
+    expect(screen.getByLabelText<HTMLInputElement>('暱稱').value).toBe('小明');
+    await userEvent.click(screen.getByRole('button', { name: '取消' }));
+    expect(screen.getByText('暱稱：小明')).toBeTruthy();
+
+    await userEvent.click(screen.getByRole('button', { name: '修改暱稱' }));
+    const input = screen.getByLabelText<HTMLInputElement>('暱稱');
+    await userEvent.clear(input);
+    await userEvent.type(input, 'Leo');
+    await userEvent.click(screen.getByRole('button', { name: '確認' }));
+    expect(screen.getByText('暱稱：Leo')).toBeTruthy();
+  });
+
+  it('已加入組別時頂端列顯示暱稱，沒有「修改暱稱」（FR-007、FR-008）', () => {
+    sessionStorage.setItem('crs.nickname', 'Milo');
+    joinedTab();
+    render(<StudentPage />);
+    currentSocket().sendState(studentView());
+    expect(screen.getByText('・Milo')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: '修改暱稱' })).toBeNull();
+  });
+
+  it('身分失效或離開組別後暱稱保留（FR-006）', () => {
+    sessionStorage.setItem('crs.nickname', 'Milo');
+    joinedTab();
+    render(<StudentPage />);
+    currentSocket().sendState(studentView({ status: 'READY' }));
+    currentSocket().reset();
+    currentSocket().sendState(publicView());
+    expect(screen.getByText('暱稱：Milo')).toBeTruthy();
+  });
+
+  it('老師身分分頁不顯示暱稱頁（003 FR-008）', () => {
+    setToken('teacher-token');
+    render(<StudentPage />);
+    currentSocket().sendState(teacherView());
+    expect(screen.queryByRole('heading', { name: '輸入你的暱稱' })).toBeNull();
+    expect(screen.getByText('這個分頁目前是老師身分，請另開新分頁以學生身分加入。')).toBeTruthy();
   });
 });

@@ -2,7 +2,7 @@ import { act, renderHook } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { getStudentIdentity, getToken, setStudentIdentity, setToken } from '../src/api/identity';
 import { INVALIDATION_NOTICE, useStudentAuth } from '../src/hooks/useStudentAuth';
-import { mockFetch } from './helpers';
+import { bodyOf, mockFetch } from './helpers';
 
 const ACTIVITY = '7c1d7a8e-6f3b-4c2a-9a63-6b2b1f1d0c11';
 const identity = (expiresAt: string) => ({
@@ -25,8 +25,10 @@ describe('useStudentAuth（003 US1、research R2、R4）', () => {
       { status: 200, body: { token: 'token-2', identity: identity(FUTURE) } },
     ]);
     const { result } = renderHook(() => useStudentAuth());
-    await act(() => result.current.join(2));
+    await act(() => result.current.join(2, 'Milo'));
     expect(calls[0]?.url).toBe('/api/auth/student');
+    // 004：加入請求帶暱稱（research R3）
+    expect(bodyOf(calls[0]?.init)).toEqual({ groupId: 2, nickname: 'Milo' });
     expect(result.current.token).toBe('token-2');
     expect(result.current.identity?.groupId).toBe(2);
     expect(getToken()).toBe('token-2');
@@ -38,7 +40,7 @@ describe('useStudentAuth（003 US1、research R2、R4）', () => {
     async (code) => {
       mockFetch([{ status: 400, body: { error: { code, message: `伺服器說：${code}` } } }]);
       const { result } = renderHook(() => useStudentAuth());
-      await expect(act(() => result.current.join(9))).rejects.toThrow(`伺服器說：${code}`);
+      await expect(act(() => result.current.join(9, 'Milo'))).rejects.toThrow(`伺服器說：${code}`);
       expect(result.current.token).toBeNull();
       expect(getToken()).toBeNull();
     },
