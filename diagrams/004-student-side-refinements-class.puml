@@ -9,7 +9,7 @@ package "shared（契約）" {
     +groupId: number
     +nickname: string（新增：去除前後空白後 1～20 字）
   }
-  class StudentIdentity {
+  class StudentIdentity <<token 與 IdentitySummary>> {
     +role: student
     +groupId: number
     +activityId: string
@@ -30,9 +30,13 @@ package "shared（契約）" {
     +kind: single | group
     +blankCount: number
     +blankLabels: (string | null)[]
-    +prompt: string | null（只在 OPEN / CLOSED）
-    +blankPrompts: (string | null)[] | null（只在 OPEN / CLOSED）
+    +content: QuestionTexts | null（只在 OPEN / CLOSED）
   }
+  class QuestionTexts {
+    +prompt: string | null（null 代表文件沒有敘述）
+    +blankPrompts: (string | null)[]
+  }
+  StudentQuestionView *-- "0..1" QuestionTexts
   class Submission {
     +submitterNickname: string | null（新增：舊資料為 null）
   }
@@ -67,10 +71,11 @@ package "shared（契約）" {
 package "server" {
   class GroupRoster {
     -members: Map<memberId, RosterEntry>
-    +join(memberId, groupId, nickname): void
-    +leave(memberId): void
+    -leftMemberIds: Set<memberId>
+    +leave(memberId): void（只在 READY，由 HttpApi 呼叫）
+    +hasLeft(memberId): boolean
     +connected(memberId, groupId, nickname): void
-    +disconnected(memberId): void（30 秒後才移除）
+    +disconnected(memberId): void（連線歸零 30 秒後才移除）
     +headcounts(groupCount): GroupHeadcount[]
     +membersOf(groupId): GroupMember[]
     +clear(): void
@@ -90,7 +95,7 @@ package "server" {
     +toStudentView(session, identity, strategy, roster): StudentView
   }
   note right of VisibilityPolicy
-    READY 以前 prompt / blankPrompts = null；
+    READY 以前 content = null；
     members 只放 identity.groupId 的組員；
     OPEN 時只給本組送出者，CLOSED 才給搶答成功答案的送出者
   end note
@@ -159,6 +164,7 @@ package "web（學生端）" {
   }
   class useStudentAuth <<hook>> {
     +join(groupId, nickname): Promise<void>（修改）
+    +leave(): Promise<void>（修改：先呼叫離開 API）
   }
   StudentPage --> NicknamePanel
   StudentPage --> JoinGroupPanel
