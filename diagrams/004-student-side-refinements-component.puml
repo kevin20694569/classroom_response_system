@@ -24,7 +24,7 @@ node "學生分頁（瀏覽器，每組可多個）" as StudentBrowser {
 }
 
 node "老師分頁（瀏覽器）" as TeacherBrowser {
-  component "TeacherClient\n（001、002 完成）" as TeacherClient #EEEEEE
+  component "TeacherClient\nSubmissionBoard 顯示送出者" as TeacherClient
 }
 
 package "web/components（老師端、學生端共用畫面元件）" as WebShared {
@@ -32,7 +32,7 @@ package "web/components（老師端、學生端共用畫面元件）" as WebShar
 }
 
 package "shared（前後端共用契約）" as Shared {
-  component "Contracts\nStudentJoinRequest（暱稱）/ GroupHeadcount /\nGroupMember / StudentQuestionView" as Contracts
+  component "Contracts\nStudentJoinRequest（暱稱）/ GroupHeadcount /\nGroupMember / StudentQuestionView /\nsubmitterNickname" as Contracts
   component "暱稱規則\nNICKNAME_MAX_LENGTH、暱稱驗證" as NicknameRules
 }
 
@@ -47,7 +47,7 @@ node "本機伺服器" as Server {
   package "領域層" {
     component "GroupRoster\n組員名冊、30 秒斷線緩衝" as Roster
     component "QuizSessionService\n狀態機" as SessionService #EEEEEE
-    component "SubmissionService" as SubmissionService #EEEEEE
+    component "SubmissionService\n記錄送出者暱稱" as SubmissionService
   }
   package "外部服務存取層" {
     component "LocalSessionRepository" as LocalRepo #EEEEEE
@@ -81,7 +81,9 @@ Realtime --> Roster : 連線 / 斷線
 Roster --> Realtime : 名冊改變
 SessionService --> Roster : 新的活動時清空
 SessionService --> Realtime : 狀態改變
-SubmissionService --> LocalRepo
+AnswerSheet --> HttpApi : 送出答案（token 決定組別與送出者）
+HttpApi --> SubmissionService
+SubmissionService --> LocalRepo : 連同送出者一起保存
 SessionService --> LocalRepo
 Realtime --> Visibility
 Realtime --> SessionHook : StudentView / PublicView
@@ -93,7 +95,9 @@ note right of Visibility
   學生：各組人數 + 本組成員暱稱，
   不含其他組成員（FR-014）；
   題目敘述只在 OPEN / CLOSED
-  傳給已加入組別的學生（FR-018、FR-019）
+  傳給已加入組別的學生（FR-018、FR-019）；
+  送出者：本組隨時可見，其他組
+  只在 CLOSED 的搶答成功答案（FR-024、FR-025）
 end note
 
 note bottom of Roster
