@@ -114,9 +114,13 @@ export async function teacherWithImport(
   return token;
 }
 
-/** 學生以 API 加入組別，回傳 token。 */
-export async function joinStudent(app: TestApp, groupId: number): Promise<string> {
-  const res = await call(app, 'POST', '/api/auth/student', null, { groupId });
+/** 學生以 API 加入組別（004：加入時帶暱稱），回傳 token。 */
+export async function joinStudent(
+  app: TestApp,
+  groupId: number,
+  nickname = '測試',
+): Promise<string> {
+  const res = await call(app, 'POST', '/api/auth/student', null, { groupId, nickname });
   if (res.statusCode !== 200) throw new Error(`加入失敗：${res.body}`);
   return res.json<{ token: string }>().token;
 }
@@ -135,13 +139,19 @@ export function submitAnswers(
 }
 
 /** 直接簽發學生 token（用於學生 API 尚未存在的階段或測試舊活動 token）。 */
-export function forgeStudentToken(groupId: number, activityId: string = randomUUID()): string {
+export function forgeStudentToken(
+  groupId: number,
+  activityId: string = randomUUID(),
+  member: { memberId?: string; nickname?: string } = {},
+): string {
   const now = new Date();
   return signToken(
     {
       role: 'student',
       groupId,
       activityId,
+      memberId: member.memberId ?? randomUUID(),
+      nickname: member.nickname ?? '測試',
       issuedAt: now.toISOString(),
       expiresAt: new Date(now.getTime() + TOKEN_TTL_MS).toISOString(),
     },

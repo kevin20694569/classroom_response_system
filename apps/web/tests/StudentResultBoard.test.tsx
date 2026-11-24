@@ -13,6 +13,7 @@ const results: ResultView[] = [
       { blankIndex: 1, text: 'CPU' },
       { blankIndex: 2, text: '作業系統' },
     ],
+    submitterNickname: null,
   },
   {
     questionNumber: 2,
@@ -21,13 +22,23 @@ const results: ResultView[] = [
       { blankIndex: 1, text: '演算法' },
       { blankIndex: 2, text: '流程圖' },
     ],
+    submitterNickname: null,
   },
-  { questionNumber: 3, winnerGroupId: 1, answers: [{ blankIndex: 1, text: '0' }] },
-  { questionNumber: 4, winnerGroupId: null, answers: null },
+  {
+    questionNumber: 3,
+    winnerGroupId: 1,
+    answers: [{ blankIndex: 1, text: '0' }],
+    submitterNickname: null,
+  },
+  { questionNumber: 4, winnerGroupId: null, answers: null, submitterNickname: null },
 ];
 const own: OwnSubmission[] = [
-  { questionNumber: 1, answers: results[0]?.answers ?? [] },
-  { questionNumber: 3, answers: [{ blankIndex: 1, text: '本組沒搶到的答案' }] },
+  { questionNumber: 1, answers: results[0]?.answers ?? [], submitterNickname: null },
+  {
+    questionNumber: 3,
+    answers: [{ blankIndex: 1, text: '本組沒搶到的答案' }],
+    submitterNickname: null,
+  },
 ];
 
 function renderBoard(showUnsentNotice = false) {

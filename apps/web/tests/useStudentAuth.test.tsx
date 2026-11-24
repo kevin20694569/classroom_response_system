@@ -9,6 +9,8 @@ const identity = (expiresAt: string) => ({
   role: 'student' as const,
   groupId: 2,
   activityId: ACTIVITY,
+  memberId: '3f0b2c1e-1111-4222-8333-444455556666',
+  nickname: 'Milo',
   expiresAt,
 });
 const FUTURE = '2999-01-01T00:00:00.000Z';

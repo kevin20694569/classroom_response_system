@@ -2,8 +2,13 @@ import { describe, expect, it } from 'vitest';
 import {
   BlankAnswerSchema,
   GroupIdSchema,
+  NICKNAME_MAX_LENGTH,
+  NicknameSchema,
   PersistedStateSchema,
   PublicViewSchema,
+  StudentJoinRequestSchema,
+  StudentQuestionViewSchema,
+  SubmissionSchema,
   QuestionSchema,
   QuestionSummarySchema,
   StudentViewSchema,
@@ -168,7 +173,15 @@ describe('002：題目敘述與老師檢視（research R2、R3）', () => {
       activityId: session001.activityId,
       source: session001.source,
       submissions: [],
-      results: [{ questionNumber: 1, winnerGroupId: null, answers: null, receivedAt: null }],
+      results: [
+        {
+          questionNumber: 1,
+          winnerGroupId: null,
+          answers: null,
+          receivedAt: null,
+          submitterNickname: null,
+        },
+      ],
       openedAt: '2026-11-23T02:00:00.000Z',
       closedAt: '2026-11-23T02:05:00.000Z',
       lastExport: null,
@@ -207,7 +220,11 @@ describe('QuestionSummary.blankLabels（003 FR-012、data-model §1）', () => {
   });
 
   it('學生、公開、老師檢視的題目都接受 blankLabels', () => {
-    const base = { status: 'READY' as const, groups: [{ id: 1, name: '第 1 組' }] };
+    const base = {
+      status: 'READY' as const,
+      groups: [{ id: 1, name: '第 1 組' }],
+      headcounts: [{ groupId: 1, memberCount: 0 }],
+    };
     const question = { ...group, blankLabels: ['（1）', '（2）'] };
     expect(
       PublicViewSchema.safeParse({ viewer: 'public', ...base, questions: [question] }).success,
@@ -216,7 +233,8 @@ describe('QuestionSummary.blankLabels（003 FR-012、data-model §1）', () => {
       StudentViewSchema.safeParse({
         viewer: 'student',
         ...base,
-        questions: [question],
+        questions: [{ ...question, content: null }],
+        members: [],
         groupId: 1,
         ownSubmissions: [],
         results: null,
@@ -229,5 +247,125 @@ describe('QuestionSummary.blankLabels（003 FR-012、data-model §1）', () => {
         questions: [{ ...group, blankLabels: [null] }],
       }).success,
     ).toBe(false);
+  });
+});
+
+describe('004：暱稱（FR-004、data-model §1）', () => {
+  it('去除前後空白後保存', () => {
+    expect(NicknameSchema.parse('  Milo  ')).toBe('Milo');
+  });
+
+  it('1 字與 20 字通過，21 字失敗', () => {
+    expect(NicknameSchema.safeParse('A').success).toBe(true);
+    expect(NicknameSchema.safeParse('字'.repeat(NICKNAME_MAX_LENGTH)).success).toBe(true);
+    expect(NicknameSchema.safeParse('字'.repeat(NICKNAME_MAX_LENGTH + 1)).success).toBe(false);
+  });
+
+  it('空字串與只有空白失敗', () => {
+    expect(NicknameSchema.safeParse('').success).toBe(false);
+    expect(NicknameSchema.safeParse('   ').success).toBe(false);
+  });
+
+  it('含換行或 tab 失敗', () => {
+    expect(NicknameSchema.safeParse('Mi\nlo').success).toBe(false);
+    expect(NicknameSchema.safeParse('Mi\tlo').success).toBe(false);
+  });
+
+  it('表情符號以實際字元計算：20 個表情符號通過', () => {
+    expect(NicknameSchema.safeParse('😀'.repeat(20)).success).toBe(true);
+    expect(NicknameSchema.safeParse('😀'.repeat(21)).success).toBe(false);
+  });
+
+  it('失敗訊息為暱稱規則', () => {
+    const result = NicknameSchema.safeParse('');
+    expect(result.success).toBe(false);
+    expect(result.error?.issues[0]?.message).toBe('暱稱需為 1～20 字，且不能只有空白。');
+  });
+});
+
+describe('004：加入請求（research R3）', () => {
+  it('組別與暱稱都有時通過，暱稱被正規化', () => {
+    expect(StudentJoinRequestSchema.parse({ groupId: 2, nickname: ' 小明 ' })).toEqual({
+      groupId: 2,
+      nickname: '小明',
+    });
+  });
+
+  it('缺少暱稱或有多餘欄位時失敗', () => {
+    expect(StudentJoinRequestSchema.safeParse({ groupId: 2 }).success).toBe(false);
+    expect(
+      StudentJoinRequestSchema.safeParse({ groupId: 2, nickname: 'Milo', memberId: 'x' }).success,
+    ).toBe(false);
+  });
+});
+
+describe('004：學生端題目敘述（research R7）', () => {
+  const base = { number: 1, kind: 'group' as const, blankCount: 2, blankLabels: [null, null] };
+
+  it('content 可為 null', () => {
+    expect(StudentQuestionViewSchema.safeParse({ ...base, content: null }).success).toBe(true);
+  });
+
+  it('blankPrompts 長度等於 blankCount 時通過，元素可為 null', () => {
+    expect(
+      StudentQuestionViewSchema.safeParse({
+        ...base,
+        content: { prompt: null, blankPrompts: ['子題一', null] },
+      }).success,
+    ).toBe(true);
+  });
+
+  it('blankPrompts 長度不符時失敗', () => {
+    expect(
+      StudentQuestionViewSchema.safeParse({
+        ...base,
+        content: { prompt: '題組說明', blankPrompts: ['子題一'] },
+      }).success,
+    ).toBe(false);
+  });
+});
+
+describe('004：送出者暱稱（FR-023、research R9）', () => {
+  const submission = {
+    id: '7c1d7a8e-6f3b-4c2a-9a63-6b2b1f1d0c11',
+    questionNumber: 1,
+    groupId: 1,
+    answers: [{ blankIndex: 1, text: '答案' }],
+    sequence: 1,
+    receivedAt: '2026-11-24T02:00:00.000Z',
+  };
+
+  it('004 之前的送出紀錄沒有 submitterNickname 時解析為 null', () => {
+    expect(SubmissionSchema.parse(submission).submitterNickname).toBeNull();
+  });
+
+  it('保留送出者暱稱', () => {
+    expect(
+      SubmissionSchema.parse({ ...submission, submitterNickname: 'Milo' }).submitterNickname,
+    ).toBe('Milo');
+  });
+
+  it('舊格式的保存檔（送出紀錄沒有送出者）仍可載入', () => {
+    const parsed = PersistedStateSchema.parse({
+      schemaVersion: 1,
+      session: {
+        activityId: submission.id,
+        status: 'CLOSED',
+        source: { spreadsheetId: 'doc', sheetTitle: '學習單' },
+        groups: [
+          { id: 1, name: '第 1 組' },
+          { id: 2, name: '第 2 組' },
+        ],
+        questions: [
+          { number: 1, order: 1, kind: 'single', blanks: [{ index: 1, label: null, location }] },
+        ],
+        submissions: [submission],
+        nextSequence: 2,
+        openedAt: '2026-11-24T01:59:00.000Z',
+        closedAt: '2026-11-24T02:05:00.000Z',
+        lastExport: null,
+      },
+    });
+    expect(parsed.session.submissions[0]?.submitterNickname).toBeNull();
   });
 });

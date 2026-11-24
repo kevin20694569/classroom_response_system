@@ -11,6 +11,8 @@ const identity: StudentIdentity = {
   role: 'student',
   groupId: 2,
   activityId: '7c1d7a8e-6f3b-4c2a-9a63-6b2b1f1d0c11',
+  memberId: '3f0b2c1e-1111-4222-8333-444455556666',
+  nickname: 'Milo',
   expiresAt: '2999-01-01T00:00:00.000Z',
 };
 
@@ -39,7 +41,9 @@ describe('AnswerSheet（003 FR-011～FR-013、Clarifications Q4）', () => {
   });
 
   it('題號清單依本組送出紀錄顯示未作答／已送出', () => {
-    renderSheet('OPEN', [{ questionNumber: 3, answers: [{ blankIndex: 1, text: '0' }] }]);
+    renderSheet('OPEN', [
+      { questionNumber: 3, answers: [{ blankIndex: 1, text: '0' }], submitterNickname: null },
+    ]);
     const buttons = within(nav())
       .getAllByRole('button')
       .map((b) => b.textContent);
@@ -67,7 +71,11 @@ describe('AnswerSheet（003 FR-011～FR-013、Clarifications Q4）', () => {
       <AnswerSheet
         {...props}
         ownSubmissions={[
-          { questionNumber: 3, answers: [{ blankIndex: 1, text: '另一分頁的答案' }] },
+          {
+            questionNumber: 3,
+            answers: [{ blankIndex: 1, text: '另一分頁的答案' }],
+            submitterNickname: null,
+          },
         ]}
       />,
     );

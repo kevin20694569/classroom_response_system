@@ -1,5 +1,7 @@
+import { AuthResponseSchema } from '@crs/shared';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
+  call,
   forgeStudentToken,
   connectSocket,
   joinStudent,
@@ -158,7 +160,7 @@ describe('錯誤不洩漏內部細節（FR-026、原則 VIII）', () => {
     const rejected = await app.app.inject({
       method: 'POST',
       url: '/api/auth/student',
-      payload: { groupId: 1 },
+      payload: { groupId: 1, nickname: '測試' },
     });
     expect(rejected.json()).toMatchObject({ error: { code: 'NO_ACTIVE_ACTIVITY' } });
     await teacherWithImport(app, 'single-example');
@@ -168,5 +170,45 @@ describe('錯誤不洩漏內部細節（FR-026、原則 VIII）', () => {
     expect(logs).toContain('NO_ACTIVE_ACTIVITY');
     expect(logs).toContain('student.joined');
     expect(logs).not.toContain(token);
+  });
+
+  it('004：加入成功回應含 memberId 與正規化後的暱稱；log 含 memberId、不含暱稱', async () => {
+    app = await startTestApp();
+    await teacherWithImport(app, 'single-example');
+    const res = await call(app, 'POST', '/api/auth/student', null, {
+      groupId: 2,
+      nickname: '  暱稱測試  ',
+    });
+    expect(res.statusCode).toBe(200);
+    const body = AuthResponseSchema.parse(res.json());
+    expect(body.identity).toMatchObject({ role: 'student', groupId: 2, nickname: '暱稱測試' });
+    if (body.identity.role !== 'student') throw new Error('應為學生身分');
+    const logs = app.logLines.join('\n');
+    expect(logs).toContain(body.identity.memberId);
+    expect(logs).not.toContain('暱稱測試');
+  });
+
+  it('004：暱稱不符規則時回 400 VALIDATION_FAILED 與規則說明', async () => {
+    app = await startTestApp();
+    await teacherWithImport(app, 'single-example');
+    for (const nickname of ['', '   ', '字'.repeat(21), 'a\nb']) {
+      const res = await call(app, 'POST', '/api/auth/student', null, { groupId: 1, nickname });
+      expect(res.statusCode).toBe(400);
+      expect(res.json()).toEqual({
+        error: { code: 'VALIDATION_FAILED', message: '暱稱需為 1～20 字，且不能只有空白。' },
+      });
+    }
+    const missing = await call(app, 'POST', '/api/auth/student', null, { groupId: 1 });
+    expect(missing.statusCode).toBe(400);
+    expect(missing.json()).toMatchObject({ error: { code: 'VALIDATION_FAILED' } });
+  });
+
+  it('004：暱稱可以重複（FR-005）', async () => {
+    app = await startTestApp();
+    await teacherWithImport(app, 'single-example');
+    const a = await call(app, 'POST', '/api/auth/student', null, { groupId: 1, nickname: 'Milo' });
+    const b = await call(app, 'POST', '/api/auth/student', null, { groupId: 1, nickname: 'Milo' });
+    expect(a.statusCode).toBe(200);
+    expect(b.statusCode).toBe(200);
   });
 });

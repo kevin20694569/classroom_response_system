@@ -130,6 +130,11 @@ export const SubmissionSchema = z.object({
   sequence: PositiveInt,
   /** 伺服器時間，僅供顯示，不用於排序 */
   receivedAt: IsoDateTime,
+  /**
+   * 送出者暱稱（004 FR-023）：取自送出者的 token，只用於顯示，不影響順位與搶答判定。
+   * 004 之前保存的送出紀錄沒有這個欄位，讀取時視為 null。
+   */
+  submitterNickname: z.string().nullable().default(null),
 });
 export type Submission = z.infer<typeof SubmissionSchema>;
 

@@ -4,14 +4,14 @@ import { groupOutcomes, wonCount } from '../src/student/groupOutcomes';
 
 const a = (text: string) => [{ blankIndex: 1, text }];
 const results: ResultView[] = [
-  { questionNumber: 3, winnerGroupId: 1, answers: a('第一組的答案') },
-  { questionNumber: 1, winnerGroupId: 2, answers: a('本組的答案一') },
-  { questionNumber: 2, winnerGroupId: null, answers: null },
-  { questionNumber: 4, winnerGroupId: 3, answers: a('第三組的答案') },
+  { questionNumber: 3, winnerGroupId: 1, answers: a('第一組的答案'), submitterNickname: null },
+  { questionNumber: 1, winnerGroupId: 2, answers: a('本組的答案一'), submitterNickname: null },
+  { questionNumber: 2, winnerGroupId: null, answers: null, submitterNickname: null },
+  { questionNumber: 4, winnerGroupId: 3, answers: a('第三組的答案'), submitterNickname: null },
 ];
 const own: OwnSubmission[] = [
-  { questionNumber: 1, answers: a('本組的答案一') },
-  { questionNumber: 3, answers: a('本組的答案三') },
+  { questionNumber: 1, answers: a('本組的答案一'), submitterNickname: null },
+  { questionNumber: 3, answers: a('本組的答案三'), submitterNickname: null },
 ];
 
 describe('groupOutcomes（003 FR-024、FR-025、research R11）', () => {

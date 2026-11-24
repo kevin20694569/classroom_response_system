@@ -23,6 +23,7 @@ export const ErrorCodeSchema = z.enum([
   'ANSWER_INCOMPLETE',
   'ANSWER_INVALID',
   'ALREADY_SUBMITTED',
+  'LEAVE_NOT_ALLOWED',
   'INTERNAL_ERROR',
 ]);
 export type ErrorCode = z.infer<typeof ErrorCodeSchema>;

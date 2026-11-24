@@ -11,6 +11,8 @@ const identity = {
   role: 'student' as const,
   groupId: 2,
   activityId: '7c1d7a8e-6f3b-4c2a-9a63-6b2b1f1d0c11',
+  memberId: '3f0b2c1e-1111-4222-8333-444455556666',
+  nickname: 'Milo',
   expiresAt: '2026-11-24T12:00:00.000Z',
 };
 
@@ -26,6 +28,12 @@ describe('學生身分保存（003 research R2、data-model §2）', () => {
     sessionStorage.setItem('crs.identity', '{不是 JSON');
     expect(getStudentIdentity()).toBeNull();
     sessionStorage.setItem('crs.identity', JSON.stringify({ role: 'student', groupId: 'x' }));
+    expect(getStudentIdentity()).toBeNull();
+  });
+
+  it('004 之前保存、沒有 memberId 與暱稱的學生身分視為沒有身分', () => {
+    const { memberId: _memberId, nickname: _nickname, ...legacy } = identity;
+    sessionStorage.setItem('crs.identity', JSON.stringify(legacy));
     expect(getStudentIdentity()).toBeNull();
   });
 

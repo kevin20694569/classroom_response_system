@@ -43,8 +43,8 @@ US4（送出者，P2）。
 
 **Purpose**: 確認基準並加入相依套件
 
-- [ ] T001 在 `004-student-side-refinements` branch 執行 `npm run typecheck`、`npm run lint`、`npm run format:check`、`npm test`，確認 001～003 的基準全部通過並回報結果
-- [ ] T002 以 `npm install @faker-js/faker -w @crs/web` 加入相依套件（寫入 `apps/web/package.json` 與根目錄 `package-lock.json`）；確認 `npm ci` 與 `npm run build` 仍成功，並回報 web 打包大小的變化（research R1；constitution 禁止已停止維護的套件，不得改用 `unique-names-generator`）
+- [X] T001 在 `004-student-side-refinements` branch 執行 `npm run typecheck`、`npm run lint`、`npm run format:check`、`npm test`，確認 001～003 的基準全部通過並回報結果
+- [X] T002 以 `npm install @faker-js/faker -w @crs/web` 加入相依套件（寫入 `apps/web/package.json` 與根目錄 `package-lock.json`）；確認 `npm ci` 與 `npm run build` 仍成功，並回報 web 打包大小的變化（research R1；constitution 禁止已停止維護的套件，不得改用 `unique-names-generator`）
 
 **Checkpoint**: 基準綠燈、相依套件可用
 
@@ -56,15 +56,15 @@ US4（送出者，P2）。
 
 **⚠️ CRITICAL**: 本 Phase 完成前不得開始任何 user story
 
-- [ ] T003 [P] 新增 `packages/shared/src/nickname.ts`：`NICKNAME_MAX_LENGTH = 20`；`NicknameSchema` 為「去除前後空白後 1～20 字，以 `unicodeLength` 計算；不得包含控制字元（換行、tab 等）；允許中英文、表情符號；允許重複」（data-model §1），輸出為去除前後空白後的字串，錯誤訊息「暱稱需為 1～20 字，且不能只有空白。」；在 `packages/shared/src/index.ts` 匯出
-- [ ] T004 修改 `packages/shared/src/api.ts`：`StudentJoinRequestSchema` 改為 strict 的 `{ groupId: z.number().int(), nickname: NicknameSchema }`；`IdentitySummarySchema` 學生分支加 `memberId: z.uuid()`、`nickname: z.string()`（data-model §2）
-- [ ] T005 修改 `packages/shared/src/views.ts` 與 `domain.ts`（data-model §4、§5）：新增 `GroupHeadcountSchema`（`{ groupId, memberCount: 非負整數 }`）、`GroupMemberSchema`（`{ memberId: uuid, nickname: string }`）、`QuestionTextsSchema`（`{ prompt: string | null, blankPrompts: (string | null)[] }`，`blankPrompts` 長度需等於題目的 `blankCount`）、`StudentQuestionViewSchema`（`QuestionSummary` 加 `content: QuestionTexts | null`）；`PublicViewSchema` 加 `headcounts`；`StudentViewSchema` 加 `headcounts`、`members`，`questions` 改為 `StudentQuestionView[]`；`OwnSubmissionSchema`、`ResultViewSchema` 加 `submitterNickname: z.string().nullable()`；`SubmissionSchema` 加 `submitterNickname: z.string().nullable().default(null)`（讀取舊的 `data/session.json` 缺少此欄位時為 `null`）；`errors.ts` 的 `ErrorCodeSchema` 加 `LEAVE_NOT_ALLOWED`
-- [ ] T006 更新 `packages/shared/tests/schemas.test.ts`：暱稱正規化（前後空白、21 字失敗、只有空白失敗、含換行失敗、表情符號以實際字元計算）；加入請求缺 `nickname` 或多餘欄位失敗；`blankPrompts` 長度不符失敗；`content` 可為 `null`；`Submission` 缺 `submitterNickname` 解析為 `null`；舊格式的 `PersistedState` 仍可解析
-- [ ] T007 修改 `apps/server/src/auth/tokens.ts` 與 `authService.ts`：學生 token 加 `memberId`、`nickname`；`joinAsStudent(groupId, nickname, session)` 以 `uuid()` 產生 memberId、回應的 `identity` 含 `memberId`、`nickname`；`AuthService` 建構時接受 `isMemberLeft: (memberId: string) => boolean`（預設永遠 `false`），`resolve()` 對已離開的 memberId 回傳 `null`（research R3、R4）；更新 `apps/server/tests/unit/{tokens,authService}.test.ts`（新欄位、缺新欄位的舊 token 驗證失敗、已離開回 `null`）
-- [ ] T008 修改 `apps/server/src/transport/http/routes/authRoutes.ts`：加入時傳入 `body.nickname`；`student.joined` log 加 `memberId`、不含暱稱；更新 `apps/server/tests/helpers/testApp.ts`：`joinStudent(app, groupId, nickname = '測試')`、`forgeStudentToken(groupId, activityId, { memberId, nickname })`；更新 `apps/server/tests/integration/auth.test.ts`（暱稱不合格回 400 `VALIDATION_FAILED`、成功回應含 memberId 與正規化後的暱稱）
-- [ ] T009 [P] 修改 `scripts/simulate-students.ts`：加入組別時帶入暱稱 `Sim-<組別>`（research R12），`npm run typecheck` 通過
-- [ ] T010 [P] 修改 `apps/web/src/api/identity.ts` 的學生身分型別與驗證（含 `memberId`、`nickname`，沿用 `IdentitySummarySchema`）；更新 `apps/web/tests/identity.test.ts`；更新 `apps/web/tests/viewBuilders.ts`：`publicView()`、`studentView()` 補 `headcounts`（預設每組 0）、`members`（預設空）、題目 `content: null`；`ownSubmissions`、`results` 補 `submitterNickname`；新增 `withContent()` 輔助，把 `teacherView()` 的題目敘述轉成 `content`
-- [ ] T011 品質關卡：`npm run typecheck`、`npm run lint`、`npm run format:check`、`npm test` 全部通過（伺服器回傳的新欄位此時可先填空值：`headcounts` 每組 0、`members` 空、`content` null、`submitterNickname` null），回報指令與結果
+- [X] T003 [P] 新增 `packages/shared/src/nickname.ts`：`NICKNAME_MAX_LENGTH = 20`；`NicknameSchema` 為「去除前後空白後 1～20 字，以 `unicodeLength` 計算；不得包含控制字元（換行、tab 等）；允許中英文、表情符號；允許重複」（data-model §1），輸出為去除前後空白後的字串，錯誤訊息「暱稱需為 1～20 字，且不能只有空白。」；在 `packages/shared/src/index.ts` 匯出
+- [X] T004 修改 `packages/shared/src/api.ts`：`StudentJoinRequestSchema` 改為 strict 的 `{ groupId: z.number().int(), nickname: NicknameSchema }`；`IdentitySummarySchema` 學生分支加 `memberId: z.uuid()`、`nickname: z.string()`（data-model §2）
+- [X] T005 修改 `packages/shared/src/views.ts` 與 `domain.ts`（data-model §4、§5）：新增 `GroupHeadcountSchema`（`{ groupId, memberCount: 非負整數 }`）、`GroupMemberSchema`（`{ memberId: uuid, nickname: string }`）、`QuestionTextsSchema`（`{ prompt: string | null, blankPrompts: (string | null)[] }`，`blankPrompts` 長度需等於題目的 `blankCount`）、`StudentQuestionViewSchema`（`QuestionSummary` 加 `content: QuestionTexts | null`）；`PublicViewSchema` 加 `headcounts`；`StudentViewSchema` 加 `headcounts`、`members`，`questions` 改為 `StudentQuestionView[]`；`OwnSubmissionSchema`、`ResultViewSchema` 加 `submitterNickname: z.string().nullable()`；`SubmissionSchema` 加 `submitterNickname: z.string().nullable().default(null)`（讀取舊的 `data/session.json` 缺少此欄位時為 `null`）；`errors.ts` 的 `ErrorCodeSchema` 加 `LEAVE_NOT_ALLOWED`
+- [X] T006 更新 `packages/shared/tests/schemas.test.ts`：暱稱正規化（前後空白、21 字失敗、只有空白失敗、含換行失敗、表情符號以實際字元計算）；加入請求缺 `nickname` 或多餘欄位失敗；`blankPrompts` 長度不符失敗；`content` 可為 `null`；`Submission` 缺 `submitterNickname` 解析為 `null`；舊格式的 `PersistedState` 仍可解析
+- [X] T007 修改 `apps/server/src/auth/tokens.ts` 與 `authService.ts`：學生 token 加 `memberId`、`nickname`；`joinAsStudent(groupId, nickname, session)` 以 `uuid()` 產生 memberId、回應的 `identity` 含 `memberId`、`nickname`；`AuthService` 建構時接受 `isMemberLeft: (memberId: string) => boolean`（預設永遠 `false`），`resolve()` 對已離開的 memberId 回傳 `null`（research R3、R4）；更新 `apps/server/tests/unit/{tokens,authService}.test.ts`（新欄位、缺新欄位的舊 token 驗證失敗、已離開回 `null`）
+- [X] T008 修改 `apps/server/src/transport/http/routes/authRoutes.ts`：加入時傳入 `body.nickname`；`student.joined` log 加 `memberId`、不含暱稱；更新 `apps/server/tests/helpers/testApp.ts`：`joinStudent(app, groupId, nickname = '測試')`、`forgeStudentToken(groupId, activityId, { memberId, nickname })`；更新 `apps/server/tests/integration/auth.test.ts`（暱稱不合格回 400 `VALIDATION_FAILED`、成功回應含 memberId 與正規化後的暱稱）
+- [X] T009 [P] 修改 `scripts/simulate-students.ts`：加入組別時帶入暱稱 `Sim-<組別>`（research R12），`npm run typecheck` 通過
+- [X] T010 [P] 修改 `apps/web/src/api/identity.ts` 的學生身分型別與驗證（含 `memberId`、`nickname`，沿用 `IdentitySummarySchema`）；更新 `apps/web/tests/identity.test.ts`；更新 `apps/web/tests/viewBuilders.ts`：`publicView()`、`studentView()` 補 `headcounts`（預設每組 0）、`members`（預設空）、題目 `content: null`；`ownSubmissions`、`results` 補 `submitterNickname`；新增 `withContent()` 輔助，把 `teacherView()` 的題目敘述轉成 `content`
+- [X] T011 品質關卡：`npm run typecheck`、`npm run lint`、`npm run format:check`、`npm test` 全部通過（伺服器回傳的新欄位此時可先填空值：`headcounts` 每組 0、`members` 空、`content` null、`submitterNickname` null），回報指令與結果
 
 **Checkpoint**: 契約、身分與測試輔助就緒；自動化測試全部通過。注意：本 Phase 起加入組別的請求必須帶暱稱，前端要到 US1（T019）才會送出暱稱，因此實際啟動時學生端無法加入組別，US1 完成後恢復；Phase 1～3 為 MVP，應一起完成後再實際操作
 

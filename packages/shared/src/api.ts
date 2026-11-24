@@ -6,6 +6,7 @@ import {
   MAX_GROUPS,
   MIN_GROUPS,
 } from './domain.js';
+import { NicknameSchema } from './nickname.js';
 import { SessionViewSchema, TeacherViewSchema } from './views.js';
 
 /**
@@ -18,9 +19,13 @@ export const TeacherLoginRequestSchema = z.strictObject({
 });
 export type TeacherLoginRequest = z.infer<typeof TeacherLoginRequestSchema>;
 
-/** 組別是否存在（1～groupCount）由伺服器檢查，不符時回 INVALID_GROUP。 */
+/**
+ * 組別是否存在（1～groupCount）由伺服器檢查，不符時回 INVALID_GROUP。
+ * 暱稱（004 FR-004）以 NicknameSchema 驗證並正規化，寫入 token 後作為送出者暱稱的唯一來源。
+ */
 export const StudentJoinRequestSchema = z.strictObject({
   groupId: z.number().int(),
+  nickname: NicknameSchema,
 });
 export type StudentJoinRequest = z.infer<typeof StudentJoinRequestSchema>;
 
@@ -30,6 +35,10 @@ export const IdentitySummarySchema = z.discriminatedUnion('role', [
     role: z.literal('student'),
     groupId: GroupIdSchema,
     activityId: z.uuid(),
+    /** 組員身分（004 research R3）：加入時由伺服器產生，同一分頁重新整理不變 */
+    memberId: z.uuid(),
+    /** 加入時的暱稱（已去除前後空白） */
+    nickname: z.string(),
     expiresAt: z.string(),
   }),
 ]);

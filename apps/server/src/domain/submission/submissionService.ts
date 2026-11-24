@@ -48,6 +48,7 @@ export class SubmissionService {
           answers,
           sequence: current.nextSequence,
           receivedAt: now().toISOString(),
+          submitterNickname: null,
         };
         return {
           next: {
