@@ -12,7 +12,7 @@
 
 技術做法（詳見 [research.md](./research.md)）：
 
-- 暱稱規則放在 shared（R2）；隨機名字使用 `unique-names-generator` 的英文名字字典（R1），只在 web 端使用。
+- 暱稱規則放在 shared（R2）；隨機名字使用持續維護的 `@faker-js/faker`（只匯入英文語系，R1），只在 web 端使用。
 - 學生加入時帶暱稱，token 內加入 `memberId` 與暱稱（R3）；伺服器新增只在記憶體的 `GroupRoster`，依 socket
   連線維護組員並保留 30 秒斷線緩衝（R4）；新增「離開組別」API，讓人數立即更新（R5）。
 - 名冊改變時沿用 `session:state` 推播 `headcounts` 與本組 `members`，不新增事件（R6）。
@@ -25,7 +25,7 @@
 **Language/Version**: TypeScript 6.0（strict）；Node.js 26 LTS（沿用 001）
 
 **Primary Dependencies**: 沿用 001～003（React 19、Vite 8、Tailwind CSS 4、Fastify 5、Socket.IO 4、Zod 4）；
-**新增** `unique-names-generator`（只加在 `apps/web`，research R1）
+**新增** `@faker-js/faker`（只加在 `apps/web`、只匯入英文語系，research R1）
 
 **Storage**: 伺服器沿用 `data/session.json`，`Submission` 多一個欄位（舊檔讀取相容）；組員名冊只在記憶體；
 學生端以分頁 `sessionStorage` 保存暱稱（`crs.nickname`）、token、身分與草稿
@@ -60,7 +60,7 @@
 | VI. PlantUML 設計優先 | 圖表為藍圖、實作後驗證 | specify／clarify 已建立 `diagrams/004-student-side-refinements-*`；本 plan 依設計調整（`content` 欄位、離開組別 API、已離開集合）先更新圖表並重新產生 PNG；下方「圖表對應」列出原始碼位置 | 通過 |
 | VII. 測試與驗證 | 正常＋錯誤案例、可見性專門測試、兩份文件 | 每個新模組有正常與錯誤／邊界測試；可見性（SC-006、SC-008）有伺服器整合測試；匯出以兩份版面不同的測試文件驗證兩種模式；[quickstart.md](./quickstart.md) §4 有人工驗證清單 | 通過 |
 | VIII. 安全與機敏資料 | 不洩漏、角色權限 | 不新增環境變數或憑證；離開 API 只限學生 token；log 不記錄暱稱與 token；錯誤訊息為繁體中文且不含內部細節 | 通過 |
-| 技術限制 | Node LTS、單一指令、lock file、lint/format、結構化 log | 新增一個 web 相依套件並更新 lock file；`npm start` 不變；新增的事件寫入結構化 log | 通過 |
+| 技術限制 | Node LTS、單一指令、lock file、lint/format、結構化 log | 新增一個持續維護的 web 相依套件（`@faker-js/faker`，不採用已停止維護的 `unique-names-generator`）並更新 lock file；`npm start` 不變；新增的事件寫入結構化 log | 通過 |
 | 開發流程 | 獨立 branch、clarify／analyze／converge | 在 `004-student-side-refinements` branch；clarify 已完成（三輪共 7 題，第四輪無新問題）；tasks 後執行 analyze | 通過 |
 
 ### 圖表對應（原則 VI：以圖表為藍圖）
@@ -168,7 +168,7 @@ apps/web/src/
 │   ├── QuestionAnswerForm.tsx   ～ QuestionContent＋子題輸入；已送出（暱稱）
 │   └── StudentResultBoard.tsx   ～ 敘述與送出者
 └── pages/teacher/SubmissionBoard.tsx ～ 送出者
-apps/web/package.json            ～ unique-names-generator
+apps/web/package.json            ～ @faker-js/faker
 apps/web/tests/                  ＋／～ 上述模組與元件的測試；viewBuilders 加新欄位
 
 scripts/simulate-students.ts     ～ 加入時帶暱稱
@@ -183,7 +183,7 @@ README.md                        ～ 子功能表加入 004
 
 | 項目 | 為何需要 | 為何不用更簡單的做法 |
 |------|----------|----------------------|
-| 新增相依套件 `unique-names-generator` | 使用者要求以套件產生隨機英文名字（R1） | 自行維護名字清單需另外維護資料；faker 過重 |
+| 新增相依套件 `@faker-js/faker` | 使用者要求以套件產生隨機英文名字（R1） | 自行維護名字清單需另外維護資料；`unique-names-generator` 自 2022 年起停止維護，違反 constitution |
 | 伺服器記憶體中的 `GroupRoster` | 人數與名冊依連線計算並有 30 秒緩衝（FR-012） | Socket.IO room 人數無法緩衝也沒有暱稱；寫入資料檔會留下已關閉的分頁 |
 | 新增 `POST /api/auth/student/leave` | 離開組別時人數要立即更新（spec 邊界情況） | 只靠斷線要等 30 秒；上行 socket 事件會破壞「Socket.IO 只負責推播」的設計 |
 | `Submission.submitterNickname`（修改保存格式） | 送出者要在重啟後仍保留並寫入匯出（FR-023、FR-027） | 只放在記憶體會在重啟後遺失 |
