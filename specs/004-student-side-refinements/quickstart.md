@@ -54,7 +54,7 @@ npm run build
 | server 單元 | `GroupRoster`：加入、同 memberId 多連線只算一位、30 秒內重連不移除、到期移除、離開立即移除、reset 清空、排序依加入先後（假計時器） | FR-009～FR-015 |
 | server 單元 | `VisibilityPolicy`：READY 以前 `content` 為 null、OPEN／CLOSED 有值；PublicView 無敘述；`members` 只有本組；送出者只在本組與 CLOSED 結果出現 | FR-014、FR-018、FR-019、FR-024、FR-025 |
 | server 單元 | `exportPlan`：附註行含暱稱／舊資料不含；三欄結果欄的定位與新增；兩份測試文件 | FR-027 |
-| server 整合 | 以 Socket.IO 用戶端連線：加入後其他分頁人數更新、重新整理不重複計算、離開 API 立即更新、READY 以外離開回 409、已離開 token 被拒、伺服器重啟後名冊重建 | FR-011～FR-013、SC-003、SC-004 |
+| server 整合 | 以 Socket.IO 用戶端連線：加入後其他分頁人數更新、重新整理不重複計算、離開 API 立即更新、READY 以外離開回 409、已離開 token 被拒、伺服器重啟後名冊重建；加入、離開、名冊移除與送出的 log 不含暱稱與 token | FR-011～FR-013、FR-022、SC-003、SC-004 |
 | server 整合 | 學生收到的所有推播與回應：READY 前敘述 0 次、他組成員名單 0 次、OPEN 時他組送出者 0 次 | SC-006、SC-008 |
 | web | 暱稱頁預填、換一個（排除目前名字）、驗證訊息、重新整理保留、修改暱稱；`randomNickname` 只產生 3～10 個英文字母且 20 次至少 15 個不同 | FR-001～FR-008、SC-002 |
 | web | 選組人數、成員名單（自己標「（你）」、重複暱稱都列出）、題目敘述版面與老師端相同、已送出（暱稱）、結果送出者、老師送出列表 | FR-009、FR-010、FR-016、FR-017、FR-024～FR-026 |
