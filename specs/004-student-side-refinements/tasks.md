@@ -313,5 +313,5 @@ T068 的 `grading`；T063 的「未答對」改為 T071 的標籤；T062 的勾�
 
 ## Phase 11: Convergence
 
-- [ ] T077 修改 `apps/web/src/pages/teacher/ExportPanel.tsx` 寫入 0 題時的訊息：由「沒有可匯出的答案（每一題都無人搶答）」改為說明匯出依批改結果，例如「沒有可匯出的答案（沒有任何題目被勾選答對，請先在搶答結果勾選答對的答案）」；同步更新 `apps/web/tests/ExportPanel.test.tsx`；並把 `apps/server/src/domain/export/exportPlan.ts`、`guidedNotesExporter.ts` 中「無人搶答」「搶答成功的答案」的註解改為「沒有答對」「答對中最早送出的答案」 per FR-027, FR-032 (partial)
-- [ ] T078 品質關卡：`npm run typecheck`、`npm run lint`、`npm run format:check`、`npm test` 全部通過，回報指令與結果 per Constitution VII (missing)
+- [X] T077 修改 `apps/web/src/pages/teacher/ExportPanel.tsx` 寫入 0 題時的訊息：由「沒有可匯出的答案（每一題都無人搶答）」改為說明匯出依批改結果，例如「沒有可匯出的答案（沒有任何題目被勾選答對，請先在搶答結果勾選答對的答案）」；同步更新 `apps/web/tests/ExportPanel.test.tsx`；並把 `apps/server/src/domain/export/exportPlan.ts`、`guidedNotesExporter.ts` 中「無人搶答」「搶答成功的答案」的註解改為「沒有答對」「答對中最早送出的答案」 per FR-027, FR-032 (partial)
+- [X] T078 品質關卡：`npm run typecheck`、`npm run lint`、`npm run format:check`、`npm test` 全部通過，回報指令與結果 per Constitution VII (missing)
