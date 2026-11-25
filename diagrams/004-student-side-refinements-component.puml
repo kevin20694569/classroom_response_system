@@ -11,7 +11,7 @@ node "學生分頁（瀏覽器，每組可多個）" as StudentBrowser {
   package "StudentClient（學生端畫面）" {
     component "StudentPage\n暱稱 → 選組 → 作答 / 結果" as StudentPage
     component "NicknamePanel\n預填隨機名字、換一個、確認" as NicknamePanel
-    component "randomNickname\n本機產生短英文名字" as RandomName
+    component "randomNickname\n本機產生短英文名字（faker 英文語系）" as RandomName
     component "NicknameStore\n暱稱只存在該分頁" as NicknameStore
     component "JoinGroupPanel\n組別 + 已加入：N 人" as JoinPanel
     component "GroupMemberList\n本組成員（N 人）" as MemberList
@@ -33,7 +33,7 @@ package "web/components（老師端、學生端共用畫面元件）" as WebShar
 
 package "shared（前後端共用契約）" as Shared {
   component "Contracts\nStudentJoinRequest（暱稱）/ GroupHeadcount /\nGroupMember / StudentQuestionView /\nsubmitterNickname" as Contracts
-  component "暱稱規則\nNICKNAME_MAX_LENGTH、暱稱驗證" as NicknameRules
+  component "暱稱規則\nNICKNAME_MAX_LENGTH、NicknameSchema" as NicknameRules
 }
 
 node "本機伺服器" as Server {
@@ -69,7 +69,7 @@ StudentPage --> ResultBoard
 StudentPage --> StudentAuth
 StudentPage --> SessionHook
 NicknamePanel --> RandomName
-NicknamePanel --> NicknameStore
+StudentPage --> NicknameStore
 NicknamePanel ..> NicknameRules
 AnswerSheet ..> QuestionContent
 ResultBoard ..> QuestionContent

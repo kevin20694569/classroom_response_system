@@ -174,10 +174,10 @@ US4（送出者，P2）。
 
 ## Phase 7: Polish & Cross-Cutting Concerns
 
-- [ ] T050 [P] 更新 `README.md`：子功能表加入 004；學生端說明加入暱稱頁、各組人數與成員、題目敘述、送出者；匯出說明加入送出者
-- [ ] T051 [P] 新增 `specs/004-student-side-refinements/diagram-verification.md`：依 plan.md「圖表對應」逐項核對三張 004 圖表的元件、類別、欄位、方法與互動順序是否都存在於原始碼且名稱一致；有差異時先更新圖表並執行 `plantuml "./diagrams/*.puml"`（原則 VI）
-- [ ] T052 新增 `specs/004-student-side-refinements/checklists/manual-verification.md`：把 quickstart.md §4 的 26 步轉成可勾選的步驟清單（只要步驟與勾選框，不需截圖、日期或執行者），開頭附上用新的暫存 `DATA_DIR` 啟動的準備方式
-- [ ] T053 最終品質關卡：`npm run typecheck`、`npm run lint`、`npm run format:check`、`npm test`、`npm run build` 全部通過；以 3000 以外的埠和暫存 `DATA_DIR` 啟動，依 quickstart.md §4 走一次主要流程（暱稱 → 加入 → 人數 → 開啟搶答看到敘述 → 送出看到送出者 → 結束 → 匯出前的結果畫面），回報結果
+- [X] T050 [P] 更新 `README.md`：子功能表加入 004；學生端說明加入暱稱頁、各組人數與成員、題目敘述、送出者；匯出說明加入送出者
+- [X] T051 [P] 新增 `specs/004-student-side-refinements/diagram-verification.md`：依 plan.md「圖表對應」逐項核對三張 004 圖表的元件、類別、欄位、方法與互動順序是否都存在於原始碼且名稱一致；有差異時先更新圖表並執行 `plantuml "./diagrams/*.puml"`（原則 VI）
+- [X] T052 新增 `specs/004-student-side-refinements/checklists/manual-verification.md`：把 quickstart.md §4 的 26 步轉成可勾選的步驟清單（只要步驟與勾選框，不需截圖、日期或執行者），開頭附上用新的暫存 `DATA_DIR` 啟動的準備方式
+- [X] T053 最終品質關卡：`npm run typecheck`、`npm run lint`、`npm run format:check`、`npm test`、`npm run build` 全部通過；以 3000 以外的埠和暫存 `DATA_DIR` 啟動，依 quickstart.md §4 走一次主要流程（暱稱 → 加入 → 人數 → 開啟搶答看到敘述 → 送出看到送出者 → 結束 → 匯出前的結果畫面），回報結果
 - [ ] T054 人工驗證：使用者依 `checklists/manual-verification.md` 逐步操作並勾選；全部通過後勾選本任務
 
 ---

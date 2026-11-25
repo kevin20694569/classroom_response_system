@@ -63,3 +63,25 @@ describe('useSessionState 斷線重連（003 FR-010、US1 情境 4）', () => {
     expect(socket.connectCalls).toBe(0);
   });
 });
+
+describe('useSessionState 版本（004 FR-013）', () => {
+  it('伺服器重新啟動後 version 從 0 重新計算，重新連線後的狀態仍會套用', () => {
+    const { result } = renderHook(() => useSessionState('token-2', vi.fn()));
+    const socket = currentSocket();
+    socket.serverConnect();
+    socket.sendState(studentView({ status: 'OPEN' }), 5);
+    socket.serverDisconnect('io server disconnect');
+    socket.serverConnect();
+    socket.sendState(studentView({ status: 'CLOSED', results: [] }), 0);
+    expect(result.current.view?.status).toBe('CLOSED');
+  });
+
+  it('同一條連線上比目前更舊的版本仍被忽略', () => {
+    const { result } = renderHook(() => useSessionState('token-2', vi.fn()));
+    const socket = currentSocket();
+    socket.serverConnect();
+    socket.sendState(studentView({ status: 'OPEN' }), 5);
+    socket.sendState(studentView({ status: 'READY' }), 4);
+    expect(result.current.view?.status).toBe('OPEN');
+  });
+});

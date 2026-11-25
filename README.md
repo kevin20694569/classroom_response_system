@@ -11,7 +11,9 @@ npm start
 ```
 
 開啟 <http://localhost:3000/teacher> 進入老師端（密碼見 `.env` 的 `TEACHER_PASSWORD`）；
-學生用另外的分頁開啟 <http://localhost:3000/student> 選擇組別加入（不需密碼，每個分頁的身分各自獨立）。
+學生用另外的分頁開啟 <http://localhost:3000/student>，先確認暱稱（預填一個隨機的英文短名字，可換一個或自行修改，
+可以和別人重複），再選擇組別加入（不需密碼，每個分頁的身分與暱稱各自獨立）。選組時看得到各組已加入人數；
+加入後畫面顯示本組成員，搶答開始後每一題都顯示題目敘述，同組同學送出的題目會標示送出者。
 
 第一次使用前請先完成下方「環境需求」與「設定」。
 
@@ -302,12 +304,13 @@ npm start
 - 需要一列同時有「題號」與「作答」的表頭（「題目」欄可有可無）
 - 題號可寫成 `1`、`1.`、`1、`、`Q1`、`第1題`，或全形數字
 - 同一題號涵蓋多個作答格即為題組；作答格的「（1）」「（2）」標記可有可無，有寫就必須從（1）連號
-- 「題目」欄的敘述會用於老師端的題目預覽（沒有「題目」欄也能匯入，預覽會顯示「文件未提供題目敘述」）
+- 「題目」欄的敘述會用於老師端的題目預覽，搶答開始後也會顯示在學生端（沒有「題目」欄也能匯入，畫面會顯示
+  「文件未提供題目敘述」）
 - 匯出時答案寫入原本的作答格，題組保留子題標記（例如「（1）CPU」）。匯出可選三種模式，寫入位置見
   [002 contracts/guided-notes-format.md](specs/002-teacher-dashboard-enhancements/contracts/guided-notes-format.md)：
   - 只有答案：只寫作答格，其他儲存格不會被改動
-  - 答案＋組別時間欄：另在表頭列最右側新增「搶答組別」「提交時間」兩欄
-  - 答案＋格內附註行：答案下方另起一行，以灰色小字記錄組別與提交時間
+  - 答案＋組別時間欄：另在表頭列最右側新增「搶答組別」「提交時間」「搶答送出者」三欄（已有的欄沿用）
+  - 答案＋格內附註行：答案下方另起一行，以灰色小字記錄組別、送出者暱稱與提交時間（例如「〔第 1 組｜Milo｜時間〕」）
 
 ## 開發與測試
 
@@ -321,8 +324,9 @@ npm start
 | `npm run simulate -- --group 1 --question 1 --answers "CPU"` | 模擬學生送出（自動化與壓力測試用；學生畫面見 `/student`） |
 
 人工驗證步驟見 [001 quickstart.md §4](specs/001-teacher-quiz-session/quickstart.md)、
-[002 quickstart.md §4](specs/002-teacher-dashboard-enhancements/quickstart.md) 與
-[003 quickstart.md §4](specs/003-student-quiz-participation/quickstart.md)。
+[002 quickstart.md §4](specs/002-teacher-dashboard-enhancements/quickstart.md)、
+[003 quickstart.md §4](specs/003-student-quiz-participation/quickstart.md) 與
+[004 quickstart.md §4](specs/004-student-side-refinements/quickstart.md)。
 
 ## 專案結構
 
@@ -342,3 +346,4 @@ diagrams/          PlantUML 圖表（.puml 與 .png）
 | 001 | 使用者角色與老師端搶答活動管理（匯入、開啟／結束、檢視、匯出） | 已實作 |
 | 002 | 老師端介面優化（題目預覽、搶答計時、提交時間提示、匯出模式） | 已實作 |
 | 003 | 學生端畫面（`/student`：加入組別、作答與送出、檢視結果） | 已實作 |
+| 004 | 學生端細修（暱稱、各組人數與本組成員、學生端題目敘述、送出者暱稱與匯出） | 已實作 |
