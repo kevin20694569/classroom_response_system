@@ -40,8 +40,7 @@ export function ExportPanel({ view }: { view: TeacherView }) {
       const label = EXPORT_MODE_LABEL[result.mode];
       setMessage(
         result.writtenQuestionCount === 0
-          ? // 匯出依老師批改結果（004 FR-027）：沒有寫入通常是還沒勾選答對
-            `沒有可匯出的答案（沒有任何題目被勾選答對，請先在搶答結果勾選答對的答案）。（${label}）`
+          ? `沒有可匯出的答案（每一題都無人搶答）。（${label}）`
           : `已寫入 ${String(result.writtenQuestionCount)} 題、${String(result.writtenCellCount)} 格（${label}，${formatTime(result.exportedAt)}）。`,
       );
     } catch (e) {

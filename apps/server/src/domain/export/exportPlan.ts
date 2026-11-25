@@ -58,8 +58,7 @@ interface Located {
  * - 一律以「匯出當下重新解析」的結果定位，不使用匯入時保存的位置（文件可能已被修改）。
  * - 先完成全部定位；任何搶答成功的題目無法定位時整次不寫入（EXPORT_LOCATE_FAILED），
  *   連結果欄的表頭也不會新增，避免只寫了一半。
- * - 每題寫入的是答對中最早送出的答案（004 FR-032）；沒有答對的題目，作答格一律不動；
- *   同一模式重複匯出時寫入內容完全相同。
+ * - 無人搶答的題目，作答格一律不動；同一模式重複匯出時寫入內容完全相同。
  */
 export function planExport(
   session: Readonly<QuizSession>,
@@ -73,7 +72,7 @@ export function planExport(
   for (const result of results) {
     const current = fresh.questions.find((q) => q.number === result.questionNumber);
     if (result.winner === null) {
-      // 沒有答對：作答格不動；欄位模式仍需知道它在文件中的位置以清空結果欄（找不到就略過）
+      // 無人搶答：作答格不動；欄位模式仍需知道它在文件中的位置以清空結果欄（找不到就略過）
       if (current !== undefined) located.push({ question: current, winner: null });
       continue;
     }
@@ -134,7 +133,7 @@ export function planExport(
  * 「答案＋組別時間欄」模式（FR-019；004 FR-027 加上送出者欄）：
  * - 沿用表頭列既有的「搶答組別」「提交時間」「搶答送出者」欄；缺少的欄依序新增在使用範圍之後（不覆蓋任何內容）。
  * - 每題寫在題目區塊第一列（該題作答格最上方的列）；題組只寫一次。
- * - 搶答成功（答對中最早送出）寫入組別、提交時間與送出者；沒有答對清空這三格（避免留下上一場的結果）；
+ * - 搶答成功寫入組別、提交時間與送出者；無人搶答清空這三格（避免留下上一場的結果）；
  *   送出者為 null（004 之前的送出）時送出者格寫入空字串。只寫搶答成功答案的送出者。
  */
 function resultColumnWrites(fresh: ParsedGuidedNotes, located: readonly Located[]): CellWrite[] {

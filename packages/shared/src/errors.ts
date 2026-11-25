@@ -24,8 +24,6 @@ export const ErrorCodeSchema = z.enum([
   'ANSWER_INVALID',
   'ALREADY_SUBMITTED',
   'LEAVE_NOT_ALLOWED',
-  'GRADE_NOT_ALLOWED',
-  'SUBMISSION_NOT_FOUND',
   'INTERNAL_ERROR',
 ]);
 export type ErrorCode = z.infer<typeof ErrorCodeSchema>;

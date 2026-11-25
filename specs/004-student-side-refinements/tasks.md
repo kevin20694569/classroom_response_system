@@ -329,3 +329,15 @@ T068 的 `grading`；T063 的「未答對」改為 T071 的標籤；T062 的勾�
 - [ ] T079 更新 `specs/004-student-side-refinements/spec.md`：新增 FR-037（老師端送出列表的「第 N 名」與逐子題換行版面）與 FR-038（搶答進行中不顯示「搶答成功」，只在「已結束」後依勾選顯示），修改 FR-032 中「搶答進行中時老師端仍以最先送出為暫定第一名」的敘述與對應的邊界情況，Clarifications 記錄本次回饋；同步更新 `contracts/student-ui.md §6`、`quickstart.md §4` 與 `checklists/manual-verification.md` 中送出列表的描述（例如步驟 16），以及類別圖 `SubmissionBoard` 的說明並重新產生 PNG per user request: teacher submission list, Constitution VI (missing)
 - [ ] T080 修改 `apps/web/src/pages/teacher/SubmissionBoard.tsx`：每筆送出的第一行為勾選框（已結束時）＋「第 N 名・第 X 組・暱稱：」＋時間圖示＋（已結束且為搶答成功時）「搶答成功」標籤；答案改為逐子題換行（題組每個子題一行「（n）答案」、單題一行答案），長答案自動換行且不溢出卡片；「搶答進行中」不顯示「搶答成功」標籤與綠色強調；更新 `apps/web/tests/SubmissionBoard.test.tsx`（第 N 名文字、每個子題各自一個元素、搶答中沒有「搶答成功」、已結束依勾選顯示）per FR-037, FR-038 (contradicts)
 - [ ] T081 品質關卡：`npm run typecheck`、`npm run lint`、`npm run format:check`、`npm test`、`npm run build` 全部通過；以 3000 以外的埠和暫存 `DATA_DIR` 開啟老師端，確認長答案的題組在搶答中與結束後的版面，回報結果 per Constitution VII (missing)
+
+## Phase 13: 拔除老師批改
+
+使用者人工驗證後要求拔除 Phase 8～11 的批改功能（勾選答對、勾選旁提示、「等待老師批改」與「批改完成」、依答對結果
+決定搶答成功與匯出），回到「最先送出的組別即搶答成功」；學生端計時（FR-029、FR-030）與暱稱頁文字（FR-028）保留。
+老師端的「搶答成功」標籤在搶答進行中就標示第一名（使用者決定），因此 Phase 12 中「搶答進行中不顯示搶答成功」的規則
+（T079 的 FR-038、T080 的對應部分）不再適用；T079、T080 的「第 N 名」與逐子題換行版面仍要做。
+
+- [X] T082 更新 `spec.md`（移除 US6、FR-031～FR-036、SC-011 與批改的邊界情況，FR-020、FR-025、FR-027 恢復原文，範圍與 Clarifications 記錄拔除）、`research.md`、`plan.md`、`data-model.md`、`contracts/`、`quickstart.md`、`checklists/manual-verification.md`（26 步）、`diagram-verification.md`、`README.md`，並更新三張 004 圖表、重新產生 PNG per user request: remove grading, Constitution VI
+- [X] T083 移除 `packages/shared` 與伺服器的批改：`Submission.correct`、`QuizSession.gradingFinishedAt`、`GradeRequestSchema`、`GRADE_NOT_ALLOWED`、`SUBMISSION_NOT_FOUND`、`OwnSubmission.grading`、`StudentView.gradingFinished`、`TeacherView.gradingFinishedAt`、`QuizSessionService.grade`／`finishGrading`、`POST /api/session/grade`、`/grade/finish`；`deriveResults` 恢復最先送出；學生 `results` 恢復「已結束」即提供；刪除 `tests/integration/grading.test.ts` 與相關測試 per user request: remove grading
+- [X] T084 移除前端的批改：老師端勾選框、提示、「批改完成」按鈕與「尚未批改」；學生端結果恢復「本組搶答成功／已送出，未搶到／本組未作答」與「無人搶答」；匯出 0 題訊息恢復「每一題都無人搶答」；更新相關測試 per user request: remove grading
+- [X] T085 品質關卡：`npm run typecheck`、`npm run lint`、`npm run format:check`、`npm test`、`npm run build` 全部通過 per Constitution VII

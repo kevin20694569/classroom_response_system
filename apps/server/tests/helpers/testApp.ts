@@ -223,19 +223,3 @@ export function connectSocket(url: string, token?: string): Promise<TestSocket> 
     }, reject);
   });
 }
-
-/**
- * 老師把目前所有送出勾選為答對並按「批改完成」（004 FR-031、FR-034）。
- * 用於沿用 001～003「最先送出即搶答成功」情境的測試：全部答對時，搶答成功就是最先送出的組別。
- */
-export async function gradeAllCorrect(app: TestApp, teacherToken: string): Promise<void> {
-  for (const s of app.service.getSession().submissions) {
-    const res = await call(app, 'POST', '/api/session/grade', teacherToken, {
-      submissionId: s.id,
-      correct: true,
-    });
-    if (res.statusCode !== 200) throw new Error(`批改失敗：${res.body}`);
-  }
-  const done = await call(app, 'POST', '/api/session/grade/finish', teacherToken, {});
-  if (done.statusCode !== 200) throw new Error(`批改完成失敗：${done.body}`);
-}

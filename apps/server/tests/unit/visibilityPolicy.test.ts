@@ -39,13 +39,7 @@ describe('VisibilityPolicy', () => {
   });
 
   it('結束後學生看得到每題結果', () => {
-    const view = toStudentView(
-      { ...openSession, status: 'CLOSED', gradingFinishedAt: '2026-11-25T01:00:00.000Z' },
-      2,
-      strategy,
-      roster,
-      NOW,
-    );
+    const view = toStudentView({ ...openSession, status: 'CLOSED' }, 2, strategy, roster, NOW);
     expect(view.results?.[0]?.winnerGroupId).toBe(1);
   });
 
@@ -150,76 +144,14 @@ describe('VisibilityPolicy — 004 人數與本組成員（FR-009、FR-010、FR-
   });
 });
 
-describe('VisibilityPolicy — 004 批改（FR-025、FR-032～FR-034）', () => {
-  /** 第 1 題：第 1 組先送出（答錯）、第 2 組後送出（答對）。 */
-  function closedWith(grades: { g1: boolean; g2: boolean }, finished: boolean) {
-    return readySession({
+describe('VisibilityPolicy — 004 搶答計時（FR-029、FR-030）', () => {
+  it('學生檢視含開啟、結束與伺服器時間', () => {
+    const session = readySession({
       status: 'CLOSED',
       openedAt: '2026-11-25T01:00:00.000Z',
       closedAt: '2026-11-25T01:05:00.000Z',
-      gradingFinishedAt: finished ? '2026-11-25T01:10:00.000Z' : null,
-      submissions: [
-        submission(1, 1, 1, ['第一組的答案'], 'Milo', grades.g1),
-        submission(1, 2, 2, ['第二組的答案'], 'Leo', grades.g2),
-      ],
-      nextSequence: 3,
     });
-  }
-
-  it('搶答進行中：本組送出一律等待批改，不受勾選影響', () => {
-    const session = { ...closedWith({ g1: true, g2: true }, false), status: 'OPEN' as const };
     const view = toStudentView(session, 1, strategy, roster, NOW);
-    expect(view.ownSubmissions[0]?.grading).toBe('PENDING');
-    expect(view.gradingFinished).toBe(false);
-  });
-
-  it('批改完成前：已勾選為答對、未勾選為等待批改；不含他組答案與結果', () => {
-    const session = closedWith({ g1: false, g2: true }, false);
-    const first = toStudentView(session, 1, strategy, roster, NOW);
-    const second = toStudentView(session, 2, strategy, roster, NOW);
-    expect(first.ownSubmissions[0]?.grading).toBe('PENDING');
-    expect(second.ownSubmissions[0]?.grading).toBe('CORRECT');
-    expect(first.results).toBeNull();
-    expect(JSON.stringify(first)).not.toContain('第二組的答案');
-    expect(JSON.stringify(first)).not.toContain('Leo');
-  });
-
-  it('批改完成後：未勾選為答錯；搶答成功為答對中最早送出的組別', () => {
-    const session = closedWith({ g1: false, g2: true }, true);
-    const first = toStudentView(session, 1, strategy, roster, NOW);
-    expect(first.ownSubmissions[0]?.grading).toBe('INCORRECT');
-    expect(first.results?.[0]).toMatchObject({ winnerGroupId: 2, submitterNickname: 'Leo' });
-  });
-
-  it('兩組都答對時，較早送出的為搶答成功；都沒勾時無人答對', () => {
-    const both = toStudentView(closedWith({ g1: true, g2: true }, true), 2, strategy, roster, NOW);
-    expect(both.results?.[0]?.winnerGroupId).toBe(1);
-    const none = toStudentView(
-      closedWith({ g1: false, g2: false }, true),
-      2,
-      strategy,
-      roster,
-      NOW,
-    );
-    expect(none.results?.[0]?.winnerGroupId).toBeNull();
-  });
-
-  it('老師檢視：已結束時依批改決定搶答成功，含批改完成時間', () => {
-    const view = toTeacherView(closedWith({ g1: false, g2: true }, true), strategy, NOW);
-    expect(view.results[0]?.winnerGroupId).toBe(2);
-    expect(view.gradingFinishedAt).toBe('2026-11-25T01:10:00.000Z');
-    const pending = toTeacherView(closedWith({ g1: false, g2: false }, false), strategy, NOW);
-    expect(pending.results[0]?.winnerGroupId).toBeNull();
-  });
-
-  it('學生檢視含搶答計時所需的開啟、結束與伺服器時間', () => {
-    const view = toStudentView(
-      closedWith({ g1: false, g2: false }, false),
-      1,
-      strategy,
-      roster,
-      NOW,
-    );
     expect(view).toMatchObject({
       openedAt: '2026-11-25T01:00:00.000Z',
       closedAt: '2026-11-25T01:05:00.000Z',

@@ -121,20 +121,12 @@ export const PublicViewSchema = z.object({
 });
 export type PublicView = z.infer<typeof PublicViewSchema>;
 
-/**
- * 學生看到的本組批改狀態（004 FR-033、FR-034）：
- * PENDING 等待老師批改（含「已結束」以前）、CORRECT 老師勾選答對、INCORRECT 批改完成後未勾選。
- */
-export const GradingStatusSchema = z.enum(['PENDING', 'CORRECT', 'INCORRECT']);
-export type GradingStatus = z.infer<typeof GradingStatusSchema>;
-
 /** 學生自己組別的已送出資料：不含 sequence、順位、是否搶答成功（避免透露他組作答狀況）。 */
 export const OwnSubmissionSchema = z.object({
   questionNumber: z.number().int().positive(),
   answers: z.array(BlankAnswerSchema),
   /** 本組這一題的送出者暱稱（004 FR-024）；舊紀錄為 null */
   submitterNickname: z.string().nullable(),
-  grading: GradingStatusSchema,
 });
 export type OwnSubmission = z.infer<typeof OwnSubmissionSchema>;
 
@@ -147,9 +139,8 @@ export const StudentViewSchema = z.object({
   members: z.array(GroupMemberSchema),
   groupId: GroupIdSchema,
   ownSubmissions: z.array(OwnSubmissionSchema),
-  /** 只有活動「已結束」且老師「批改完成」後才有值（004 FR-025） */
+  /** 只有活動「已結束」後才有值 */
   results: z.array(ResultViewSchema).nullable(),
-  gradingFinished: z.boolean(),
   /** 搶答計時用（004 FR-029、FR-030）：與老師端相同的開啟、結束時間與伺服器時間 */
   openedAt: z.string().nullable(),
   closedAt: z.string().nullable(),
@@ -169,8 +160,6 @@ export const TeacherViewSchema = z.object({
   openedAt: z.string().nullable(),
   closedAt: z.string().nullable(),
   lastExport: LastExportSchema.nullable(),
-  /** 批改完成時間（004 FR-034）；尚未完成為 null */
-  gradingFinishedAt: z.string().nullable(),
   /** 伺服器產生這份資料時的時間，前端據此校正計時（002 FR-012、research R5） */
   serverNow: z.string(),
 });

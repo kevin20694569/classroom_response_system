@@ -24,7 +24,7 @@ node "學生分頁（瀏覽器，每組可多個）" as StudentBrowser {
 }
 
 node "老師分頁（瀏覽器）" as TeacherBrowser {
-  component "TeacherClient\nSubmissionBoard 顯示送出者、\n勾選答對、批改完成" as TeacherClient
+  component "TeacherClient\nSubmissionBoard 顯示送出者" as TeacherClient
 }
 
 package "web/components（老師端、學生端共用畫面元件）" as WebShared {
@@ -47,7 +47,7 @@ node "本機伺服器" as Server {
   }
   package "領域層" {
     component "GroupRoster\n組員名冊、30 秒斷線緩衝" as Roster
-    component "QuizSessionService\n狀態機、批改（converge）" as SessionService
+    component "QuizSessionService\n狀態機" as SessionService #EEEEEE
     component "SubmissionService\n記錄送出者暱稱" as SubmissionService
     component "exportPlan\n附註行 / 送出者欄寫入暱稱" as ExportPlan
   }
@@ -77,8 +77,6 @@ ResultBoard ..> QuestionContent
 TeacherClient ..> QuestionContent : 題目預覽改用共用版面
 TeacherClient ..> Timer
 PhaseBanner ..> Timer
-TeacherClient --> HttpApi : 勾選答對 / 批改完成
-HttpApi --> SessionService : grade / finishGrading
 
 StudentAuth --> HttpApi : 加入（groupId、暱稱）/ 離開
 HttpApi ..> NicknameRules : 驗證暱稱

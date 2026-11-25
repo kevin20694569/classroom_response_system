@@ -39,19 +39,9 @@ package "shared（契約）" {
   StudentQuestionView *-- "0..1" QuestionTexts
   class Submission {
     +submitterNickname: string | null（新增：舊資料為 null）
-    +correct: boolean（converge：老師勾選答對，預設 false）
   }
-  class QuizSession {
-    +gradingFinishedAt: string | null（converge：批改完成時間）
-  }
-  QuizSession *-- "0..*" Submission
   class OwnSubmission {
     +submitterNickname: string | null（新增：本組都看得到）
-    +grading: PENDING | CORRECT | INCORRECT（converge）
-  }
-  class GradeRequest {
-    +submissionId: string
-    +correct: boolean
   }
   class ResultView {
     +submitterNickname: string | null（新增：只在 CLOSED，搶答成功答案的送出者）
@@ -63,8 +53,7 @@ package "shared（契約）" {
     +headcounts: GroupHeadcount[]（新增）
     +members: GroupMember[]（新增：只有本組，依加入先後）
     +questions: StudentQuestionView[]（修改）
-    +gradingFinished: boolean（converge：false 時 results 為 null）
-    +openedAt / closedAt / serverNow（converge：計時）
+    +openedAt / closedAt / serverNow（converge：搶答計時）
   }
   class NicknameRules <<module>> {
     +NICKNAME_MAX_LENGTH = 20
@@ -111,17 +100,6 @@ package "server" {
     members 只放 groupId 的組員；
     OPEN 時只給本組送出者，CLOSED 才給搶答成功答案的送出者
   end note
-  class QuizSessionService {
-    +grade(submissionId, correct): QuizSession（converge：只在 CLOSED）
-    +finishGrading(): QuizSession（converge：只在 CLOSED）
-  }
-  class Results <<module>> {
-    +deriveResults(session, strategy): QuestionResult[]
-    （CLOSED：correct 中 sequence 最小；OPEN：最先送出）
-  }
-  QuizSessionService ..> GradeRequest
-  VisibilityPolicy ..> Results
-  exportPlan ..> Results
   class SubmissionService {
     +submit(submitter, request): SubmitResponse（送出者取自 token 的 nickname）
   }
@@ -140,8 +118,6 @@ package "server" {
 package "web（老師端）" {
   class SubmissionBoard {
     +submissions: Submission[]（每筆顯示送出者暱稱）
-    +onGrade(submissionId, correct)（converge：已結束才有勾選框與提示）
-    +onFinishGrading()（converge：批改完成按鈕）
   }
   class SessionTimer {
     +status / openedAt / closedAt / serverNow（converge：老師端、學生端共用）

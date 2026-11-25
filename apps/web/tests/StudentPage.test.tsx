@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { getToken, setStudentIdentity, setToken } from '../src/api/identity';
@@ -136,7 +136,6 @@ describe('StudentPage — US2 作答與送出', () => {
             questionNumber: 3,
             answers: [{ blankIndex: 1, text: '本組的答案' }],
             submitterNickname: null,
-            grading: 'PENDING',
           },
         ],
       }),
@@ -156,7 +155,6 @@ describe('StudentPage — US3 結果檢視', () => {
           questionNumber: 3,
           answers: [{ blankIndex: 1, text: '本組的答案' }],
           submitterNickname: null,
-          grading: 'PENDING',
         },
       ],
       results: [
@@ -370,7 +368,7 @@ describe('StudentPage — 004 US2 各組人數與本組成員', () => {
   });
 });
 
-describe('StudentPage — 004 搶答計時與批改（FR-029、FR-033）', () => {
+describe('StudentPage — 004 搶答計時（FR-029）', () => {
   it('頂端列顯示搶答計時；已結束時停在結束時間減開啟時間', () => {
     joinedTab();
     render(<StudentPage />);
@@ -384,28 +382,5 @@ describe('StudentPage — 004 搶答計時與批改（FR-029、FR-033）', () =>
       }),
     );
     expect(screen.getByLabelText('搶答計時').textContent).toBe('01:05.25');
-  });
-
-  it('結束後老師批改前顯示「等待老師批改」，勾選推播後顯示「答對」', () => {
-    joinedTab();
-    render(<StudentPage />);
-    const submitted = {
-      questionNumber: 3,
-      answers: [{ blankIndex: 1, text: '本組的答案' }],
-      submitterNickname: 'Milo',
-    };
-    currentSocket().sendState(
-      studentView({ status: 'CLOSED', ownSubmissions: [{ ...submitted, grading: 'PENDING' }] }),
-    );
-    expect(screen.getByText('老師批改中，結果會即時更新')).toBeTruthy();
-    expect(
-      within(screen.getByRole('region', { name: '第 3 題結果' })).getByText('等待老師批改'),
-    ).toBeTruthy();
-    currentSocket().sendState(
-      studentView({ status: 'CLOSED', ownSubmissions: [{ ...submitted, grading: 'CORRECT' }] }),
-    );
-    expect(
-      within(screen.getByRole('region', { name: '第 3 題結果' })).getByText('答對'),
-    ).toBeTruthy();
   });
 });

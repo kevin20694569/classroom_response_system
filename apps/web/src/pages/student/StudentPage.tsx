@@ -125,7 +125,7 @@ export function StudentPage() {
       {view.status === 'CLOSED' ? (
         <StudentResultBoard
           questions={view.questions}
-          results={view.results}
+          results={view.results ?? []}
           ownSubmissions={view.ownSubmissions}
           groupId={view.groupId}
           showUnsentNotice={AnswerDraftStore.hasUnsent(identity.activityId, identity.groupId)}

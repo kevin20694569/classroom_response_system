@@ -1,7 +1,6 @@
 import type {
   GroupId,
   PublicView,
-  GradingStatus,
   QuestionResult,
   QuestionTexts,
   QuizSession,
@@ -35,20 +34,6 @@ function base(session: QuizSession): Pick<PublicView, 'status' | 'groups' | 'que
       blankLabels: q.blanks.map((b) => b.label),
     })),
   };
-}
-
-/**
- * 本組送出的批改狀態（004 FR-033、FR-034）：「已結束」以前一律等待批改（不透露任何判定）；
- * 已勾選為答對；批改完成後仍未勾選為答錯。
- */
-function gradingOf(
-  submission: QuizSession['submissions'][number],
-  status: QuizSession['status'],
-  gradingFinished: boolean,
-): GradingStatus {
-  if (status !== 'CLOSED') return 'PENDING';
-  if (submission.correct) return 'CORRECT';
-  return gradingFinished ? 'INCORRECT' : 'PENDING';
 }
 
 /** 學生端在這個階段能不能看到題目敘述（004 FR-016、FR-018）。 */
@@ -91,7 +76,6 @@ export function toStudentView(
   roster: RosterReader,
   now: Date,
 ): StudentView {
-  const gradingFinished = session.status === 'CLOSED' && session.gradingFinishedAt !== null;
   return {
     viewer: 'student',
     ...base(session),
@@ -112,11 +96,10 @@ export function toStudentView(
         questionNumber: s.questionNumber,
         answers: s.answers,
         submitterNickname: s.submitterNickname,
-        grading: gradingOf(s, session.status, gradingFinished),
       })),
-    // 他組的搶答成功答案與送出者只在老師「批改完成」後公布（004 FR-025），避免批改途中結果反覆改變
-    results: gradingFinished ? deriveResults(session, strategy).map(toResultView) : null,
-    gradingFinished,
+    results:
+      session.status === 'CLOSED' ? deriveResults(session, strategy).map(toResultView) : null,
+    // 搶答計時用（004 FR-029、FR-030）
     openedAt: session.openedAt,
     closedAt: session.closedAt,
     serverNow: now.toISOString(),
@@ -160,7 +143,6 @@ export function toTeacherView(
     openedAt: session.openedAt,
     closedAt: session.closedAt,
     lastExport: session.lastExport,
-    gradingFinishedAt: session.gradingFinishedAt,
     serverNow: now.toISOString(),
   };
 }

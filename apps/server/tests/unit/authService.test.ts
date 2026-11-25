@@ -26,7 +26,6 @@ function readySession(activityId: string): Readonly<QuizSession> {
     openedAt: null,
     closedAt: null,
     lastExport: null,
-    gradingFinishedAt: null,
   };
 }
 
