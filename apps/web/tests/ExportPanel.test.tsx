@@ -90,7 +90,7 @@ describe('ExportPanel（US4）', () => {
     const radios = screen.getAllByRole<HTMLInputElement>('radio');
     expect(radios).toHaveLength(3);
     expect(screen.getByRole<HTMLInputElement>('radio', { name: /只有答案/ }).checked).toBe(true);
-    expect(screen.getByText(/新增「搶答組別」「提交時間」兩欄/)).toBeTruthy();
+    expect(screen.getByText(/新增「搶答組別」「提交時間」「搶答送出者」三欄/)).toBeTruthy();
     expect(screen.getByText(/複製答案格時會一併複製這一行/)).toBeTruthy();
     unmount();
     render(<ExportPanel view={teacherView({ status: 'OPEN' })} />);

@@ -118,6 +118,7 @@ package "server" {
 package "web（老師端）" {
   class SubmissionBoard {
     +submissions: Submission[]（每筆顯示送出者暱稱）
+    （第 N 名・組別・暱稱一行，子題答案各一行，FR-037）
   }
   class SessionTimer {
     +status / openedAt / closedAt / serverNow（converge：老師端、學生端共用）

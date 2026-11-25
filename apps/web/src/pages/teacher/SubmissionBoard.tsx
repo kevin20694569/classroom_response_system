@@ -5,16 +5,21 @@ function groupLabel(view: TeacherView, groupId: number): string {
   return view.groups.find((g) => g.id === groupId)?.name ?? `第 ${groupId} 組`;
 }
 
-function AnswerText({ answers, isGroup }: { answers: readonly BlankAnswer[]; isGroup: boolean }) {
-  if (!isGroup) return <span>{answers[0]?.text}</span>;
+/**
+ * 答案逐行顯示（004 FR-037）：題組每個子題一行「（n）答案」，單題一行答案；
+ * 長答案在卡片內自動換行（保留原有換行、長字串也會斷行），不同子題不擠在同一行。
+ */
+function AnswerLines({ answers, isGroup }: { answers: readonly BlankAnswer[]; isGroup: boolean }) {
+  const line = 'whitespace-pre-wrap break-words [overflow-wrap:anywhere]';
+  if (!isGroup) return <p className={line}>{answers[0]?.text}</p>;
   return (
-    <span className="space-x-3">
+    <div className="space-y-0.5">
       {answers.map((a) => (
-        <span key={a.blankIndex}>
+        <p key={a.blankIndex} className={line}>
           （{a.blankIndex}）{a.text}
-        </span>
+        </p>
       ))}
-    </span>
+    </div>
   );
 }
 
@@ -23,6 +28,7 @@ function AnswerText({ answers, isGroup }: { answers: readonly BlankAnswer[]; isG
  * 搶答進行中與結束後都依順位顯示每題所有組別的送出紀錄，搶答成功者有標示；結束後無人作答標示「無人搶答」
  * （002 FR-026：結束後保留所有組別的答案，只有匯出才只輸出搶答成功的答案）。
  * 002：每筆答案後面有時間圖示，可查看提交時間（FR-014）。
+ * 004：以「第 N 名」標示順序，答案在名次下方逐子題換行（FR-037）。
  */
 export function SubmissionBoard({ view }: { view: TeacherView }) {
   if (view.status === 'NOT_IMPORTED' || view.status === 'READY') {
@@ -59,20 +65,27 @@ export function SubmissionBoard({ view }: { view: TeacherView }) {
                   {closed ? '無人搶答' : '尚無組別作答'}
                 </p>
               ) : (
-                <ol className="mt-2 space-y-1 text-sm">
+                <ol className="mt-2 space-y-2 text-sm">
                   {records.map((record, i) => {
                     // 搶答成功組別以伺服器的結果為準（RankingStrategy）；結束後其他組別的答案仍保留顯示（FR-026）
                     const won = record.groupId === result?.winnerGroupId;
                     return (
-                      <li key={record.id} className={won ? 'font-semibold text-green-700' : ''}>
-                        第 {i + 1} 位・{groupLabel(view, record.groupId)}
-                        {/* 送出者暱稱（004 FR-026）；004 之前的紀錄沒有送出者時只顯示組別 */}
-                        {record.submitterNickname !== null && `・${record.submitterNickname}`}：
-                        <AnswerText answers={record.answers} isGroup={isGroup} />
-                        <TimeHint receivedAt={record.receivedAt} openedAt={view.openedAt} />
-                        {won && (
-                          <span className="ml-2 rounded bg-green-100 px-1.5 text-xs">搶答成功</span>
-                        )}
+                      <li key={record.id} className="min-w-0 space-y-0.5">
+                        {/* 第一行：名次、組別、送出者、提交時間與搶答成功標籤（004 FR-037） */}
+                        <div className={won ? 'font-semibold text-green-700' : 'font-medium'}>
+                          第 {i + 1} 名・{groupLabel(view, record.groupId)}
+                          {/* 送出者暱稱（004 FR-026）；004 之前的紀錄沒有送出者時只顯示組別 */}
+                          {record.submitterNickname !== null && `・${record.submitterNickname}`}：
+                          <TimeHint receivedAt={record.receivedAt} openedAt={view.openedAt} />
+                          {won && (
+                            <span className="ml-2 rounded bg-green-100 px-1.5 text-xs">
+                              搶答成功
+                            </span>
+                          )}
+                        </div>
+                        <div className={won ? 'text-green-800' : 'text-slate-800'}>
+                          <AnswerLines answers={record.answers} isGroup={isGroup} />
+                        </div>
                       </li>
                     );
                   })}
