@@ -56,8 +56,8 @@ package "shared（契約）" {
   }
   class NicknameRules <<module>> {
     +NICKNAME_MAX_LENGTH = 20
-    +normalizeNickname(raw): string
-    +validateNickname(raw): NicknameIssue | null
+    +NICKNAME_RULE_MESSAGE: string
+    +NicknameSchema（去除前後空白、1～20 字、無控制字元）
   }
   StudentView *-- "0..*" GroupHeadcount
   StudentView *-- "0..*" GroupMember
@@ -70,16 +70,16 @@ package "shared（契約）" {
 
 package "server" {
   class GroupRoster {
-    -members: Map<memberId, RosterEntry>
+    -entries: Map<memberId, RosterEntry>
     -leftMemberIds: Set<memberId>
-    +leave(memberId): void（只在 READY，由 HttpApi 呼叫）
+    +leave(memberId, groupId): void（只在 READY，由 HttpApi 呼叫）
     +hasLeft(memberId): boolean
     +connected(memberId, groupId, nickname): void
     +disconnected(memberId): void（連線歸零 30 秒後才移除）
-    +headcounts(groupCount): GroupHeadcount[]
+    +headcounts(groups): GroupHeadcount[]
     +membersOf(groupId): GroupMember[]
     +clear(): void
-    +onChange(listener): void
+    +onChange(listener): () => void
   }
   class RosterEntry {
     +memberId: string
@@ -92,19 +92,19 @@ package "server" {
   GroupRoster *-- "0..*" RosterEntry
   class VisibilityPolicy <<module>> {
     +toPublicView(session, roster): PublicView
-    +toStudentView(session, identity, strategy, roster): StudentView
+    +toStudentView(session, groupId, strategy, roster): StudentView
   }
   note right of VisibilityPolicy
     READY 以前 content = null；
-    members 只放 identity.groupId 的組員；
+    members 只放 groupId 的組員；
     OPEN 時只給本組送出者，CLOSED 才給搶答成功答案的送出者
   end note
   class SubmissionService {
-    +submit(identity, request): Submission（送出者取自 identity.nickname）
+    +submit(submitter, request): SubmitResponse（送出者取自 token 的 nickname）
   }
   SubmissionService ..> Submission : 保存
   class exportPlan <<module>> {
-    +planExport(session, results, mode): CellWrite[]
+    +planExport(session, results, fresh, mode): ExportPlan
     -attribution(winner): 〔第 N 組｜暱稱｜時間〕（修改）
     -resultColumnWrites(): 組別欄、時間欄、送出者欄（新增一欄）
   }
@@ -123,6 +123,8 @@ package "web（老師端）" {
 package "web（學生端）" {
   class StudentPage {
     -nickname: string | null
+    -editingNickname: boolean
+    -leaveError: string | null
     -identity: StudentIdentity | null
     -view: StudentView | PublicView | null
     +render(): 暱稱 / 選組 / 作答 / 結果
@@ -130,12 +132,12 @@ package "web（學生端）" {
   class NicknamePanel {
     +initial: string | null
     +onConfirm(nickname): void
-    -draft: string
-    -issue: NicknameIssue | null
-    +shuffle(): void
+    +onCancel?(): void（修改暱稱時）
+    -value: string
+    -error: string | null
   }
   class randomNickname <<function>> {
-    +randomNickname(): string（3～10 個英文字母）
+    +randomNickname(exclude?): string（3～10 個英文字母，faker 英文語系）
   }
   class NicknameStore <<module>> {
     +load(): string | null
@@ -155,8 +157,11 @@ package "web（學生端）" {
   class QuestionContent {
     +number: number
     +kind: single | group
+    +blankCount: number
     +prompt: string | null
     +blanks: {label, prompt}[]
+    +titleAs?: p | h2
+    +hideTitle?: boolean
     +renderBlank?(index): ReactNode（學生端插入輸入欄或結果）
   }
   class QuestionAnswerForm {
@@ -169,8 +174,14 @@ package "web（學生端）" {
   StudentPage --> NicknamePanel
   StudentPage --> JoinGroupPanel
   StudentPage --> GroupMemberList
+  class StudentResultBoard {
+    +questions: StudentQuestionView[]（修改：顯示敘述與送出者）
+  }
+  StudentPage --> StudentResultBoard
+  StudentPage ..> NicknameStore
   NicknamePanel ..> randomNickname
-  NicknamePanel ..> NicknameStore
+  NicknamePanel ..> NicknameRules
   QuestionAnswerForm ..> QuestionContent
+  StudentResultBoard ..> QuestionContent
 }
 @enduml

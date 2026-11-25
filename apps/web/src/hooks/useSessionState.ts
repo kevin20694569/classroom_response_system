@@ -33,6 +33,9 @@ export function useSessionState(
     // 這條連線是否已不再使用：元件卸載、或活動換新（之後由新的身分建立新連線）
     let retired = false;
     socket.on('connect', () => {
+      // 伺服器每次接受連線都會先送一份完整狀態；伺服器重新啟動後 version 從 0 重新計算，
+      // 因此每次（重新）連線都重設版本，避免重啟後的狀態被當成舊版本而忽略（004 FR-013）
+      versionRef.current = -1;
       setState((s) => ({ ...s, connected: true }));
     });
     socket.on('disconnect', (reason) => {

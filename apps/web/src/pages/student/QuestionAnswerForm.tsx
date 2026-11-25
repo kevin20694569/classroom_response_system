@@ -165,11 +165,15 @@ export function QuestionAnswerForm({
     // 同組成員都看得到送出者（004 FR-024）；本分頁剛送出、推播尚未到達時以自己的暱稱顯示
     const submitter = submitted === null ? identity.nickname : submitted.submitterNickname;
     const byIndex = new Map(answers.map((a) => [a.blankIndex, a.text]));
+    const badge = (
+      <p className="inline-block rounded-full bg-green-100 px-3 py-1 text-sm font-semibold text-green-800">
+        {submitter === null ? '已送出' : `已送出（${submitter}）`}
+      </p>
+    );
     return (
       <div className="space-y-2">
-        <p className="inline-block rounded-full bg-green-100 px-3 py-1 text-sm font-semibold text-green-800">
-          {submitter === null ? '已送出' : `已送出（${submitter}）`}
-        </p>
+        {/* 有題目敘述時題號在 QuestionContent 內，標籤放在題目與答案之後；否則沿用 003 放在最上方 */}
+        {showLabels && badge}
         <WithContent
           question={question}
           renderBlank={(index) => {
@@ -184,6 +188,7 @@ export function QuestionAnswerForm({
             );
           }}
         />
+        {!showLabels && badge}
         {message !== null && <p className="text-sm text-slate-600">{message}</p>}
       </div>
     );

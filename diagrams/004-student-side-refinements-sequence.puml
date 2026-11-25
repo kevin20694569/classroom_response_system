@@ -19,7 +19,7 @@ PageA -> Store : load()
 Store --> PageA : null（尚未有暱稱）
 PageA -> PageA : randomNickname() 預填「Milo」
 A -> PageA : 「換一個」/ 自行修改 / 確認
-PageA -> PageA : validateNickname()（1～20 字）
+PageA -> PageA : NicknameSchema 驗證（1～20 字）
 PageA -> Store : save(nickname)
 PageA -> RT : 無 token 連線
 RT --> PageA : PublicView（組別 + 各組人數）
@@ -32,9 +32,9 @@ Http --> PageA : token（含 memberId、暱稱）
 PageA -> RT : 以 token 重新連線
 RT -> Roster : connected(memberId, 2, nickname)
 Roster -> RT : onChange
-RT --> PageA : StudentView（本組成員、各組人數）
 RT --> PageB : StudentView（第 2 組成員 +1）
 RT --> PageC : PublicView（第 2 組人數 +1）
+RT --> PageA : StudentView（本組成員含自己、各組人數）
 
 == 重新整理與斷線 ==
 A -> PageA : 重新整理
@@ -66,7 +66,7 @@ RT --> PageC : 結束後各組 StudentView 的 results\n都含搶答成功答案
 == 待開始時離開組別 ==
 A -> PageA : 離開組別（只限 READY）
 PageA -> Http : POST /api/auth/student/leave（token）
-Http -> Roster : leave(memberId)（只在 READY；立即移除，不等 30 秒）
+Http -> Roster : leave(memberId, groupId)（只在 READY；立即移除，不等 30 秒）
 Http --> PageA : 204
 Roster -> RT : onChange
 RT --> PageB : 第 2 組成員 -1
