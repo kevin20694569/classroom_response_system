@@ -19,6 +19,8 @@
 - `StudentView` 的題目在 `OPEN`／`CLOSED` 才帶 `content`（敘述），版面與老師端共用 `QuestionContent`（R7、R8）。
 - `Submission` 新增 `submitterNickname`（舊資料讀成 `null`），經由既有的可見性規則傳給各角色（R9）；
   匯出的附註行與結果欄加上送出者（R10）。
+- converge 新增：老師在「已結束」勾選答對與「批改完成」，搶答成功改為答對中最早送出，匯出依批改結果（R13）；
+  學生端顯示與老師端共用的搶答計時（R14）。
 
 ## Technical Context
 
@@ -86,6 +88,9 @@
 | GroupRoster、RosterEntry | 組件圖、類別圖、時序圖 | `apps/server/src/domain/roster/groupRoster.ts` |
 | VisibilityPolicy（人數、本組成員、content、送出者） | 組件圖、類別圖、時序圖 | `apps/server/src/domain/visibility/visibilityPolicy.ts` |
 | SubmissionService（送出者） | 組件圖、類別圖、時序圖 | `apps/server/src/domain/submission/submissionService.ts` |
+| 批改（grade、finishGrading、依批改的結果） | 組件圖、類別圖、時序圖 | `apps/server/src/domain/session/quizSessionService.ts`、`domain/ranking/results.ts`、`transport/http/routes/sessionRoutes.ts` |
+| SubmissionBoard（勾選、批改完成、提示） | 組件圖、類別圖、時序圖 | `apps/web/src/pages/teacher/SubmissionBoard.tsx` |
+| SessionTimer（老師端、學生端共用） | 組件圖 | `apps/web/src/components/SessionTimer.tsx` |
 | exportPlan（附註行、送出者欄） | 組件圖、類別圖 | `apps/server/src/domain/export/exportPlan.ts`、`domain/guidedNotes/parser.ts` |
 | AuthService／tokens（memberId、暱稱） | 時序圖 | `apps/server/src/auth/{authService,tokens}.ts` |
 | QuizSessionService、LocalSessionRepository | 組件圖（灰色） | 沿用，不改（`reset` 變更時由 gateway 清空名冊） |

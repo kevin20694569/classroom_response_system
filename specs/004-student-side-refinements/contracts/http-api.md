@@ -86,3 +86,24 @@
 ```
 
 同一時刻「待開始」的學生檢視中，每題 `content` 為 `null`；`PublicView` 的題目沒有 `content` 欄位。
+
+## 5. 老師批改（converge 新增）
+
+`POST /api/session/grade`（只限老師）
+
+```json
+{ "submissionId": "0b8d2c33-…", "correct": true }
+```
+
+`POST /api/session/grade/finish`（只限老師；請求內容為 `{}`）
+
+| 情況 | 狀態碼 | code | 訊息 |
+|------|--------|------|------|
+| 成功 | 200 | — | 回應 `{ view: TeacherView }` |
+| 活動不是「已結束」 | 409 | `GRADE_NOT_ALLOWED` | 搶答結束後才能批改。 |
+| 找不到這筆送出 | 404 | `SUBMISSION_NOT_FOUND` | 找不到這筆送出，請重新整理後再試。 |
+| 學生 token | 403 | `FORBIDDEN` | 沿用 |
+| 沒有 token | 401 | `UNAUTHORIZED` | 沿用 |
+
+- 勾選狀態與原本相同時不改變資料；批改完成重複按下不改變第一次的時間。
+- log：`submission.graded`（題號、組別、`correct`）、`grading.finished`；不含暱稱。

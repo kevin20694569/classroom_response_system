@@ -9,6 +9,7 @@
 | 活動狀態改變（匯入、開啟、結束） | PublicView（含 `headcounts`） | 各組 StudentView（含 `headcounts`、`members`、`content`） | TeacherView（含送出者） |
 | 送出成功 | — | 只有送出的那一組 | TeacherView |
 | 名冊改變（加入、30 秒到期移除、離開組別） | PublicView | 每一組 StudentView（人數改變所有組都要更新） | 不推播（老師端不顯示名冊） |
+| 老師勾選、取消勾選、批改完成 | PublicView | 每一組 StudentView（本組的 `grading`；批改完成後含 `results`） | TeacherView |
 | 新的活動（reset） | 沿用 003：各組收到 `session:reset` 並中斷連線；名冊清空 | | |
 
 ## 規則

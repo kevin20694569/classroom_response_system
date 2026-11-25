@@ -99,3 +99,25 @@
 ```
 
 - 在「有暱稱、未加入」且老師尚未匯入時，畫面沿用 003 的「老師尚未匯入題目，請稍候」，並顯示目前暱稱。
+
+## 7. 批改（converge 新增，research R13）
+
+| 欄位 | 位置 | 說明 |
+|------|------|------|
+| `correct` | `Submission` | 老師是否勾選答對；預設 `false`（含舊資料） |
+| `gradingFinishedAt` | `QuizSession` | 老師按「批改完成」的時間；尚未完成為 `null`；重新匯入時清空 |
+| `grading` | `OwnSubmission`（學生） | `PENDING`／`CORRECT`／`INCORRECT`，由 `correct`、`gradingFinishedAt` 與活動狀態推導 |
+| `gradingFinished` | `StudentView` | 是否已批改完成；為 `false` 時 `results` 為 `null` |
+| `gradingFinishedAt` | `TeacherView` | 同 `QuizSession` |
+| `openedAt`、`closedAt`、`serverNow` | `StudentView` | 學生端搶答計時用（research R14） |
+
+每筆送出的批改狀態（學生看到的）：
+
+```text
+（搶答進行中）PENDING
+已結束 ──老師勾選──> CORRECT ──取消勾選──> PENDING（尚未批改完成）或 INCORRECT（已批改完成）
+已結束、未勾選 ──批改完成──> INCORRECT
+```
+
+每題的搶答成功：「已結束」時為 `correct` 的送出中 `sequence` 最小者，沒有則無人答對；「搶答進行中」為最先送出（暫定）。
+學生的結果標籤（批改完成後）：搶答成功組別「本組搶答成功」、其他答對「回答成功」、未勾「答錯」、沒有送出「本組未作答」。
