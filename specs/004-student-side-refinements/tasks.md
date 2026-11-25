@@ -281,3 +281,26 @@ Task: "T030 GroupMemberList.tsx"
 - [ ] T064 [P] 學生端計時：把 `apps/web/src/pages/teacher/SessionTimer.tsx` 移到 `apps/web/src/components/SessionTimer.tsx`（老師端改為引用，畫面不變），學生作答與結果畫面（`apps/web/src/pages/student/PhaseBanner.tsx` 或 `StudentPage.tsx`）以 `StudentView` 的 `openedAt`、`closedAt`、`serverNow` 顯示同一個計時（待開始為 00:00.00、搶答中持續走、已結束停在總時間）；新增 web 測試確認與老師端相同的計算方式 per user request: synced timer (missing)
 - [ ] T065 [P] 刪除暱稱頁說明中的「可以和別人重複。」：`apps/web/src/pages/student/NicknamePanel.tsx` 改為「暱稱會顯示給同組同學與老師。」（暱稱仍允許重複，FR-005 不變），同步更新 `contracts/student-ui.md §1` 與相關測試 per user request: nickname page text (contradicts)
 - [ ] T066 品質關卡：`npm run typecheck`、`npm run lint`、`npm run format:check`、`npm test`、`npm run build` 全部通過；更新 `README.md`（勾選答對、依答對結果匯出、學生端計時）與 `diagram-verification.md`；以 3000 以外的埠和暫存 `DATA_DIR` 實際操作勾選與學生計時，回報結果 per Constitution VII (missing)
+
+## Phase 9: Convergence
+
+本 Phase 來自使用者在第二次 converge 提出的批改流程（「等待老師批改」與「批改完成」按鈕）。它修改 Phase 8 尚未
+實作的規則，實作時以本 Phase 為準：T055、T056、T057 要一併寫入下列規則；T058 的 `OwnSubmission.correct` 改為
+T068 的 `grading`；T063 的「未答對」改為 T071 的標籤；T062 的勾選畫面加上 T072 的按鈕。
+
+規則：
+- 搶答結束後，本組每一題送出一開始都是「等待老師批改」。
+- 老師每勾選一筆，立即推播給該組，該題顯示「答對」；取消勾選則回到「等待老師批改」。
+- 老師按下「批改完成」後，沒勾的送出全部推播為「答錯」；答對組別中最早送出（伺服器 `sequence` 最小）的顯示
+  「搶答成功」，其他答對的顯示「回答成功」；整題沒有答對時為「無人答對」。
+- 批改完成前，學生端不顯示他組的搶答成功答案與送出者；批改完成後才公布（避免結果在批改中途反覆改變）。
+- 批改完成後老師仍可改勾選，學生端即時更新（沒勾＝答錯）。
+- 重新匯入時清空勾選與批改完成狀態；兩者在伺服器重新啟動後都保留。
+
+- [ ] T067 依上述規則更新 `spec.md`（批改流程的 User Story、FR、SC、邊界情況與 Clarifications）、`plan.md`、`research.md`、`data-model.md`（批改狀態與狀態轉換：等待老師批改 → 答對／答錯）、`contracts/`（`http-api.md` 新增批改完成 API、`realtime-events.md`、`student-ui.md` 結果標籤、老師端勾選畫面與「批改完成」按鈕）、`quickstart.md §4` 與 `checklists/manual-verification.md`，並更新三張 004 圖表後執行 `plantuml "./diagrams/004-*.puml"`（與 T055～T057 一起完成）per user request: grading workflow, Constitution VI (missing)
+- [ ] T068 在 `packages/shared` 的 `QuizSession` 加 `gradingFinishedAt: IsoDateTime | null`（預設 `null`，舊資料相容）；`OwnSubmission` 改為帶 `grading: 'PENDING' | 'CORRECT' | 'INCORRECT'`（取代 T058 規劃的 `correct`；「已結束」以前一律 `PENDING`）；`StudentView` 加 `gradingFinished: boolean`；`TeacherView` 加 `gradingFinishedAt`；更新 `packages/shared/tests/schemas.test.ts` per user request: grading workflow (missing)
+- [ ] T069 新增 `POST /api/session/grade/finish`（只限老師；只在「已結束」接受，否則 `GRADE_NOT_ALLOWED`；重複按下不改變第一次的時間）於 `apps/server/src/transport/http/routes/sessionRoutes.ts`，由 `QuizSessionService` 經同一把鎖設定 `gradingFinishedAt` 並保存、推播給老師與所有組；重新匯入時清空；log `grading.finished`；整合測試涵蓋權限、階段、重複按下、重啟後保留、重新匯入清空 per user request: finish grading button (missing)
+- [ ] T070 修改 `apps/server/src/domain/visibility/visibilityPolicy.ts` 與 T059 的結果規則：學生 `ownSubmissions[].grading` 在批改完成前為勾選＝`CORRECT`、未勾＝`PENDING`，批改完成後未勾＝`INCORRECT`；學生 `results`（他組的搶答成功答案與送出者）在批改完成前為 `null`，批改完成後為「答對中最早送出」；老師檢視不受影響；單元與整合測試證明批改完成前學生收到的資料不含他組答案與送出者、勾選與取消勾選即時推播給該組 per user request: pending/correct/incorrect, Constitution I (missing)
+- [ ] T071 修改學生端結果（`apps/web/src/student/groupOutcomes.ts`、`apps/web/src/pages/student/StudentResultBoard.tsx`）：批改完成前每題顯示「等待老師批改」或「答對」，批改完成後顯示「本組搶答成功」「回答成功」「答錯」「本組未作答」，並公布每題的搶答成功答案與送出者（沒有則「無人答對」）；搶答成功題數只在批改完成後計算；更新 `groupOutcomes.test.ts`、`StudentResultBoard.test.tsx`、`StudentPage.test.tsx`（取代 T063 的標籤）per user request: result labels (missing)
+- [ ] T072 在老師端（`apps/web/src/pages/teacher/SubmissionBoard.tsx` 或 `SessionControls.tsx`）於「已結束」顯示「批改完成」按鈕，呼叫 T069 的 API；按下後顯示「已批改完成」，仍可修改勾選；勾選旁的使用提示補上「勾選會立即通知該組答對；按『批改完成』後，沒勾的送出會通知為答錯」；更新老師端測試 per user request: finish grading button and hint (missing)
+- [ ] T073 品質關卡：`npm run typecheck`、`npm run lint`、`npm run format:check`、`npm test`、`npm run build` 全部通過；以 3000 以外的埠和暫存 `DATA_DIR` 實際操作「等待老師批改 → 勾選 → 取消勾選 → 批改完成」並確認學生端畫面；更新 `diagram-verification.md` per Constitution VII (missing)
