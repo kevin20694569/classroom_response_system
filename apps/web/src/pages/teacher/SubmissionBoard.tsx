@@ -189,7 +189,7 @@ export function SubmissionBoard({ view }: { view: TeacherView }) {
                   })}
                   {closed && result?.winnerGroupId === null && (
                     <li className="text-slate-500">
-                      {view.gradingFinishedAt === null ? '尚未勾選答對' : '無人答對'}
+                      {view.gradingFinishedAt === null ? '尚未批改' : '無人答對'}
                     </li>
                   )}
                 </ol>

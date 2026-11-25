@@ -74,10 +74,13 @@
 | `members` | ✘ | ✔ 只有本組 | ✘ |
 | 題目敘述 | ✘ 任何階段 | `content`：READY 以前 `null`；OPEN、CLOSED 才有值 | ✔ 沿用 002 |
 | `ownSubmissions[].submitterNickname` | — | ✔ 本組（任何階段） | — |
-| `results[].submitterNickname` | — | 只在 CLOSED（`results` 本身只在 CLOSED 有值） | ✔ 任何階段 |
+| `results[].submitterNickname` | — | 只在老師批改完成後（`results` 本身在批改完成前為 `null`） | ✔ 任何階段 |
 | `submissions[].submitterNickname` | — | — | ✔ 任何階段 |
+| `ownSubmissions[].grading` | — | ✔ 本組；CLOSED 以前一律 `PENDING`（§7） | — |
+| `gradingFinished`／`gradingFinishedAt` | — | ✔ `gradingFinished` | ✔ `gradingFinishedAt` |
+| `openedAt`、`closedAt`、`serverNow` | — | ✔（搶答計時） | ✔ 沿用 002 |
 
-- 學生端永遠收不到其他組的 `members`；其他組的暱稱只會以 CLOSED 後 `results[].submitterNickname` 出現（FR-014、FR-025）。
+- 學生端永遠收不到其他組的 `members`；其他組的暱稱與答案只會在老師批改完成後以 `results[]` 出現（FR-014、FR-025）。
 
 ## 5. 送出紀錄（Submission）
 
