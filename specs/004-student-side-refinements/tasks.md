@@ -307,6 +307,6 @@ T068 的 `grading`；T063 的「未答對」改為 T071 的標籤；T062 的勾�
 
 ## Phase 10: Convergence
 
-- [ ] T074 [P] 把老師端沒有搶答成功的題目在批改完成前的提示，從「尚未勾選答對」改為契約的「尚未批改」（`apps/web/src/pages/teacher/SubmissionBoard.tsx`），並同步更新 `apps/web/tests/SubmissionBoard.test.tsx` per contracts/student-ui.md §6 (contradicts)
-- [ ] T075 [P] 更新 `specs/004-student-side-refinements/data-model.md §4`：學生 `results[].submitterNickname` 與其他組暱稱改為「老師批改完成後」才出現（不是 CLOSED 就出現），並加上 `ownSubmissions[].grading`、`gradingFinished`、`openedAt`／`closedAt`／`serverNow` 列；更新 `quickstart.md §3` 測試重點表，加入批改（權限、階段、即時推播、批改完成前不含他組答案、重啟保留、重新匯入清空）、依批改匯出與學生端計時三列 per FR-025, FR-029～FR-036 (partial)
-- [ ] T076 品質關卡：`npm run typecheck`、`npm run lint`、`npm run format:check`、`npm test` 全部通過，回報指令與結果 per Constitution VII (missing)
+- [X] T074 [P] 把老師端沒有搶答成功的題目在批改完成前的提示，從「尚未勾選答對」改為契約的「尚未批改」（`apps/web/src/pages/teacher/SubmissionBoard.tsx`），並同步更新 `apps/web/tests/SubmissionBoard.test.tsx` per contracts/student-ui.md §6 (contradicts)
+- [X] T075 [P] 更新 `specs/004-student-side-refinements/data-model.md §4`：學生 `results[].submitterNickname` 與其他組暱稱改為「老師批改完成後」才出現（不是 CLOSED 就出現），並加上 `ownSubmissions[].grading`、`gradingFinished`、`openedAt`／`closedAt`／`serverNow` 列；更新 `quickstart.md §3` 測試重點表，加入批改（權限、階段、即時推播、批改完成前不含他組答案、重啟保留、重新匯入清空）、依批改匯出與學生端計時三列 per FR-025, FR-029～FR-036 (partial)
+- [X] T076 品質關卡：`npm run typecheck`、`npm run lint`、`npm run format:check`、`npm test` 全部通過，回報指令與結果 per Constitution VII (missing)

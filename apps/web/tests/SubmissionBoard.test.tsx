@@ -335,7 +335,7 @@ describe('SubmissionBoard — 004 批改（FR-031、FR-034）', () => {
     expect(screen.getByText('已批改完成（仍可修改勾選）')).toBeTruthy();
   });
 
-  it('沒有搶答成功的題目：批改完成前顯示「尚未勾選答對」，之後顯示「無人答對」', () => {
+  it('沒有搶答成功的題目：批改完成前顯示「尚未批改」，之後顯示「無人答對」', () => {
     const results = [1, 2, 3, 4].map((n) => ({
       questionNumber: n,
       winnerGroupId: null,
@@ -346,7 +346,7 @@ describe('SubmissionBoard — 004 批改（FR-031、FR-034）', () => {
     const view = closedView({ submissions: [record(3, 1, 1, ['錯的'])], results });
     const { unmount } = render(<SubmissionBoard view={view} />);
     expect(
-      within(screen.getByRole('article', { name: '第 3 題' })).getByText('尚未勾選答對'),
+      within(screen.getByRole('article', { name: '第 3 題' })).getByText('尚未批改'),
     ).toBeTruthy();
     unmount();
     render(<SubmissionBoard view={{ ...view, gradingFinishedAt: '2026-11-25T02:00:00.000Z' }} />);
