@@ -134,7 +134,7 @@ export class RealtimeGateway {
       .emit(SESSION_STATE, { view: toPublicView(session, this.roster), version });
     for (const group of session.groups) {
       this.io.to(groupRoom(group.id)).emit(SESSION_STATE, {
-        view: toStudentView(session, group.id, ranking, this.roster),
+        view: toStudentView(session, group.id, ranking, this.roster, this.service.deps.now()),
         version,
       });
     }
@@ -165,7 +165,7 @@ export class RealtimeGateway {
           });
           for (const group of session.groups) {
             this.io.to(groupRoom(group.id)).emit(SESSION_STATE, {
-              view: toStudentView(session, group.id, ranking, this.roster),
+              view: toStudentView(session, group.id, ranking, this.roster, this.service.deps.now()),
               version,
             });
           }
@@ -178,7 +178,13 @@ export class RealtimeGateway {
           });
           if (change.groupId !== undefined) {
             this.io.to(groupRoom(change.groupId)).emit(SESSION_STATE, {
-              view: toStudentView(session, change.groupId, ranking, this.roster),
+              view: toStudentView(
+                session,
+                change.groupId,
+                ranking,
+                this.roster,
+                this.service.deps.now(),
+              ),
               version,
             });
           }

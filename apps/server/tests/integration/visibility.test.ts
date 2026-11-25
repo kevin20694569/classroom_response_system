@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import {
   call,
   connectSocket,
+  gradeAllCorrect,
   joinStudent,
   startTestApp,
   submitAnswers,
@@ -66,10 +67,18 @@ describe('可見性', () => {
     ].join('\n');
     expect(everything2).not.toContain(SECRET_1);
 
-    // 結束後兩組都收到每題結果，且在 1 秒內同步
+    // 結束後、老師批改完成前看不到結果；批改完成後兩組都收到每題結果，且在 1 秒內同步（004 FR-025）
     const closed = [s1, s2].map((s) => s.nextState((p) => p.view.status === 'CLOSED', 1000));
     await call(app, 'POST', '/api/session/close', teacher);
     for (const payload of await Promise.all(closed)) {
+      if (payload.view.viewer !== 'student') throw new Error('應為學生檢視');
+      expect(payload.view.results).toBeNull();
+    }
+    const graded = [s1, s2].map((s) =>
+      s.nextState((p) => p.view.viewer === 'student' && p.view.gradingFinished, 1000),
+    );
+    await gradeAllCorrect(app, teacher);
+    for (const payload of await Promise.all(graded)) {
       if (payload.view.viewer !== 'student') throw new Error('應為學生檢視');
       expect(payload.view.results?.[0]).toMatchObject({ questionNumber: 1, winnerGroupId: 1 });
     }
@@ -172,6 +181,10 @@ describe('可見性', () => {
     await call(app, 'POST', '/api/session/close', teacher);
     await closed;
     httpBodies.push((await call(app, 'GET', '/api/session', g2)).body);
+    const graded = s2.nextState((p) => p.view.viewer === 'student' && p.view.gradingFinished, 1000);
+    await gradeAllCorrect(app, teacher);
+    await graded;
+    httpBodies.push((await call(app, 'GET', '/api/session', g2)).body);
 
     const views: Record<string, unknown>[] = [
       ...httpBodies.map((body) => (JSON.parse(body) as { view: Record<string, unknown> }).view),
@@ -180,13 +193,17 @@ describe('可見性', () => {
     for (const view of views) {
       expect(Object.keys(view).sort()).toEqual(
         [
+          'closedAt',
+          'gradingFinished',
           'groupId',
           'groups',
           'headcounts',
           'members',
+          'openedAt',
           'ownSubmissions',
           'questions',
           'results',
+          'serverNow',
           'status',
           'viewer',
         ].sort(),
@@ -203,8 +220,9 @@ describe('可見性', () => {
         expect((q.blankLabels as unknown[]).length).toBe(q.blankCount);
       }
       expect(view.ownSubmissions).toEqual([]);
-      if (view.status !== 'CLOSED') expect(view.results).toBeNull();
-      else {
+      if (view.status !== 'CLOSED' || view.gradingFinished !== true) {
+        expect(view.results).toBeNull();
+      } else {
         for (const r of view.results as Record<string, unknown>[]) {
           expect(Object.keys(r).sort()).toEqual([
             'answers',
@@ -272,8 +290,12 @@ describe('004：送出者的可見性（FR-024～FR-026、SC-008）', () => {
     ].join('\n');
     expect(leoBeforeClose).not.toContain('第一組的Milo');
 
-    const closed = leoSocket.nextState((p) => p.view.status === 'CLOSED', 1000);
     await call(app, 'POST', '/api/session/close', teacher);
+    const closed = leoSocket.nextState(
+      (p) => p.view.viewer === 'student' && p.view.gradingFinished,
+      1000,
+    );
+    await gradeAllCorrect(app, teacher);
     const leoView = (await closed).view;
     if (leoView.viewer !== 'student') throw new Error('應為學生檢視');
     const q3 = leoView.results?.find((r) => r.questionNumber === 3);

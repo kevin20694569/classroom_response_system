@@ -42,7 +42,12 @@ describe('AnswerSheet（003 FR-011～FR-013、Clarifications Q4）', () => {
 
   it('題號清單依本組送出紀錄顯示未作答／已送出', () => {
     renderSheet('OPEN', [
-      { questionNumber: 3, answers: [{ blankIndex: 1, text: '0' }], submitterNickname: null },
+      {
+        questionNumber: 3,
+        answers: [{ blankIndex: 1, text: '0' }],
+        submitterNickname: null,
+        grading: 'PENDING',
+      },
     ]);
     const buttons = within(nav())
       .getAllByRole('button')
@@ -75,6 +80,7 @@ describe('AnswerSheet（003 FR-011～FR-013、Clarifications Q4）', () => {
             questionNumber: 3,
             answers: [{ blankIndex: 1, text: '另一分頁的答案' }],
             submitterNickname: null,
+            grading: 'PENDING',
           },
         ]}
       />,

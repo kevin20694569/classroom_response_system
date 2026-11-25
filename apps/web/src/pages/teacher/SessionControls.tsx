@@ -2,7 +2,7 @@ import { TeacherViewResponseSchema, type TeacherView } from '@crs/shared';
 import { useState } from 'react';
 import { ApiError, apiRequest } from '../../api/http';
 import { ErrorBanner, type DisplayError } from '../../components/ErrorBanner';
-import { SessionTimer } from './SessionTimer';
+import { SessionTimer } from '../../components/SessionTimer';
 
 export const CLOSE_CONFIRM_MESSAGE = '結束後各組無法再作答，也不能重新開啟。確定要結束搶答嗎？';
 export const CLOSED_HINT = '搶答已結束。要再進行搶答請重新匯入，開始新的一場。';

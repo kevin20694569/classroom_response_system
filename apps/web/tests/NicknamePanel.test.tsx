@@ -13,6 +13,9 @@ describe('NicknamePanel（004 US1、contracts/student-ui.md §1）', () => {
   it('第一次進入時預填一個隨機的英文短名字，沒有「取消」', () => {
     render(<NicknamePanel initial={null} onConfirm={vi.fn()} />);
     expect(screen.getByRole('heading', { name: '輸入你的暱稱' })).toBeTruthy();
+    // 說明不再寫「可以和別人重複」（004 FR-028）
+    expect(screen.getByText('暱稱會顯示給同組同學與老師。')).toBeTruthy();
+    expect(document.body.textContent).not.toContain('可以和別人重複');
     expect(input().value).toMatch(/^[A-Za-z]{3,10}$/);
     expect(screen.queryByRole('button', { name: '取消' })).toBeNull();
   });

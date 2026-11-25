@@ -73,6 +73,7 @@ export function teacherView(overrides: Partial<TeacherView> = {}): TeacherView {
     openedAt: null,
     closedAt: null,
     lastExport: null,
+    gradingFinishedAt: null,
     serverNow: '2026-11-23T02:00:00.000Z',
     ...overrides,
   };
@@ -114,6 +115,10 @@ export function studentView(overrides: Partial<StudentView> = {}): StudentView {
     groupId: 2,
     ownSubmissions: [],
     results: null,
+    gradingFinished: false,
+    openedAt: null,
+    closedAt: null,
+    serverNow: '2026-11-23T02:00:00.000Z',
     ...overrides,
   };
 }

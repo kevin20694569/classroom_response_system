@@ -1,6 +1,6 @@
 import type { SessionStatus } from '@crs/shared';
 import { useEffect, useMemo, useState } from 'react';
-import { formatElapsed } from '../../utils/timeFormat';
+import { formatElapsed } from '../utils/timeFormat';
 
 interface SessionTimerProps {
   status: SessionStatus;
@@ -10,7 +10,7 @@ interface SessionTimerProps {
 }
 
 /**
- * 搶答計時（002 US2，research R5）：
+ * 搶答計時（002 US2，research R5；004 FR-029 起老師端與學生端共用）：
  * - 以伺服器記錄的開啟時間為起點；收到資料時以 serverNow 校正瀏覽器時鐘（FR-012）。
  * - 搶答進行中每個畫面影格都由時鐘重新計算（requestAnimationFrame，約每秒 60 次，FR-010），
  *   不累加，因此分頁從背景切回時立即顯示正確值。

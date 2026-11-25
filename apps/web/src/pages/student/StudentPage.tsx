@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ApiError } from '../../api/http';
+import { SessionTimer } from '../../components/SessionTimer';
 import { useSessionState } from '../../hooks/useSessionState';
 import { useStudentAuth } from '../../hooks/useStudentAuth';
 import * as AnswerDraftStore from '../../student/answerDraftStore';
@@ -105,6 +106,15 @@ export function StudentPage() {
         onLeave={() => {
           void leaveGroup();
         }}
+        timer={
+          // 與老師端同步的搶答計時（004 FR-029）
+          <SessionTimer
+            status={view.status}
+            openedAt={view.openedAt}
+            closedAt={view.closedAt}
+            serverNow={view.serverNow}
+          />
+        }
       />
       {leaveError !== null && (
         <p role="alert" className="rounded-md bg-red-50 p-3 text-red-800">
@@ -115,7 +125,7 @@ export function StudentPage() {
       {view.status === 'CLOSED' ? (
         <StudentResultBoard
           questions={view.questions}
-          results={view.results ?? []}
+          results={view.results}
           ownSubmissions={view.ownSubmissions}
           groupId={view.groupId}
           showUnsentNotice={AnswerDraftStore.hasUnsent(identity.activityId, identity.groupId)}
