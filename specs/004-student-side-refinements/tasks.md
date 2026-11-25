@@ -261,3 +261,23 @@ Task: "T030 GroupMemberList.tsx"
 - 每個 Phase 品質關卡通過後 commit
 - 實作若需偏離 plan、contracts 或圖表：需求改變 → 先改 spec 與圖表；只是程式寫錯 → 直接修程式（constitution 開發流程）
 - 避免：模糊任務、多個任務同時修改同一檔案、破壞 story 獨立性的跨 story 相依
+
+## Phase 8: Convergence
+
+本 Phase 來自使用者在 converge 時提出的新需求（暱稱頁文字、學生端計時、老師勾選答對、依答對結果匯出）。
+這些屬於需求變更，依 constitution 開發流程先改 spec、設計文件與圖表（T055～T057），再改程式。
+已確認的決定：某一題沒有勾選任何答案時視為無人答對、匯出不寫入；結束後畫面上答對組別中最早送出（伺服器
+`sequence` 最小）的顯示「搶答成功」，其他答對的組別顯示「回答成功」。
+
+- [ ] T055 更新 `specs/004-student-side-refinements/spec.md`：新增 User Story 5（學生端顯示與老師端同步的搶答計時）與 User Story 6（老師在「已結束」勾選每組每題的答案是否答對，旁邊有使用提示；答對組別中最早送出的為「搶答成功」、其他答對的為「回答成功」、沒勾的視為答錯、整題沒勾任何答案為「無人答對」；匯出改寫入「答對組別中最早送出」的答案與送出者，無人答對的題目不寫入、結果欄留空）及對應的 FR、SC、邊界情況（「搶答進行中」仍以最先送出為暫定第一名、重新匯入時勾選清空、勾選在伺服器重啟後保留、只在「已結束」可勾選）；修改範圍說明與 FR-020（本子功能改變 001～003 的結果判定與 002 的匯出規則），Clarifications 記錄本次兩個決定；`checklists/requirements.md` 重新檢查 per user request: grading & timer (missing)
+- [ ] T056 更新 `plan.md`、`research.md`、`data-model.md`、`quickstart.md` 與 `contracts/`（`http-api.md` 新增老師勾選 API、`realtime-events.md` 勾選後的推播、`student-ui.md` 計時與結果標籤、新增老師端勾選畫面與提示文字、`guided-notes-export.md` 改為依答對結果），並把 quickstart §4 與 `checklists/manual-verification.md` 補上計時、勾選、結果標籤與匯出的驗證步驟 per user request: grading & timer (missing)
+- [ ] T057 更新 `diagrams/004-student-side-refinements-{component,class,sequence}.puml`（勾選 API、`Submission.correct`、依答對結果的排序、學生端計時元件、老師端勾選畫面）並執行 `plantuml "./diagrams/004-*.puml"` 重新產生 PNG per Constitution VI (missing)
+- [ ] T058 [P] 在 `packages/shared/src/domain.ts` 為 `Submission` 加 `correct: z.boolean().default(false)`（舊資料讀成 `false`），在 `packages/shared/src/api.ts` 新增 strict 的 `GradeRequestSchema`（`{ submissionId: uuid, correct: boolean }`），`errors.ts` 新增 `GRADE_NOT_ALLOWED`（狀態不是「已結束」，409）與 `SUBMISSION_NOT_FOUND`（404）；`OwnSubmission` 加 `correct`（只在「已結束」為真實值，其他階段一律 `false`，避免搶答中透露資訊）；`StudentView` 加 `openedAt`、`closedAt`、`serverNow`；更新 `packages/shared/tests/schemas.test.ts` per user request: grading & timer (missing)
+- [ ] T059 在 `apps/server/src/domain/ranking/` 新增依勾選結果推導每題結果的規則：「已結束」時每題的搶答成功為 `correct === true` 中 `sequence` 最小的送出，沒有就是無人答對；「搶答進行中」維持 001 的最先送出為暫定第一名；`deriveResults` 與 `VisibilityPolicy`（學生 `results`、`ownSubmissions[].correct`，老師 `results`）改用此規則；新增單元測試（多組答對取最早、只有後送出的答對、全部未勾、搶答中不受勾選影響）per user request: grading results (missing)
+- [ ] T060 在 `apps/server/src/domain/session/quizSessionService.ts`（或新的 grading 服務）新增 `grade(submissionId, correct)`：只在「已結束」接受（否則 `GRADE_NOT_ALLOWED`）、找不到送出回 `SUBMISSION_NOT_FOUND`、經同一把鎖修改並保存、推播 `state` 給老師與所有組；新增 `POST /api/session/grade`（只限老師，學生 403、未登入 401）於 `apps/server/src/transport/http/routes/sessionRoutes.ts`；log `submission.graded`（題號、組別、correct，不含暱稱）；整合測試涵蓋權限、階段、重啟後保留、重新匯入後清空、學生收到的資料在勾選前後都不含他組未搶到的答案 per user request: grading (missing)
+- [ ] T061 修改 `apps/server/src/domain/export/exportPlan.ts` 與匯出流程使用 T059 的結果：每題寫入「答對組別中最早送出」的答案、附註行與「搶答組別／提交時間／搶答送出者」欄；無人答對的題目作答格不寫入、結果欄清空；以兩份版面不同的測試文件更新 `apps/server/tests/unit/exportPlan.test.ts` 與 `apps/server/tests/integration/export.test.ts`（含「最先送出的答錯、第二個答對」與「整題未勾」）per user request: export by correct answers, Constitution III/VII (missing)
+- [ ] T062 新增老師端勾選畫面：在 `apps/web/src/pages/teacher/SubmissionBoard.tsx` 於「已結束」時每筆送出旁顯示勾選框（呼叫 `POST /api/session/grade`，失敗時還原並顯示訊息），旁邊固定顯示使用提示（例如「勾選代表該組這一題答對，不勾視為答錯；每題以答對組別中最早送出的為搶答成功，匯出時寫入該組的答案」），「搶答成功」標示改依勾選結果；「搶答進行中」不顯示勾選框；更新 `apps/web/tests/SubmissionBoard.test.tsx` per user request: grading UI with hint (missing)
+- [ ] T063 修改學生端結果：`apps/web/src/student/groupOutcomes.ts` 與 `apps/web/src/pages/student/StudentResultBoard.tsx` 的本組成績改為「本組搶答成功」（答對中最早）、「回答成功」（答對但不是最早）、「未答對」（有送出但沒被勾選）、「本組未作答」；沒有任何答對時顯示「無人答對」；老師勾選後即時更新；搶答成功題數依新規則計算；更新 `groupOutcomes.test.ts`、`StudentResultBoard.test.tsx`、`StudentPage.test.tsx` per user request: result labels (missing)
+- [ ] T064 [P] 學生端計時：把 `apps/web/src/pages/teacher/SessionTimer.tsx` 移到 `apps/web/src/components/SessionTimer.tsx`（老師端改為引用，畫面不變），學生作答與結果畫面（`apps/web/src/pages/student/PhaseBanner.tsx` 或 `StudentPage.tsx`）以 `StudentView` 的 `openedAt`、`closedAt`、`serverNow` 顯示同一個計時（待開始為 00:00.00、搶答中持續走、已結束停在總時間）；新增 web 測試確認與老師端相同的計算方式 per user request: synced timer (missing)
+- [ ] T065 [P] 刪除暱稱頁說明中的「可以和別人重複。」：`apps/web/src/pages/student/NicknamePanel.tsx` 改為「暱稱會顯示給同組同學與老師。」（暱稱仍允許重複，FR-005 不變），同步更新 `contracts/student-ui.md §1` 與相關測試 per user request: nickname page text (contradicts)
+- [ ] T066 品質關卡：`npm run typecheck`、`npm run lint`、`npm run format:check`、`npm test`、`npm run build` 全部通過；更新 `README.md`（勾選答對、依答對結果匯出、學生端計時）與 `diagram-verification.md`；以 3000 以外的埠和暫存 `DATA_DIR` 實際操作勾選與學生計時，回報結果 per Constitution VII (missing)
