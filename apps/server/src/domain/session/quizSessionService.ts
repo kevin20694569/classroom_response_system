@@ -139,6 +139,8 @@ export class QuizSessionService {
           openedAt: null,
           closedAt: null,
           lastExport: null,
+          // 新的一場活動：批改狀態清空（004 FR-035）
+          gradingFinishedAt: null,
         };
         const changes: SessionChange[] =
           current.activityId === null
@@ -194,6 +196,63 @@ export class QuizSessionService {
       { event: 'session.transition', from, to: session.status },
       '活動狀態已轉換',
     );
+    return session;
+  }
+
+  /**
+   * 老師批改一筆送出（004 FR-031、FR-033）：只在「已結束」接受；勾選與原本相同時不改變資料。
+   * 經同一把鎖修改並保存，推播 state 變更讓該組立即看到「答對」或回到「等待老師批改」。
+   */
+  async grade(submissionId: string, correct: boolean): Promise<QuizSession> {
+    const session = await this.mutate((current) => {
+      if (current.status !== 'CLOSED') {
+        throw new DomainError('GRADE_NOT_ALLOWED', '搶答結束後才能批改。');
+      }
+      const graded = current.submissions.find((s) => s.id === submissionId);
+      if (graded === undefined) {
+        throw new DomainError('SUBMISSION_NOT_FOUND', '找不到這筆送出，請重新整理後再試。');
+      }
+      if (graded.correct === correct) return { next: current, result: current, changes: [] };
+      const next: QuizSession = {
+        ...current,
+        submissions: current.submissions.map((s) =>
+          s.id === submissionId ? { ...s, correct } : s,
+        ),
+      };
+      return { next, result: next, changes: [{ kind: 'state' }] };
+    });
+    const graded = session.submissions.find((s) => s.id === submissionId);
+    if (graded !== undefined) {
+      // 以題號與組別記錄批改，不記錄暱稱（004 FR-036）
+      this.deps.logger.info(
+        {
+          event: 'submission.graded',
+          questionNumber: graded.questionNumber,
+          groupId: graded.groupId,
+          correct,
+        },
+        '老師批改送出',
+      );
+    }
+    return session;
+  }
+
+  /**
+   * 批改完成（004 FR-034）：只在「已結束」接受；重複按下不改變第一次的時間。
+   * 之後未勾選的送出為答錯，學生端公布每題的搶答成功答案。
+   */
+  async finishGrading(): Promise<QuizSession> {
+    const session = await this.mutate((current) => {
+      if (current.status !== 'CLOSED') {
+        throw new DomainError('GRADE_NOT_ALLOWED', '搶答結束後才能批改。');
+      }
+      if (current.gradingFinishedAt !== null) {
+        return { next: current, result: current, changes: [] };
+      }
+      const next: QuizSession = { ...current, gradingFinishedAt: this.deps.now().toISOString() };
+      return { next, result: next, changes: [{ kind: 'state' }] };
+    });
+    this.deps.logger.info({ event: 'grading.finished' }, '老師批改完成');
     return session;
   }
 

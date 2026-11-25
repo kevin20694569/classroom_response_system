@@ -1,7 +1,8 @@
 import type { Submission } from '@crs/shared';
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { SubmissionBoard } from '../src/pages/teacher/SubmissionBoard';
+import { GRADING_HINT, SubmissionBoard } from '../src/pages/teacher/SubmissionBoard';
+import { bodyOf, mockFetch } from './helpers';
 import { teacherView } from './viewBuilders';
 
 function record(
@@ -18,6 +19,7 @@ function record(
     sequence,
     receivedAt: '2026-11-23T08:00:00.000Z',
     submitterNickname: null,
+    correct: false,
   };
 }
 
@@ -255,5 +257,101 @@ describe('SubmissionBoard — 004 送出者（FR-026）', () => {
     const items = within(screen.getByRole('article', { name: '第 3 題' })).getAllByRole('listitem');
     expect(items[0]?.textContent).toContain('第 1 位・第 1 組・Milo：0');
     expect(items[1]?.textContent).toContain('第 2 位・第 2 組：1');
+  });
+});
+
+describe('SubmissionBoard — 004 批改（FR-031、FR-034）', () => {
+  const closedView = (overrides: Parameters<typeof teacherView>[0] = {}) =>
+    teacherView({
+      status: 'CLOSED',
+      submissions: [
+        { ...record(3, 1, 1, ['錯的']), submitterNickname: 'Milo' },
+        { ...record(3, 2, 2, ['0']), correct: true },
+      ],
+      ...overrides,
+    });
+
+  it('搶答進行中沒有勾選框與批改提示', () => {
+    render(
+      <SubmissionBoard
+        view={teacherView({ status: 'OPEN', submissions: [record(3, 1, 1, ['0'])] })}
+      />,
+    );
+    expect(screen.queryAllByRole('checkbox')).toHaveLength(0);
+    expect(screen.queryByText(GRADING_HINT)).toBeNull();
+    expect(screen.queryByRole('button', { name: '批改完成' })).toBeNull();
+  });
+
+  it('已結束時每筆送出有勾選框（依伺服器狀態勾選），旁邊有使用提示與批改完成按鈕', () => {
+    render(<SubmissionBoard view={closedView()} />);
+    expect(screen.getByText(GRADING_HINT)).toBeTruthy();
+    expect(
+      screen.getByRole<HTMLInputElement>('checkbox', { name: '第 1 組第 3 題答對' }).checked,
+    ).toBe(false);
+    expect(
+      screen.getByRole<HTMLInputElement>('checkbox', { name: '第 2 組第 3 題答對' }).checked,
+    ).toBe(true);
+    expect(screen.getByRole('button', { name: '批改完成' })).toBeTruthy();
+  });
+
+  it('勾選時呼叫批改 API（送出 id 與是否答對）', async () => {
+    const { calls } = mockFetch([{ status: 200, body: { view: closedView() } }]);
+    render(<SubmissionBoard view={closedView()} />);
+    fireEvent.click(screen.getByRole('checkbox', { name: '第 1 組第 3 題答對' }));
+    await waitFor(() => {
+      expect(calls).toHaveLength(1);
+    });
+    expect(calls[0]?.url).toBe('/api/session/grade');
+    expect(bodyOf(calls[0]?.init)).toEqual({
+      submissionId: '00000000-0000-4000-8000-000000000001',
+      correct: true,
+    });
+  });
+
+  it('批改失敗時顯示伺服器訊息', async () => {
+    mockFetch([
+      {
+        status: 409,
+        body: { error: { code: 'GRADE_NOT_ALLOWED', message: '搶答結束後才能批改。' } },
+      },
+    ]);
+    render(<SubmissionBoard view={closedView()} />);
+    fireEvent.click(screen.getByRole('checkbox', { name: '第 2 組第 3 題答對' }));
+    expect(await screen.findByText('搶答結束後才能批改。')).toBeTruthy();
+  });
+
+  it('按「批改完成」呼叫 API；已批改完成時按鈕停用並顯示狀態', async () => {
+    const { calls } = mockFetch([{ status: 200, body: { view: closedView() } }]);
+    const { unmount } = render(<SubmissionBoard view={closedView()} />);
+    fireEvent.click(screen.getByRole('button', { name: '批改完成' }));
+    await waitFor(() => {
+      expect(calls[0]?.url).toBe('/api/session/grade/finish');
+    });
+    unmount();
+    render(
+      <SubmissionBoard view={closedView({ gradingFinishedAt: '2026-11-25T02:00:00.000Z' })} />,
+    );
+    expect(screen.getByRole<HTMLButtonElement>('button', { name: '批改完成' }).disabled).toBe(true);
+    expect(screen.getByText('已批改完成（仍可修改勾選）')).toBeTruthy();
+  });
+
+  it('沒有搶答成功的題目：批改完成前顯示「尚未勾選答對」，之後顯示「無人答對」', () => {
+    const results = [1, 2, 3, 4].map((n) => ({
+      questionNumber: n,
+      winnerGroupId: null,
+      answers: null,
+      receivedAt: null,
+      submitterNickname: null,
+    }));
+    const view = closedView({ submissions: [record(3, 1, 1, ['錯的'])], results });
+    const { unmount } = render(<SubmissionBoard view={view} />);
+    expect(
+      within(screen.getByRole('article', { name: '第 3 題' })).getByText('尚未勾選答對'),
+    ).toBeTruthy();
+    unmount();
+    render(<SubmissionBoard view={{ ...view, gradingFinishedAt: '2026-11-25T02:00:00.000Z' }} />);
+    expect(
+      within(screen.getByRole('article', { name: '第 3 題' })).getByText('無人答對'),
+    ).toBeTruthy();
   });
 });

@@ -62,3 +62,18 @@
 | 新的活動：`clear()`、`session:reset`、暱稱保留 | `realtimeGateway.ts`、`useStudentAuth.ts` | ✔ |
 
 結論：三張 004 圖表與原始碼一致。
+
+## converge 新增（Phase 8～9）
+
+| 圖表元素 | 圖表 | 原始碼位置 | 一致 | 說明 |
+|----------|------|------------|------|------|
+| `Submission.correct`、`QuizSession.gradingFinishedAt`、`GradeRequest` | 類別圖 | `packages/shared/src/{domain,api}.ts` | ✔ | 舊資料讀成 `false`／`null` |
+| `OwnSubmission.grading`、`StudentView.{gradingFinished, openedAt, closedAt, serverNow}` | 類別圖、時序圖 | `packages/shared/src/views.ts` | ✔ | |
+| `QuizSessionService.grade`、`finishGrading` | 類別圖、組件圖、時序圖 | `apps/server/src/domain/session/quizSessionService.ts` | ✔ | 只在 CLOSED；同一把鎖保存並推播 |
+| `Results.deriveResults`（CLOSED 依批改） | 類別圖 | `apps/server/src/domain/ranking/results.ts` | ✔ | 匯出與檢視共用 |
+| `VisibilityPolicy`（批改完成前 `results` 為 null） | 類別圖、時序圖 | `apps/server/src/domain/visibility/visibilityPolicy.ts` | ✔ | `toStudentView` 另傳入伺服器時間 |
+| HttpApi `POST /api/session/grade`、`/grade/finish` | 組件圖、時序圖 | `apps/server/src/transport/http/routes/sessionRoutes.ts` | ✔ | |
+| `SubmissionBoard`（勾選、提示、批改完成） | 類別圖、組件圖 | `apps/web/src/pages/teacher/SubmissionBoard.tsx` | ✔ | 內部拆成 `GradeCheckbox`、`GradingPanel` |
+| `SessionTimer`（共用） | 類別圖、組件圖 | `apps/web/src/components/SessionTimer.tsx` | ✔ | 學生端放在 `PhaseBanner` 的 `timer` |
+
+結論：converge 新增的圖表元素與原始碼一致。

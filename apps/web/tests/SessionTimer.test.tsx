@@ -1,7 +1,7 @@
 import type { SessionStatus } from '@crs/shared';
 import { act, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { SessionTimer } from '../src/pages/teacher/SessionTimer';
+import { SessionTimer } from '../src/components/SessionTimer';
 
 /** 以手動推進的假 requestAnimationFrame 取代瀏覽器影格（research R5）。 */
 let frames = new Map<number, FrameRequestCallback>();

@@ -38,7 +38,7 @@ export function NicknamePanel({ initial, onConfirm, onCancel }: NicknamePanelPro
   return (
     <main className="mx-auto mt-16 max-w-md space-y-4 p-6">
       <h1 className="text-center text-2xl font-bold">輸入你的暱稱</h1>
-      <p className="text-center text-slate-600">暱稱會顯示給同組同學與老師，可以和別人重複。</p>
+      <p className="text-center text-slate-600">暱稱會顯示給同組同學與老師。</p>
       <form onSubmit={confirm} className="space-y-3 rounded-xl bg-white p-4 shadow">
         <label htmlFor={inputId} className="block text-sm font-medium text-slate-700">
           暱稱

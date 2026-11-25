@@ -135,6 +135,11 @@ export const SubmissionSchema = z.object({
    * 004 之前保存的送出紀錄沒有這個欄位，讀取時視為 null。
    */
   submitterNickname: z.string().nullable().default(null),
+  /**
+   * 老師是否勾選這筆送出答對（004 FR-031）：只在「已結束」後由老師修改；舊資料沒有這個欄位時為 false。
+   * 「已結束」後每題的搶答成功為答對送出中 sequence 最小者（FR-032）。
+   */
+  correct: z.boolean().default(false),
 });
 export type Submission = z.infer<typeof SubmissionSchema>;
 
@@ -184,6 +189,8 @@ export const QuizSessionSchema = z
     openedAt: IsoDateTime.nullable(),
     closedAt: IsoDateTime.nullable(),
     lastExport: LastExportSchema.nullable(),
+    /** 老師按「批改完成」的時間（004 FR-034）；尚未完成為 null，重新匯入時清空 */
+    gradingFinishedAt: IsoDateTime.nullable().default(null),
   })
   .superRefine((s, ctx) => {
     if (s.status === 'NOT_IMPORTED') {

@@ -12,22 +12,30 @@ import { blankLabelOf } from '../../student/validateDraft';
 
 export interface StudentResultBoardProps {
   questions: readonly StudentQuestionView[];
-  results: readonly ResultView[];
+  /** 每題結果；老師「批改完成」前為 null（004 FR-025） */
+  results: readonly ResultView[] | null;
   ownSubmissions: readonly OwnSubmission[];
   groupId: number;
   /** 結束時該分頁還有未送出的內容（FR-018） */
   showUnsentNotice: boolean;
 }
 
+/** 本組每題的標籤（004 FR-033、FR-034、contracts/student-ui.md §5a）。 */
 const OUTCOME_LABEL: Readonly<Record<OutcomeKind, string>> = {
+  PENDING: '等待老師批改',
+  CORRECT: '答對',
   WON: '本組搶答成功',
-  SUBMITTED_NOT_WON: '已送出，未搶到',
+  ANSWERED_CORRECT: '回答成功',
+  INCORRECT: '答錯',
   NOT_SUBMITTED: '本組未作答',
 };
 
 const OUTCOME_STYLE: Readonly<Record<OutcomeKind, string>> = {
+  PENDING: 'bg-amber-50 text-amber-800',
+  CORRECT: 'bg-green-100 text-green-800',
   WON: 'bg-green-100 text-green-800',
-  SUBMITTED_NOT_WON: 'bg-amber-100 text-amber-800',
+  ANSWERED_CORRECT: 'bg-emerald-50 text-emerald-800',
+  INCORRECT: 'bg-red-50 text-red-800',
   NOT_SUBMITTED: 'bg-slate-100 text-slate-600',
 };
 
@@ -54,7 +62,8 @@ function AnswerList({
 }
 
 /**
- * 結果畫面（003 US3）：每題的搶答成功組別與答案、本組成績與搶答成功題數。
+ * 結果畫面（003 US3；004 依老師批改）：批改完成前顯示本組每題的批改狀態與本組答案；
+ * 批改完成後顯示每題的搶答成功組別與答案、本組成績與搶答成功題數。
  * 只顯示伺服器提供的搶答成功答案與本組答案，不顯示其他組未搶到的答案、順序或時間。
  */
 export function StudentResultBoard({
@@ -64,7 +73,13 @@ export function StudentResultBoard({
   groupId,
   showUnsentNotice,
 }: StudentResultBoardProps) {
-  const outcomes = groupOutcomes(results, ownSubmissions, groupId);
+  const outcomes = groupOutcomes(
+    questions.map((q) => q.number),
+    results,
+    ownSubmissions,
+    groupId,
+  );
+  const finished = results !== null;
   const questionByNumber = new Map(questions.map((q) => [q.number, q]));
 
   return (
@@ -74,7 +89,13 @@ export function StudentResultBoard({
           搶答已結束，尚未送出的答案不會被採計
         </p>
       )}
-      <p className="text-lg font-semibold">本組搶答成功 {wonCount(outcomes)} 題</p>
+      {finished ? (
+        <p className="text-lg font-semibold">本組搶答成功 {wonCount(outcomes)} 題</p>
+      ) : (
+        <p role="status" className="rounded-md bg-slate-100 p-3 text-slate-700">
+          老師批改中，結果會即時更新
+        </p>
+      )}
       {outcomes.map((outcome) => {
         const question = questionByNumber.get(outcome.questionNumber);
         const content = question?.content ?? null;
@@ -106,19 +127,19 @@ export function StudentResultBoard({
                 hideTitle
               />
             )}
-            {outcome.winnerGroupId === null || outcome.winnerAnswers === null ? (
-              <p className="text-slate-500">無人搶答</p>
+            {!finished ? null : outcome.winnerGroupId === null || outcome.winnerAnswers === null ? (
+              <p className="text-slate-500">無人答對</p>
             ) : (
               <div className="space-y-1">
                 <p className="text-sm text-slate-500">
                   搶答成功：{groupName(outcome.winnerGroupId)}
-                  {/* 結束後所有學生都看得到搶答成功答案的送出者（004 FR-025） */}
+                  {/* 批改完成後所有學生都看得到搶答成功答案的送出者（004 FR-025） */}
                   {outcome.winnerSubmitter !== null && `・${outcome.winnerSubmitter}`}
                 </p>
                 <AnswerList question={question} answers={outcome.winnerAnswers} />
               </div>
             )}
-            {outcome.kind === 'SUBMITTED_NOT_WON' && outcome.ownAnswers !== null && (
+            {outcome.kind !== 'WON' && outcome.ownAnswers !== null && (
               <div className="space-y-1 border-t border-slate-100 pt-2">
                 <p className="text-sm text-slate-500">
                   {outcome.ownSubmitter === null ? '本組答案' : `本組（${outcome.ownSubmitter}）`}

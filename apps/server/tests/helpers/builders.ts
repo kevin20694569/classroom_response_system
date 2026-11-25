@@ -66,6 +66,11 @@ export function submission(
   sequence: number,
   texts: string[] = ['答案'],
   submitterNickname: string | null = null,
+  /**
+   * 預設視為老師已勾選答對：讓「已結束」的結果沿用 001～003「最先送出即搶答成功」的測試情境；
+   * 測試批改規則（004）時再明確傳入 false。
+   */
+  correct = true,
 ): Submission {
   return {
     id: randomUUID(),
@@ -75,5 +80,6 @@ export function submission(
     sequence,
     receivedAt: new Date(Date.UTC(2026, 10, 23, 0, 0, sequence)).toISOString(),
     submitterNickname,
+    correct,
   };
 }
