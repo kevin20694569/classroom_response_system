@@ -4,6 +4,11 @@ import { describe, expect, it } from 'vitest';
 import { SubmissionBoard } from '../src/pages/teacher/SubmissionBoard';
 import { teacherView } from './viewBuilders';
 
+/** 送出列表每筆的第一行（名次、組別、送出者、標籤）與下方逐行答案（004 FR-037）。 */
+const headerOf = (li: HTMLElement | undefined): string => li?.firstElementChild?.textContent ?? '';
+const answerLinesOf = (li: HTMLElement | undefined): string[] =>
+  Array.from(li?.querySelectorAll('p') ?? []).map((p) => p.textContent);
+
 function record(
   questionNumber: number,
   groupId: number,
@@ -60,9 +65,11 @@ describe('SubmissionBoard（US3）', () => {
     render(<SubmissionBoard view={view} />);
     const q1 = within(screen.getByRole('article', { name: '第 1 題' }));
     const items = q1.getAllByRole('listitem');
-    expect(items[0]?.textContent).toContain('第 1 位・第 1 組：（1）CPU（2）作業系統');
-    expect(items[0]?.textContent).toContain('搶答成功');
-    expect(items[1]?.textContent).toContain('第 2 位・第 2 組');
+    expect(headerOf(items[0])).toContain('第 1 名・第 1 組：');
+    expect(headerOf(items[0])).toContain('搶答成功');
+    // 題組每個子題各自一行（004 FR-037）
+    expect(answerLinesOf(items[0])).toEqual(['（1）CPU', '（2）作業系統']);
+    expect(headerOf(items[1])).toContain('第 2 名・第 2 組');
     expect(items[1]?.textContent).not.toContain('搶答成功');
     expect(
       within(screen.getByRole('article', { name: '第 3 題' })).getByText('尚無組別作答'),
@@ -106,7 +113,9 @@ describe('SubmissionBoard（US3）', () => {
     });
     render(<SubmissionBoard view={view} />);
     expect(screen.getByText('搶答結果')).toBeTruthy();
-    expect(screen.getByRole('article', { name: '第 3 題' }).textContent).toContain('第 2 組：0');
+    const q3 = within(screen.getByRole('article', { name: '第 3 題' })).getAllByRole('listitem');
+    expect(headerOf(q3[0])).toContain('第 1 名・第 2 組：');
+    expect(answerLinesOf(q3[0])).toEqual(['0']);
     expect(screen.getAllByText('無人搶答')).toHaveLength(3);
   });
 
@@ -233,9 +242,11 @@ describe('SubmissionBoard（US3）', () => {
     const q3 = within(screen.getByRole('article', { name: '第 3 題' }));
     const items = q3.getAllByRole('listitem');
     expect(items).toHaveLength(2);
-    expect(items[0]?.textContent).toContain('第 1 位・第 1 組：0');
-    expect(items[0]?.textContent).toContain('搶答成功');
-    expect(items[1]?.textContent).toContain('第 2 位・第 2 組：1');
+    expect(headerOf(items[0])).toContain('第 1 名・第 1 組：');
+    expect(headerOf(items[0])).toContain('搶答成功');
+    expect(answerLinesOf(items[0])).toEqual(['0']);
+    expect(headerOf(items[1])).toContain('第 2 名・第 2 組：');
+    expect(answerLinesOf(items[1])).toEqual(['1']);
     expect(items[1]?.textContent).not.toContain('搶答成功');
     expect(q3.getAllByRole('button', { name: '查看提交時間' })).toHaveLength(2);
     expect(screen.getAllByText('無人搶答')).toHaveLength(3);
@@ -253,7 +264,40 @@ describe('SubmissionBoard — 004 送出者（FR-026）', () => {
     });
     render(<SubmissionBoard view={view} />);
     const items = within(screen.getByRole('article', { name: '第 3 題' })).getAllByRole('listitem');
-    expect(items[0]?.textContent).toContain('第 1 位・第 1 組・Milo：0');
-    expect(items[1]?.textContent).toContain('第 2 位・第 2 組：1');
+    expect(headerOf(items[0])).toContain('第 1 名・第 1 組・Milo：');
+    expect(headerOf(items[1])).toContain('第 2 名・第 2 組：');
+    expect(headerOf(items[1])).not.toContain('・：');
+  });
+});
+
+describe('SubmissionBoard — 004 送出列表版面（FR-037）', () => {
+  it('以「第 N 名」標示；長答案的子題各自一行並可換行；搶答進行中第一名標示搶答成功', () => {
+    const long = '根據文章第一段，小明升級的電腦「大腦」硬體，其英文簡稱是什麼？'.repeat(4);
+    const view = teacherView({
+      status: 'OPEN',
+      submissions: [
+        { ...record(1, 1, 1, [long, `${long}（二）`]), submitterNickname: 'Thomas' },
+        { ...record(1, 2, 2, ['GPU', 'Linux']), submitterNickname: 'Mary' },
+      ],
+      results: [1, 2, 3, 4].map((n) => ({
+        questionNumber: n,
+        winnerGroupId: n === 1 ? 1 : null,
+        answers: null,
+        receivedAt: null,
+        submitterNickname: null,
+      })),
+    });
+    render(<SubmissionBoard view={view} />);
+    const items = within(screen.getByRole('article', { name: '第 1 題' })).getAllByRole('listitem');
+    expect(headerOf(items[0])).toMatch(/^第 1 名・第 1 組・Thomas：/);
+    expect(headerOf(items[0])).toContain('搶答成功');
+    expect(headerOf(items[0])).not.toContain(long);
+    expect(answerLinesOf(items[0])).toEqual([`（1）${long}`, `（2）${long}（二）`]);
+    for (const line of items[0]?.querySelectorAll('p') ?? []) {
+      expect(line.className).toContain('break-words');
+    }
+    expect(headerOf(items[1])).toMatch(/^第 2 名・第 2 組・Mary：/);
+    expect(answerLinesOf(items[1])).toEqual(['（1）GPU', '（2）Linux']);
+    expect(document.body.textContent).not.toMatch(/第 \d+ 位/);
   });
 });

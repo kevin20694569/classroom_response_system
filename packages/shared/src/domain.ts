@@ -159,9 +159,10 @@ export const EXPORT_MODE_LABEL: Readonly<Record<ExportMode, string>> = {
 
 export const EXPORT_MODE_DESCRIPTION: Readonly<Record<ExportMode, string>> = {
   'answers-only': '只把答案寫入原本的填空格（與先前相同）。',
-  'answers-with-columns': '答案寫入填空格，並在表頭列新增「搶答組別」「提交時間」兩欄記錄結果。',
+  'answers-with-columns':
+    '答案寫入填空格，並在表頭列新增「搶答組別」「提交時間」「搶答送出者」三欄記錄結果。',
   'answers-with-note-line':
-    '答案下方另起一行，以灰色小字記錄組別與時間；複製答案格時會一併複製這一行。',
+    '答案下方另起一行，以灰色小字記錄組別、送出者與時間；複製答案格時會一併複製這一行。',
 };
 
 export const LastExportSchema = z.object({
