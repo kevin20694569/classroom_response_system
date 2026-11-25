@@ -280,7 +280,7 @@ Task: "T030 GroupMemberList.tsx"
 - [X] T063 修改學生端結果：`apps/web/src/student/groupOutcomes.ts` 與 `apps/web/src/pages/student/StudentResultBoard.tsx` 的本組成績改為「本組搶答成功」（答對中最早）、「回答成功」（答對但不是最早）、「未答對」（有送出但沒被勾選）、「本組未作答」；沒有任何答對時顯示「無人答對」；老師勾選後即時更新；搶答成功題數依新規則計算；更新 `groupOutcomes.test.ts`、`StudentResultBoard.test.tsx`、`StudentPage.test.tsx` per user request: result labels (missing)
 - [X] T064 [P] 學生端計時：把 `apps/web/src/pages/teacher/SessionTimer.tsx` 移到 `apps/web/src/components/SessionTimer.tsx`（老師端改為引用，畫面不變），學生作答與結果畫面（`apps/web/src/pages/student/PhaseBanner.tsx` 或 `StudentPage.tsx`）以 `StudentView` 的 `openedAt`、`closedAt`、`serverNow` 顯示同一個計時（待開始為 00:00.00、搶答中持續走、已結束停在總時間）；新增 web 測試確認與老師端相同的計算方式 per user request: synced timer (missing)
 - [X] T065 [P] 刪除暱稱頁說明中的「可以和別人重複。」：`apps/web/src/pages/student/NicknamePanel.tsx` 改為「暱稱會顯示給同組同學與老師。」（暱稱仍允許重複，FR-005 不變），同步更新 `contracts/student-ui.md §1` 與相關測試 per user request: nickname page text (contradicts)
-- [ ] T066 品質關卡：`npm run typecheck`、`npm run lint`、`npm run format:check`、`npm test`、`npm run build` 全部通過；更新 `README.md`（勾選答對、依答對結果匯出、學生端計時）與 `diagram-verification.md`；以 3000 以外的埠和暫存 `DATA_DIR` 實際操作勾選與學生計時，回報結果 per Constitution VII (missing)
+- [X] T066 品質關卡：`npm run typecheck`、`npm run lint`、`npm run format:check`、`npm test`、`npm run build` 全部通過；更新 `README.md`（勾選答對、依答對結果匯出、學生端計時）與 `diagram-verification.md`；以 3000 以外的埠和暫存 `DATA_DIR` 實際操作勾選與學生計時，回報結果 per Constitution VII (missing)
 
 ## Phase 9: Convergence
 
@@ -303,4 +303,4 @@ T068 的 `grading`；T063 的「未答對」改為 T071 的標籤；T062 的勾�
 - [X] T070 修改 `apps/server/src/domain/visibility/visibilityPolicy.ts` 與 T059 的結果規則：學生 `ownSubmissions[].grading` 在批改完成前為勾選＝`CORRECT`、未勾＝`PENDING`，批改完成後未勾＝`INCORRECT`；學生 `results`（他組的搶答成功答案與送出者）在批改完成前為 `null`，批改完成後為「答對中最早送出」；老師檢視不受影響；單元與整合測試證明批改完成前學生收到的資料不含他組答案與送出者、勾選與取消勾選即時推播給該組 per user request: pending/correct/incorrect, Constitution I (missing)
 - [X] T071 修改學生端結果（`apps/web/src/student/groupOutcomes.ts`、`apps/web/src/pages/student/StudentResultBoard.tsx`）：批改完成前每題顯示「等待老師批改」或「答對」，批改完成後顯示「本組搶答成功」「回答成功」「答錯」「本組未作答」，並公布每題的搶答成功答案與送出者（沒有則「無人答對」）；搶答成功題數只在批改完成後計算；更新 `groupOutcomes.test.ts`、`StudentResultBoard.test.tsx`、`StudentPage.test.tsx`（取代 T063 的標籤）per user request: result labels (missing)
 - [X] T072 在老師端（`apps/web/src/pages/teacher/SubmissionBoard.tsx` 或 `SessionControls.tsx`）於「已結束」顯示「批改完成」按鈕，呼叫 T069 的 API；按下後顯示「已批改完成」，仍可修改勾選；勾選旁的使用提示補上「勾選會立即通知該組答對；按『批改完成』後，沒勾的送出會通知為答錯」；更新老師端測試 per user request: finish grading button and hint (missing)
-- [ ] T073 品質關卡：`npm run typecheck`、`npm run lint`、`npm run format:check`、`npm test`、`npm run build` 全部通過；以 3000 以外的埠和暫存 `DATA_DIR` 實際操作「等待老師批改 → 勾選 → 取消勾選 → 批改完成」並確認學生端畫面；更新 `diagram-verification.md` per Constitution VII (missing)
+- [X] T073 品質關卡：`npm run typecheck`、`npm run lint`、`npm run format:check`、`npm test`、`npm run build` 全部通過；以 3000 以外的埠和暫存 `DATA_DIR` 實際操作「等待老師批改 → 勾選 → 取消勾選 → 批改完成」並確認學生端畫面；更新 `diagram-verification.md` per Constitution VII (missing)
