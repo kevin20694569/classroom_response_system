@@ -315,3 +315,17 @@ T068 的 `grading`；T063 的「未答對」改為 T071 的標籤；T062 的勾�
 
 - [X] T077 修改 `apps/web/src/pages/teacher/ExportPanel.tsx` 寫入 0 題時的訊息：由「沒有可匯出的答案（每一題都無人搶答）」改為說明匯出依批改結果，例如「沒有可匯出的答案（沒有任何題目被勾選答對，請先在搶答結果勾選答對的答案）」；同步更新 `apps/web/tests/ExportPanel.test.tsx`；並把 `apps/server/src/domain/export/exportPlan.ts`、`guidedNotesExporter.ts` 中「無人搶答」「搶答成功的答案」的註解改為「沒有答對」「答對中最早送出的答案」 per FR-027, FR-032 (partial)
 - [X] T078 品質關卡：`npm run typecheck`、`npm run lint`、`npm run format:check`、`npm test` 全部通過，回報指令與結果 per Constitution VII (missing)
+
+## Phase 12: Convergence
+
+本 Phase 來自使用者人工驗證時對老師端「作答狀況」的回饋（附截圖：題組的長答案擠在同一行、排版混亂）。屬於需求變更，
+依 constitution 先改 spec 與契約再改程式。規則：
+- 送出順序改稱「第 N 名」（取代「第 N 位」）。
+- 每筆送出先顯示一行「第 N 名・第 X 組・暱稱：」，下面每個子題各自一行「（n）答案」（單題為一行答案）；長答案自動換行，
+  不與其他子題擠在同一行。時間圖示與勾選框留在第一行。
+- 搶答進行中不標示「搶答成功」，也不把第一名標成綠色，只依序列出有哪些組送出；「搶答成功」只在「已結束」後依老師的
+  勾選顯示（答對中最早送出）。
+
+- [ ] T079 更新 `specs/004-student-side-refinements/spec.md`：新增 FR-037（老師端送出列表的「第 N 名」與逐子題換行版面）與 FR-038（搶答進行中不顯示「搶答成功」，只在「已結束」後依勾選顯示），修改 FR-032 中「搶答進行中時老師端仍以最先送出為暫定第一名」的敘述與對應的邊界情況，Clarifications 記錄本次回饋；同步更新 `contracts/student-ui.md §6`、`quickstart.md §4` 與 `checklists/manual-verification.md` 中送出列表的描述（例如步驟 16），以及類別圖 `SubmissionBoard` 的說明並重新產生 PNG per user request: teacher submission list, Constitution VI (missing)
+- [ ] T080 修改 `apps/web/src/pages/teacher/SubmissionBoard.tsx`：每筆送出的第一行為勾選框（已結束時）＋「第 N 名・第 X 組・暱稱：」＋時間圖示＋（已結束且為搶答成功時）「搶答成功」標籤；答案改為逐子題換行（題組每個子題一行「（n）答案」、單題一行答案），長答案自動換行且不溢出卡片；「搶答進行中」不顯示「搶答成功」標籤與綠色強調；更新 `apps/web/tests/SubmissionBoard.test.tsx`（第 N 名文字、每個子題各自一個元素、搶答中沒有「搶答成功」、已結束依勾選顯示）per FR-037, FR-038 (contradicts)
+- [ ] T081 品質關卡：`npm run typecheck`、`npm run lint`、`npm run format:check`、`npm test`、`npm run build` 全部通過；以 3000 以外的埠和暫存 `DATA_DIR` 開啟老師端，確認長答案的題組在搶答中與結束後的版面，回報結果 per Constitution VII (missing)
