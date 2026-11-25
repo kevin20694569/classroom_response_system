@@ -197,7 +197,6 @@ describe('QuestionAnswerForm — 送出（003 FR-014～FR-019）', () => {
           { blankIndex: 2, text: '另一分頁的答案二' },
         ],
         submitterNickname: null,
-        grading: 'PENDING',
       },
     });
     expect(screen.getByText('已送出')).toBeTruthy();
@@ -306,7 +305,6 @@ describe('QuestionAnswerForm — 004 題目敘述（FR-016、FR-017）', () => {
           { blankIndex: 2, text: '答案二' },
         ],
         submitterNickname: null,
-        grading: 'PENDING',
       },
     });
     expect(screen.getByText(/閱讀下列敘述/)).toBeTruthy();
@@ -325,7 +323,6 @@ describe('QuestionAnswerForm — 004 送出者（FR-024）', () => {
         questionNumber: 3,
         answers: [{ blankIndex: 1, text: '0' }],
         submitterNickname: 'Ava',
-        grading: 'PENDING',
       },
     });
     expect(screen.getByText('已送出（Ava）')).toBeTruthy();
@@ -337,7 +334,6 @@ describe('QuestionAnswerForm — 004 送出者（FR-024）', () => {
         questionNumber: 3,
         answers: [{ blankIndex: 1, text: '0' }],
         submitterNickname: null,
-        grading: 'PENDING',
       },
     });
     expect(screen.getByText('已送出')).toBeTruthy();

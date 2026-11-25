@@ -144,22 +144,7 @@
 - **Decision**：`scripts/simulate-students.ts` 加入組別時帶入暱稱（例如 `Sim-1`），其他行為不變。
 - **Rationale**：`StudentJoinRequest` 改為必填暱稱，腳本必須跟著更新才能繼續用於壓力測試。
 
-## R13：老師批改與依批改決定搶答成功（converge 新增）
-
-- **Decision**：
-  - `Submission` 新增 `correct: boolean`（預設 `false`，舊資料讀成 `false`）；`QuizSession` 新增
-    `gradingFinishedAt: string | null`（預設 `null`）。兩者都寫入 `data/session.json`，重新匯入時清空。
-  - 新增老師專用 API：`POST /api/session/grade`（`{ submissionId, correct }`）與 `POST /api/session/grade/finish`，
-    只在「已結束」接受，經 `QuizSessionService.mutate` 的同一把鎖修改並保存，推播 `state` 變更。
-  - `deriveResults` 在「已結束」時以「`correct === true` 中 `sequence` 最小」為搶答成功，沒有則為無人答對；
-    「搶答進行中」維持最先送出的暫定第一名。匯出沿用 `deriveResults`，因此自動改為依批改結果。
-  - 學生檢視：`ownSubmissions[].grading` 為 `PENDING`（未勾且尚未批改完成）、`CORRECT`（已勾）、`INCORRECT`（批改完成後未勾）；
-    「已結束」以前一律 `PENDING`。`results`（含他組答案與送出者）只在批改完成後提供；`gradingFinished` 告知畫面是否已公布。
-- **Rationale**：批改屬於活動資料，必須由伺服器保存並決定（原則 I）；結果仍由作答紀錄推導、不另存一份，避免不一致。批改完成前
-  不公布他組答案，避免搶答成功組別在批改途中反覆改變。
-- **Alternatives considered**：另存「每題結果」表：會與送出紀錄不同步；前端自行判定：違反原則 I。
-
-## R14：學生端搶答計時（converge 新增）
+## R13：學生端搶答計時（converge 新增）
 
 - **Decision**：`StudentView` 新增 `openedAt`、`closedAt`、`serverNow`；老師端的 `SessionTimer` 移到 `apps/web/src/components/`
   由兩端共用，學生端放在頂端列。

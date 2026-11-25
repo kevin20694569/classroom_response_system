@@ -7,7 +7,6 @@ import {
   PersistedStateSchema,
   PublicViewSchema,
   StudentJoinRequestSchema,
-  GradeRequestSchema,
   StudentQuestionViewSchema,
   SubmissionSchema,
   QuestionSchema,
@@ -186,7 +185,6 @@ describe('002：題目敘述與老師檢視（research R2、R3）', () => {
       openedAt: '2026-11-23T02:00:00.000Z',
       closedAt: '2026-11-23T02:05:00.000Z',
       lastExport: null,
-      gradingFinishedAt: null,
       serverNow: '2026-11-23T02:06:00.000Z',
     };
     expect(TeacherViewSchema.safeParse(view).success).toBe(true);
@@ -240,7 +238,6 @@ describe('QuestionSummary.blankLabels（003 FR-012、data-model §1）', () => {
         groupId: 1,
         ownSubmissions: [],
         results: null,
-        gradingFinished: false,
         openedAt: null,
         closedAt: null,
         serverNow: '2026-11-25T02:00:00.000Z',
@@ -373,51 +370,5 @@ describe('004：送出者暱稱（FR-023、research R9）', () => {
       },
     });
     expect(parsed.session.submissions[0]?.submitterNickname).toBeNull();
-  });
-});
-
-describe('004 converge：批改欄位（FR-031、FR-034）', () => {
-  it('舊的送出紀錄沒有 correct 時為 false；舊的活動沒有 gradingFinishedAt 時為 null', () => {
-    const parsed = PersistedStateSchema.parse({
-      schemaVersion: 1,
-      session: {
-        activityId: '7c1d7a8e-6f3b-4c2a-9a63-6b2b1f1d0c11',
-        status: 'CLOSED',
-        source: { spreadsheetId: 'doc', sheetTitle: '學習單' },
-        groups: [
-          { id: 1, name: '第 1 組' },
-          { id: 2, name: '第 2 組' },
-        ],
-        questions: [
-          { number: 1, order: 1, kind: 'single', blanks: [{ index: 1, label: null, location }] },
-        ],
-        submissions: [
-          {
-            id: '0b8d2c33-5f0e-4d0a-9a8e-2f2b1f1d0c11',
-            questionNumber: 1,
-            groupId: 1,
-            answers: [{ blankIndex: 1, text: '答案' }],
-            sequence: 1,
-            receivedAt: '2026-11-24T02:00:00.000Z',
-          },
-        ],
-        nextSequence: 2,
-        openedAt: '2026-11-24T01:59:00.000Z',
-        closedAt: '2026-11-24T02:05:00.000Z',
-        lastExport: null,
-      },
-    });
-    expect(parsed.session.submissions[0]?.correct).toBe(false);
-    expect(parsed.session.gradingFinishedAt).toBeNull();
-  });
-
-  it('批改請求為 strict：只接受 submissionId 與 correct', () => {
-    const id = '0b8d2c33-5f0e-4d0a-9a8e-2f2b1f1d0c11';
-    expect(GradeRequestSchema.safeParse({ submissionId: id, correct: true }).success).toBe(true);
-    expect(GradeRequestSchema.safeParse({ submissionId: id }).success).toBe(false);
-    expect(
-      GradeRequestSchema.safeParse({ submissionId: id, correct: true, groupId: 1 }).success,
-    ).toBe(false);
-    expect(GradeRequestSchema.safeParse({ submissionId: 'x', correct: true }).success).toBe(false);
   });
 });

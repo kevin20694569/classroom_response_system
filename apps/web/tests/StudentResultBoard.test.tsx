@@ -33,17 +33,11 @@ const results: ResultView[] = [
   { questionNumber: 4, winnerGroupId: null, answers: null, submitterNickname: null },
 ];
 const own: OwnSubmission[] = [
-  {
-    questionNumber: 1,
-    answers: results[0]?.answers ?? [],
-    submitterNickname: null,
-    grading: 'CORRECT',
-  },
+  { questionNumber: 1, answers: results[0]?.answers ?? [], submitterNickname: null },
   {
     questionNumber: 3,
     answers: [{ blankIndex: 1, text: '本組沒搶到的答案' }],
     submitterNickname: null,
-    grading: 'INCORRECT',
   },
 ];
 
@@ -67,24 +61,24 @@ describe('StudentResultBoard（003 FR-024、FR-025、FR-018）', () => {
     expect(screen.getByText('本組搶答成功 1 題')).toBeTruthy();
   });
 
-  it('每題顯示搶答成功組別與答案，題組依子題分列並顯示標記；無人答對', () => {
+  it('每題顯示搶答成功組別與答案，題組依子題分列並顯示標記；無人搶答', () => {
     renderBoard();
     const first = within(card(1));
     expect(first.getByText('搶答成功：第 2 組')).toBeTruthy();
     expect(first.getAllByText('（1）').length).toBeGreaterThan(0);
     expect(first.getAllByText('CPU').length).toBeGreaterThan(0);
-    expect(within(card(4)).getByText('無人答對')).toBeTruthy();
+    expect(within(card(4)).getByText('無人搶答')).toBeTruthy();
   });
 
-  it('批改完成後的本組成績標籤（004 FR-034）', () => {
+  it('三種本組成績標籤', () => {
     renderBoard();
     expect(within(card(1)).getByText('本組搶答成功')).toBeTruthy();
     expect(within(card(2)).getByText('本組未作答')).toBeTruthy();
-    expect(within(card(3)).getByText('答錯')).toBeTruthy();
+    expect(within(card(3)).getByText('已送出，未搶到')).toBeTruthy();
     expect(within(card(4)).getByText('本組未作答')).toBeTruthy();
   });
 
-  it('答錯時另外列出本組答案', () => {
+  it('「已送出，未搶到」另外列出本組答案', () => {
     renderBoard();
     const third = within(card(3));
     expect(third.getByText('本組答案')).toBeTruthy();
@@ -142,12 +136,7 @@ describe('StudentResultBoard — 004 送出者（FR-025）', () => {
           },
         ]}
         ownSubmissions={[
-          {
-            questionNumber: 3,
-            answers: [{ blankIndex: 1, text: '1' }],
-            submitterNickname: 'Leo',
-            grading: 'CORRECT',
-          },
+          { questionNumber: 3, answers: [{ blankIndex: 1, text: '1' }], submitterNickname: 'Leo' },
         ]}
         groupId={2}
         showUnsentNotice={false}
@@ -162,43 +151,5 @@ describe('StudentResultBoard — 004 送出者（FR-025）', () => {
     renderBoard();
     expect(within(card(3)).getByText('搶答成功：第 1 組')).toBeTruthy();
     expect(within(card(3)).getByText('本組答案')).toBeTruthy();
-  });
-});
-
-describe('StudentResultBoard — 004 批改中（FR-025、FR-033）', () => {
-  it('批改完成前顯示「老師批改中」、本組每題的批改狀態與本組答案，不顯示搶答成功組別', () => {
-    render(
-      <StudentResultBoard
-        questions={questions}
-        results={null}
-        ownSubmissions={[
-          { ...(own[0] as OwnSubmission), grading: 'PENDING' },
-          { ...(own[1] as OwnSubmission), grading: 'CORRECT' },
-        ]}
-        groupId={2}
-        showUnsentNotice={false}
-      />,
-    );
-    expect(screen.getByText('老師批改中，結果會即時更新')).toBeTruthy();
-    expect(screen.queryByText(/本組搶答成功 \d+ 題/)).toBeNull();
-    expect(within(card(1)).getByText('等待老師批改')).toBeTruthy();
-    expect(within(card(3)).getByText('答對')).toBeTruthy();
-    expect(within(card(3)).getByText('本組沒搶到的答案')).toBeTruthy();
-    expect(within(card(2)).getByText('本組未作答')).toBeTruthy();
-    expect(screen.queryByText(/搶答成功：/)).toBeNull();
-    expect(screen.queryByText('無人答對')).toBeNull();
-  });
-
-  it('答對但不是最早送出時顯示「回答成功」', () => {
-    render(
-      <StudentResultBoard
-        questions={questions}
-        results={results}
-        ownSubmissions={[{ ...(own[1] as OwnSubmission), grading: 'CORRECT' }]}
-        groupId={2}
-        showUnsentNotice={false}
-      />,
-    );
-    expect(within(card(3)).getByText('回答成功')).toBeTruthy();
   });
 });

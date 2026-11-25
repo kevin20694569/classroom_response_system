@@ -63,16 +63,6 @@ note over PageC : 其他組與未選組分頁\n在 OPEN 時收不到送出者
 T -> RT : 結束搶答（status = CLOSED）
 RT --> PageC : 結束後各組 StudentView 的 results\n都含搶答成功答案的送出者
 
-== 批改（converge） ==
-T -> Http : POST /api/session/grade（第 1 組第 3 題答對）
-Http -> RT : 狀態改變
-RT --> PageA : StudentView（第 3 題 grading = CORRECT「答對」；results = null）
-RT --> PageB : StudentView（本組仍「等待老師批改」，看不到第 1 組答案）
-T -> Http : POST /api/session/grade/finish
-Http -> RT : 狀態改變
-RT --> PageB : StudentView（未勾選＝「答錯」；results 公布答對中最早的組別與送出者）
-note over Http : 匯出依「答對中最早送出」寫入；\n沒有答對的題目不寫入
-
 == 待開始時離開組別 ==
 A -> PageA : 離開組別（只限 READY）
 PageA -> Http : POST /api/auth/student/leave（token）

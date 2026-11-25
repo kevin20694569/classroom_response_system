@@ -98,13 +98,6 @@ export const SubmitRequestSchema = z.strictObject({
 });
 export type SubmitRequest = z.infer<typeof SubmitRequestSchema>;
 
-/** 老師批改一筆送出（004 FR-031）：只在「已結束」接受；學生不能呼叫。 */
-export const GradeRequestSchema = z.strictObject({
-  submissionId: z.uuid(),
-  correct: z.boolean(),
-});
-export type GradeRequest = z.infer<typeof GradeRequestSchema>;
-
 /** 送出成功的回應：不含順位或是否搶答成功（FR-020）。 */
 export const SubmitResponseSchema = z.object({
   submissionId: z.uuid(),

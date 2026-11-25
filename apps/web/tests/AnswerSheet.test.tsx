@@ -46,7 +46,6 @@ describe('AnswerSheet（003 FR-011～FR-013、Clarifications Q4）', () => {
         questionNumber: 3,
         answers: [{ blankIndex: 1, text: '0' }],
         submitterNickname: null,
-        grading: 'PENDING',
       },
     ]);
     const buttons = within(nav())
@@ -80,7 +79,6 @@ describe('AnswerSheet（003 FR-011～FR-013、Clarifications Q4）', () => {
             questionNumber: 3,
             answers: [{ blankIndex: 1, text: '另一分頁的答案' }],
             submitterNickname: null,
-            grading: 'PENDING',
           },
         ]}
       />,

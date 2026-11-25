@@ -60,7 +60,6 @@ export class SubmissionService {
           sequence: current.nextSequence,
           receivedAt: now().toISOString(),
           submitterNickname: submitter.nickname,
-          correct: false,
         };
         return {
           next: {

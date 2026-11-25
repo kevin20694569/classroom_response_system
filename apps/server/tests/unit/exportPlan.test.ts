@@ -370,30 +370,3 @@ describe('planExport：送出者暱稱（004 FR-027、SC-008）', () => {
     }
   });
 });
-
-describe('planExport：依老師批改結果（004 FR-027、FR-032）', () => {
-  it.each(['group-example', 'exported-columns'])(
-    '%s：最先送出的答錯、第二個答對時寫入第二個；整題沒有答對時不寫入、結果欄清空',
-    (fixture) => {
-      const session = closedSessionFor(fixture, [
-        submission(3, 1, 1, ['錯的答案'], 'Milo', false),
-        submission(3, 2, 2, ['0'], 'Leo', true),
-        submission(1, 1, 3, ['CPU', '作業系統'], 'Ava', false),
-      ]);
-      const { writes, writtenQuestionCount } = plan(
-        session,
-        loadFixture(fixture),
-        'answers-with-columns',
-      );
-      expect(writtenQuestionCount).toBe(1);
-      expect(writes.find((w) => w.rowIndex === 10 && w.columnIndex === 6)?.text).toBe('0');
-      expect(writes.some((w) => w.text.includes('錯的答案') || w.text.includes('CPU'))).toBe(false);
-      const row4 = writes.filter((w) => w.rowIndex === 4 && w.columnIndex >= 8).map((w) => w.text);
-      expect(row4).toEqual(['', '', '']);
-      const row10 = writes
-        .filter((w) => w.rowIndex === 10 && w.columnIndex >= 8)
-        .map((w) => w.text);
-      expect(row10).toEqual(['第 2 組', T2, 'Leo']);
-    },
-  );
-});

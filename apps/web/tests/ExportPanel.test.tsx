@@ -32,7 +32,7 @@ describe('ExportPanel（US4）', () => {
     expect(calls[0]?.url).toBe('/api/session/export');
   });
 
-  it('寫入 0 題時顯示「沒有可匯出的答案」並提示先勾選答對（004 FR-027）', async () => {
+  it('寫入 0 題時顯示「沒有可匯出的答案」', async () => {
     mockFetch([
       {
         status: 200,
@@ -46,9 +46,7 @@ describe('ExportPanel（US4）', () => {
     ]);
     render(<ExportPanel view={teacherView({ status: 'CLOSED' })} />);
     await userEvent.click(button());
-    const message = await screen.findByText(/沒有可匯出的答案/);
-    expect(message.textContent).toContain('沒有任何題目被勾選答對');
-    expect(message.textContent).not.toContain('無人搶答');
+    expect(await screen.findByText(/沒有可匯出的答案/)).toBeTruthy();
   });
 
   it('無法定位時列出題號', async () => {

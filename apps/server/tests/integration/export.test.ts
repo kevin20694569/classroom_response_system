@@ -7,7 +7,6 @@ import type { SpreadsheetSnapshot } from '../../src/infrastructure/sheets/guided
 import {
   call,
   connectSocket,
-  gradeAllCorrect,
   joinStudent,
   restartApp,
   startTestApp,
@@ -61,8 +60,6 @@ async function runActivity(
     expect((await submitAnswers(a, token, step.question, step.answers)).statusCode).toBe(200);
   }
   await call(a, 'POST', '/api/session/close', teacher);
-  // 004：老師把全部送出勾選為答對，搶答成功即最先送出的組別（沿用 001～003 的匯出情境）
-  await gradeAllCorrect(a, teacher);
   return teacher;
 }
 
