@@ -304,3 +304,9 @@ T068 的 `grading`；T063 的「未答對」改為 T071 的標籤；T062 的勾�
 - [X] T071 修改學生端結果（`apps/web/src/student/groupOutcomes.ts`、`apps/web/src/pages/student/StudentResultBoard.tsx`）：批改完成前每題顯示「等待老師批改」或「答對」，批改完成後顯示「本組搶答成功」「回答成功」「答錯」「本組未作答」，並公布每題的搶答成功答案與送出者（沒有則「無人答對」）；搶答成功題數只在批改完成後計算；更新 `groupOutcomes.test.ts`、`StudentResultBoard.test.tsx`、`StudentPage.test.tsx`（取代 T063 的標籤）per user request: result labels (missing)
 - [X] T072 在老師端（`apps/web/src/pages/teacher/SubmissionBoard.tsx` 或 `SessionControls.tsx`）於「已結束」顯示「批改完成」按鈕，呼叫 T069 的 API；按下後顯示「已批改完成」，仍可修改勾選；勾選旁的使用提示補上「勾選會立即通知該組答對；按『批改完成』後，沒勾的送出會通知為答錯」；更新老師端測試 per user request: finish grading button and hint (missing)
 - [X] T073 品質關卡：`npm run typecheck`、`npm run lint`、`npm run format:check`、`npm test`、`npm run build` 全部通過；以 3000 以外的埠和暫存 `DATA_DIR` 實際操作「等待老師批改 → 勾選 → 取消勾選 → 批改完成」並確認學生端畫面；更新 `diagram-verification.md` per Constitution VII (missing)
+
+## Phase 10: Convergence
+
+- [ ] T074 [P] 把老師端沒有搶答成功的題目在批改完成前的提示，從「尚未勾選答對」改為契約的「尚未批改」（`apps/web/src/pages/teacher/SubmissionBoard.tsx`），並同步更新 `apps/web/tests/SubmissionBoard.test.tsx` per contracts/student-ui.md §6 (contradicts)
+- [ ] T075 [P] 更新 `specs/004-student-side-refinements/data-model.md §4`：學生 `results[].submitterNickname` 與其他組暱稱改為「老師批改完成後」才出現（不是 CLOSED 就出現），並加上 `ownSubmissions[].grading`、`gradingFinished`、`openedAt`／`closedAt`／`serverNow` 列；更新 `quickstart.md §3` 測試重點表，加入批改（權限、階段、即時推播、批改完成前不含他組答案、重啟保留、重新匯入清空）、依批改匯出與學生端計時三列 per FR-025, FR-029～FR-036 (partial)
+- [ ] T076 品質關卡：`npm run typecheck`、`npm run lint`、`npm run format:check`、`npm test` 全部通過，回報指令與結果 per Constitution VII (missing)
