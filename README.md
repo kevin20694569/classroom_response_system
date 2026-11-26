@@ -311,6 +311,19 @@ npm start
   - 答案＋組別時間欄：另在表頭列最右側新增「搶答組別」「提交時間」「搶答送出者」三欄（已有的欄沿用）
   - 答案＋格內附註行：答案下方另起一行，以灰色小字記錄組別、送出者暱稱與提交時間（例如「〔第 1 組｜Milo｜時間〕」）
 
+### 匯出結果 CSV（子功能 005）
+
+搶答結束後，老師端「匯出 CSV」區塊的按鈕可以下載所有組別的送出紀錄，存成 `搶答結果_YYYYMMDD-HHmm.csv`
+（時間為開啟搶答的時間；同一場活動重複匯出的檔名與內容完全相同）。這個匯出與上面的「寫回 Guided Notes」互相獨立，
+不會改動 Guided Notes 文件。
+
+- 每一列是一筆送出紀錄，欄位依序為：題號、子題、組別、送出者暱稱、答案、搶答順位、送出時間、是否搶答成功
+- 題組的每個子題各一列（「子題」欄為文件上的標記，如「（1）」）；沒有任何組別作答的題目有一列，答案為「無人作答」
+- 依題號排序，同一題再依搶答順位排序；不只列出搶答成功的組別
+- 檔案使用 UTF-8（含 BOM），用 Excel 直接開啟中文不會亂碼；答案含逗號、換行、雙引號時依 CSV 規則加上引號，
+  以 `=` `+` `-` `@` 開頭的內容會在前面加上 `'`，避免被 Excel 當成公式執行
+- 搶答尚未結束時按鈕停用並顯示「搶答結束後才能匯出 CSV。」；伺服器也只允許老師在搶答結束後下載
+
 ## 開發與測試
 
 | 指令 | 說明 |
@@ -325,7 +338,8 @@ npm start
 人工驗證步驟見 [001 quickstart.md §4](specs/001-teacher-quiz-session/quickstart.md)、
 [002 quickstart.md §4](specs/002-teacher-dashboard-enhancements/quickstart.md)、
 [003 quickstart.md §4](specs/003-student-quiz-participation/quickstart.md) 與
-[004 quickstart.md §4](specs/004-student-side-refinements/quickstart.md)。
+[004 quickstart.md §4](specs/004-student-side-refinements/quickstart.md) 與
+[005 quickstart.md §5](specs/005-results-csv-export/quickstart.md)。
 
 ## 專案結構
 
@@ -346,3 +360,4 @@ diagrams/          PlantUML 圖表（.puml 與 .png）
 | 002 | 老師端介面優化（題目預覽、搶答計時、提交時間提示、匯出模式） | 已實作 |
 | 003 | 學生端畫面（`/student`：加入組別、作答與送出、檢視結果） | 已實作 |
 | 004 | 學生端細修（暱稱、各組人數與本組成員、學生端題目敘述、送出者暱稱與匯出、學生端計時） | 已實作 |
+| 005 | 搶答結果匯出 CSV（所有送出紀錄、題組逐子題、無人作答、Excel 相容） | 已實作 |

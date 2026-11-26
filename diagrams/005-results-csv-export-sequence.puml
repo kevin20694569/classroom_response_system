@@ -41,11 +41,11 @@ group mutate()（在鎖內讀取，回傳原 session → 不保存、不推播�
   Svc -> Svc : 確認 status = CLOSED
   Svc -> Rank : deriveResults（每題第 1 名）
   Svc -> Csv : export(session, results, mode)
-  loop 每一題（依題號由小到大）
-    Csv -> Rank : rank(該題送出)
-    Rank --> Csv : 依順位排序
-  end
   Csv -> Rows : buildResultRows(session, ranking, results)
+  loop 每一題（依題號由小到大）
+    Rows -> Rank : rank(該題送出)
+    Rank --> Rows : 依順位排序
+  end
   Rows -> Rows : 單題一列；題組每個子題一列（相鄰）；\n無人作答一列「無人作答」；\n搶答成功 = results 的 winner
   Rows --> Csv : ResultRow[]
   Csv -> Enc : encodeCsv(CSV_HEADERS, rows)

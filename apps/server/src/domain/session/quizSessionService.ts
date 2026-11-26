@@ -1,4 +1,5 @@
 import {
+  CSV_EXPORT_NOT_CLOSED_MESSAGE,
   DEFAULT_EXPORT_MODE,
   groupName,
   type ExportMode,
@@ -10,6 +11,7 @@ import type { SessionRepository } from '../../infrastructure/persistence/session
 import type { GuidedNotesGateway } from '../../infrastructure/sheets/guidedNotesGateway.js';
 import { parseSpreadsheetUrl } from '../../infrastructure/sheets/spreadsheetUrl.js';
 import { DomainError } from '../errors.js';
+import { CsvResultExporter, type CsvExport } from '../export/csv/csvResultExporter.js';
 import { GuidedNotesExporter } from '../export/guidedNotesExporter.js';
 import type { ResultExporter } from '../export/resultExporter.js';
 import { parseGuidedNotes } from '../guidedNotes/parser.js';
@@ -45,6 +47,8 @@ export interface QuizSessionServiceDeps {
   uuid: () => string;
   /** 預設為寫回原 Guided Notes；延伸功能（如 CSV）可替換 */
   exporter?: ResultExporter;
+  /** 預設為 CsvResultExporter（子功能 005：產生結果 CSV） */
+  csvExporter?: ResultExporter<CsvExport>;
 }
 
 export interface ExportResult {
@@ -238,6 +242,42 @@ export class QuizSessionService {
           code: error instanceof DomainError ? error.code : 'INTERNAL_ERROR',
         },
         '匯出至 Guided Notes 失敗',
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * 產生結果 CSV（子功能 005，FR-003、FR-004）：只有「已結束」才能匯出。
+   * 在鎖內讀取目前狀態並回傳原 session，所以不保存、不推播、不改 lastExport；
+   * 同一場活動重複匯出的內容完全相同。log 只記錄列數，不記錄答案與暱稱（FR-015）。
+   */
+  async exportCsv(): Promise<CsvExport> {
+    const csvExporter = this.deps.csvExporter ?? new CsvResultExporter(this.deps.ranking);
+    try {
+      const result = await this.mutate(async (current) => {
+        if (current.status !== 'CLOSED') {
+          throw new DomainError('INVALID_TRANSITION', CSV_EXPORT_NOT_CLOSED_MESSAGE);
+        }
+        const exported = await csvExporter.export(
+          current,
+          deriveResults(current, this.deps.ranking),
+          DEFAULT_EXPORT_MODE,
+        );
+        return { next: current, result: exported, changes: [] };
+      });
+      this.deps.logger.info(
+        { event: 'csv_export.succeeded', rowCount: result.rowCount },
+        '匯出 CSV 成功',
+      );
+      return result;
+    } catch (error) {
+      this.deps.logger.warn(
+        {
+          event: 'csv_export.failed',
+          code: error instanceof DomainError ? error.code : 'INTERNAL_ERROR',
+        },
+        '匯出 CSV 失敗',
       );
       throw error;
     }

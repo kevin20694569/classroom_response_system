@@ -65,7 +65,8 @@ package "server（領域層）" {
   }
   class resultRows <<module>> {
     +buildResultRows(session, ranking, results): ResultRow[]
-    -blankLabel(question, index): string（無標記時「（序號）」）
+    -blankLabelOf(question, position): string（無標記時「（序號）」）
+    -rowsOfSubmission(question, submission, rankLabel, isWinner): ResultRow[]
   }
   note right of resultRows
     依題號由小到大；同題依順位；
@@ -76,6 +77,7 @@ package "server（領域層）" {
     +encodeCsv(headers, rows): string（UTF-8 BOM、CRLF）
     +encodeField(value): string
     -neutralizeFormula(value): string（= + - @ Tab CR 開頭加 '）
+    -quoteIfNeeded(value): string（含逗號、引號、換行或前後空白時加雙引號）
   }
   class csvFileName <<module>> {
     +csvFileName(openedAt): string
@@ -109,6 +111,7 @@ package "server（領域層）" {
   resultRows ..> Question : 讀取
   resultRows ..> QuestionResult : 讀取 winner
   resultRows ..> formatSubmittedAt
+  resultRows ..> RankingStrategy : 每題排序
   resultRows ..> ResultRow : 產生
   resultRows ..> csvExport
   csvEncoder ..> ResultRow

@@ -62,7 +62,7 @@ SessionService --> Ranking : deriveResults（第 1 名 = 搶答成功）
 SessionService --> CsvExporter : export(session, results, mode)
 CsvExporter ..|> ExporterIf
 GnExporter ..|> ExporterIf
-CsvExporter --> Ranking : 每題完整排序
+ResultRows --> Ranking : 每題完整排序
 CsvExporter --> ResultRows : session + 排序 + results
 ResultRows --> CsvEncoder : ResultRow[]
 CsvExporter --> FileName : openedAt
