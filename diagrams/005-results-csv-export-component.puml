@@ -35,8 +35,8 @@ node "本機伺服器" as Server {
     interface "ResultExporter<TReport>\n（擴充點，加上泛型）" as ExporterIf
     package "CSV 匯出（新增）" {
       component "CsvResultExporter\nimplements ResultExporter<CsvExport>" as CsvExporter
-      component "resultRows\n送出 → 結果紀錄列：\n依題號、順位、子題排序；\n無人作答一列" as ResultRows
-      component "csvEncoder\nUTF-8 BOM、RFC 4180 引號、\n公式字元防護、CRLF" as CsvEncoder
+      component "resultRows\n送出 → 結果紀錄列：\n依題號、順位、子題排序；\n子題欄「子題N」、時間無毫秒；\n無人作答一列" as ResultRows
+      component "csvEncoder\nUTF-8 BOM、RFC 4180 引號、\n公式字元防護、CRLF、\nExcel 文字儲存格（007、1/2、TRUE）" as CsvEncoder
       component "csvFileName\n搶答結果_YYYYMMDD-HHmm.csv\n（開啟搶答時間）" as FileName
     }
     component "GuidedNotesExporter / exportPlan\nimplements ResultExporter\n（002、004 規則不變）" as GnExporter #EEEEEE

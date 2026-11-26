@@ -55,17 +55,18 @@ package "server（領域層）" {
   }
   class ResultRow {
     +questionNumber: number
-    +blankLabel: string | null（單題、無人作答為 null）
+    +blankLabel: string | null（題組為「子題N」；單題、無人作答為 null）
     +groupLabel: string | null（「第 N 組」）
     +submitterNickname: string | null
     +answer: string（無人作答為「無人作答」）
     +rankLabel: string | null（「第 N 名」）
-    +submittedAt: string | null（YYYY/MM/DD HH:mm:ss.SSS）
+    +submittedAt: string | null（YYYY-MM-DD HH:mm:ss，無毫秒）
     +isWinner: 是 | 否 | null
   }
   class resultRows <<module>> {
     +buildResultRows(session, ranking, results): ResultRow[]
-    -blankLabelOf(question, position): string（無標記時「（序號）」）
+    +toCsvRecord(row): CsvCell[]（答案、暱稱經 toExcelText）
+    -blankLabelOf(question, position): string（「子題N」，不用文件標記）
     -rowsOfSubmission(question, submission, rankLabel, isWinner): ResultRow[]
   }
   note right of resultRows
@@ -75,7 +76,8 @@ package "server（領域層）" {
   end note
   class csvEncoder <<module>> {
     +encodeCsv(headers, rows): string（UTF-8 BOM、CRLF）
-    +encodeField(value): string
+    +encodeField(value: CsvCell): string
+    +toExcelText(value): CsvCell（007、1/2、TRUE 等 → ="值"）
     -neutralizeFormula(value): string（= + - @ Tab CR 開頭加 '）
     -quoteIfNeeded(value): string（含逗號、引號、換行或前後空白時加雙引號）
   }
@@ -83,9 +85,16 @@ package "server（領域層）" {
     +csvFileName(openedAt): string
     +csvAsciiFileName(openedAt): string
   }
-  class formatSubmittedAt <<function, 沿用>> {
-    +formatSubmittedAt(iso): string
+  class ExcelTextCell {
+    +excelText: string（輸出 ="值"，Excel 顯示原樣）
   }
+  class csvSubmittedAt <<module>> {
+    +formatCsvSubmittedAt(iso): string（YYYY-MM-DD HH:mm:ss）
+  }
+  note right of csvSubmittedAt
+    CSV 專用；002 的 formatSubmittedAt（帶毫秒）
+    只供 Guided Notes 使用，不變
+  end note
   interface RankingStrategy <<沿用>> {
     +rank(submissions): Submission[]
   }
@@ -110,7 +119,9 @@ package "server（領域層）" {
   resultRows ..> Submission : 讀取
   resultRows ..> Question : 讀取
   resultRows ..> QuestionResult : 讀取 winner
-  resultRows ..> formatSubmittedAt
+  resultRows ..> csvSubmittedAt
+  resultRows ..> csvEncoder : toExcelText
+  csvEncoder ..> ExcelTextCell
   resultRows ..> RankingStrategy : 每題排序
   resultRows ..> ResultRow : 產生
   resultRows ..> csvExport

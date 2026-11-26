@@ -102,10 +102,13 @@ specs/005-results-csv-export/
 ├── quickstart.md        # Phase 1（含人工驗證清單）
 ├── contracts/           # Phase 1
 │   ├── http-api.md          # GET /api/session/export.csv、錯誤、共用常數
-│   ├── csv-format.md        # 編碼、引號、公式防護、欄位、排序、範例、檔名
+│   ├── csv-format.md        # 編碼、引號、公式防護、Excel 相容性、欄位、排序、範例、檔名
 │   └── teacher-ui.md        # 老師端「匯出 CSV」區塊的文字與行為
 ├── checklists/
-│   └── requirements.md
+│   ├── requirements.md
+│   └── manual-verification.md
+├── diagram-verification.md  # 圖表與程式碼一致性驗證（原則 VI）
+├── openspec-notice.md       # 對外變更摘要（給 OpenSpec 小組）
 └── tasks.md             # Phase 2（由 /speckit-tasks 產生）
 
 diagrams/
@@ -126,8 +129,9 @@ packages/shared/tests/schemas.test.ts  ～ 常數（表頭 8 欄、順序）
 
 apps/server/src/
 ├── domain/export/resultExporter.ts        ～ ResultExporter<TReport = ExportReport>
-├── domain/export/csv/csvEncoder.ts        ＋ encodeCsv、encodeField（BOM、CRLF、引號、公式防護）
-├── domain/export/csv/resultRows.ts        ＋ ResultRow、buildResultRows
+├── domain/export/csv/csvEncoder.ts        ＋ encodeCsv、encodeField、toExcelText、CsvCell、ExcelTextCell（BOM、CRLF、引號、公式防護、Excel 文字儲存格）
+├── domain/export/csv/resultRows.ts        ＋ ResultRow、buildResultRows、toCsvRecord（子題欄「子題N」）
+├── domain/export/csv/csvSubmittedAt.ts    ＋ formatCsvSubmittedAt（YYYY-MM-DD HH:mm:ss，CSV 專用）
 ├── domain/export/csv/csvFileName.ts       ＋ csvFileName、csvAsciiFileName
 ├── domain/export/csv/csvResultExporter.ts ＋ CsvExport、CsvResultExporter
 ├── domain/session/quizSessionService.ts   ～ deps.csvExporter、exportCsv()、csv_export log
@@ -136,6 +140,7 @@ apps/server/tests/
 ├── unit/csvEncoder.test.ts                ＋
 ├── unit/resultRows.test.ts                ＋
 ├── unit/csvFileName.test.ts               ＋
+├── unit/csvSubmittedAt.test.ts            ＋
 ├── unit/csvResultExporter.test.ts         ＋
 ├── unit/quizSessionService.test.ts        ～ exportCsv 狀態限制、不保存、不推播
 └── integration/csvExport.test.ts          ＋ 409／401／403、200 header 與內容、重複匯出、重新啟動、Guided Notes 不受影響
