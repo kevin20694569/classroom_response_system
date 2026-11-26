@@ -171,7 +171,7 @@ CSV 依「第 1 題（第 3 組 (1)(2) → 第 1 組 (1)(2)）→ 第 2 題無�
 - [X] T040 [P] 新增 `specs/005-results-csv-export/checklists/manual-verification.md`：依 quickstart.md §5（A 單題範例、B 題組範例、C 錯誤處理與既有功能）建立可勾選的人工驗證清單，包含老師端與至少兩組學生端
 - [X] T041 [P] 更新 `README.md`：在匯出說明處加入「匯出 CSV」（搶答結束後下載、欄位、Excel 直接開啟）；子功能表新增「005 | 搶答結果匯出 CSV（所有送出紀錄、題組逐子題、無人作答、Excel 相容） | 已實作」
 - [X] T042 檢查 `apps/server/src/domain/export/csv/*.ts` 與 `CsvExportPanel.tsx` 的對外函式都有明確型別註記、重要規則有繁體中文註解；確認沒有 `any`、沒有新增相依套件（`git diff main -- package.json package-lock.json apps/*/package.json` 無變更）、Guided Notes 匯出相關檔案沒有變更（`git diff main -- apps/server/src/domain/export/exportPlan.ts apps/server/src/domain/export/guidedNotesExporter.ts apps/web/src/pages/teacher/ExportPanel.tsx` 無變更）
-- [X] T043 最終品質關卡：`npm run typecheck`、`npm run lint`、`npm run format:check`、`npm test`、`npm run build` 全部通過；依 `checklists/manual-verification.md` 完成人工驗證（老師＋兩組學生，單題與題組範例各一次）並記錄結果；回報指令與結果（自動化與 build 已通過；人工驗證尚未執行，待使用者依 checklists/manual-verification.md 完成）
+- [X] T043 最終品質關卡：`npm run typecheck`、`npm run lint`、`npm run format:check`、`npm test`、`npm run build` 全部通過；依 `checklists/manual-verification.md` 完成人工驗證（老師＋兩組學生，單題與題組範例各一次）並記錄結果；回報指令與結果（自動化與 build 已通過；2026-11-26 補測後使用者回報人工驗證全部通過，已記錄於 checklists/manual-verification.md；`format:check` 需以 `--end-of-line auto` 執行，原因是 Windows 工作目錄為 CRLF）
 
 ---
 
