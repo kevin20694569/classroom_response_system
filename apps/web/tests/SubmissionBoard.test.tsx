@@ -23,6 +23,7 @@ function record(
     sequence,
     receivedAt: '2026-11-23T08:00:00.000Z',
     submitterNickname: null,
+    submitterMemberId: null,
   };
 }
 
