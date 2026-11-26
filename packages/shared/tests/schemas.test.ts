@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   BlankAnswerSchema,
+  CSV_EXPORT_PATH,
+  CSV_HEADERS,
+  CSV_NO_ANSWER_TEXT,
   GroupIdSchema,
   NICKNAME_MAX_LENGTH,
   NicknameSchema,
@@ -370,5 +373,25 @@ describe('004：送出者暱稱（FR-023、research R9）', () => {
       },
     });
     expect(parsed.session.submissions[0]?.submitterNickname).toBeNull();
+  });
+});
+
+describe('005：CSV 匯出共用常數（contracts/http-api.md）', () => {
+  it('表頭恰為 8 欄且順序固定（FR-005）', () => {
+    expect([...CSV_HEADERS]).toEqual([
+      '題號',
+      '子題',
+      '組別',
+      '送出者暱稱',
+      '答案',
+      '搶答順位',
+      '送出時間',
+      '是否搶答成功',
+    ]);
+  });
+
+  it('路徑與無人作答文字', () => {
+    expect(CSV_EXPORT_PATH).toBe('/api/session/export.csv');
+    expect(CSV_NO_ANSWER_TEXT).toBe('無人作答');
   });
 });

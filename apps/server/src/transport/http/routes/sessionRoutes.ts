@@ -1,4 +1,5 @@
 import {
+  CSV_EXPORT_PATH,
   EmptyRequestSchema,
   ExportRequestSchema,
   ImportRequestSchema,
@@ -57,5 +58,19 @@ export function registerSessionRoutes(
     if (!body.success) throw new DomainError('VALIDATION_FAILED', '匯出模式不正確。');
     const response: ExportResponse = await service.exportResults(body.data.mode);
     return reply.send(response);
+  });
+
+  // 子功能 005：下載結果 CSV（只限老師、搶答結束後；檔名含中文，另附純 ASCII 備用檔名）
+  app.get(CSV_EXPORT_PATH, async (request, reply) => {
+    requireTeacher(request.identity);
+    const csv = await service.exportCsv();
+    return reply
+      .header('Content-Type', 'text/csv; charset=utf-8')
+      .header('Cache-Control', 'no-store')
+      .header(
+        'Content-Disposition',
+        `attachment; filename="${csv.asciiFileName}"; filename*=UTF-8''${encodeURIComponent(csv.fileName)}`,
+      )
+      .send(csv.content);
   });
 }

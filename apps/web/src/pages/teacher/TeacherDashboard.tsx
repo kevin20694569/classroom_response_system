@@ -1,6 +1,7 @@
 import { QuestionList } from '../../components/QuestionList';
 import { StatusBadge } from '../../components/StatusBadge';
 import { useSessionState } from '../../hooks/useSessionState';
+import { CsvExportPanel } from './CsvExportPanel';
 import { ExportPanel } from './ExportPanel';
 import { ImportPanel } from './ImportPanel';
 import { SessionControls } from './SessionControls';
@@ -33,6 +34,7 @@ export function TeacherDashboard({ token, onLogout }: { token: string; onLogout:
           <SessionControls view={view} />
           <SubmissionBoard view={view} />
           <ExportPanel view={view} />
+          <CsvExportPanel view={view} />
         </>
       )}
     </div>

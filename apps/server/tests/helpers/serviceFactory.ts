@@ -18,14 +18,17 @@ export interface ServiceFixture {
   gateway: FakeGuidedNotesGateway;
 }
 
-export async function createService(initial: QuizSession | null = null): Promise<ServiceFixture> {
+export async function createService(
+  initial: QuizSession | null = null,
+  logger: DomainLogger = silentLogger,
+): Promise<ServiceFixture> {
   const repository = new InMemorySessionRepository(initial);
   const gateway = new FakeGuidedNotesGateway();
   const service = new QuizSessionService({
     repository,
     gateway,
     ranking: new FirstSubmissionStrategy(),
-    logger: silentLogger,
+    logger,
     now: () => new Date(),
     uuid: randomUUID,
   });
