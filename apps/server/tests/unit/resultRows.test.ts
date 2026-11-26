@@ -2,7 +2,7 @@ import { CSV_NO_ANSWER_TEXT, groupName, type QuizSession } from '@crs/shared';
 import { describe, expect, it } from 'vitest';
 import { CsvResultExporter } from '../../src/domain/export/csv/csvResultExporter.js';
 import { buildResultRows, toCsvRecord } from '../../src/domain/export/csv/resultRows.js';
-import { formatSubmittedAt } from '../../src/domain/export/submittedAt.js';
+import { formatCsvSubmittedAt } from '../../src/domain/export/csv/csvSubmittedAt.js';
 import { FirstSubmissionStrategy } from '../../src/domain/ranking/firstSubmissionStrategy.js';
 import { deriveResults } from '../../src/domain/ranking/results.js';
 import { groupQuestion, readySession, singleQuestion, submission } from '../helpers/builders.js';
@@ -35,7 +35,7 @@ describe('buildResultRows（單題，FR-006）', () => {
   it('順位、送出時間與搶答成功', () => {
     const rows = rowsOf(session);
     expect(rows.map((r) => r.rankLabel)).toEqual(['第 1 名', '第 2 名', '第 1 名']);
-    expect(rows[0]?.submittedAt).toBe(formatSubmittedAt(second.receivedAt));
+    expect(rows[0]?.submittedAt).toBe(formatCsvSubmittedAt(second.receivedAt));
     expect(rows.map((r) => r.isWinner)).toEqual(['是', '否', '是']);
   });
 
@@ -54,7 +54,7 @@ describe('buildResultRows（單題，FR-006）', () => {
       '小華',
       'CPU',
       '第 1 名',
-      formatSubmittedAt(second.receivedAt),
+      formatCsvSubmittedAt(second.receivedAt),
       '是',
     ]);
   });
@@ -68,16 +68,16 @@ describe('buildResultRows（題組與無人作答，FR-006～FR-008）', () => {
       readySession({ status: 'CLOSED', questions: [groupQuestion(1)], submissions: [g1, g3] }),
     );
     expect(rows.map((r) => [r.groupLabel, r.blankLabel, r.answer, r.isWinner])).toEqual([
-      ['第 3 組', '（1）', 'CPU', '是'],
-      ['第 3 組', '（2）', '作業系統', '是'],
-      ['第 1 組', '（1）', 'GPU', '否'],
-      ['第 1 組', '（2）', '核心', '否'],
+      ['第 3 組', '子題1', 'CPU', '是'],
+      ['第 3 組', '子題2', '作業系統', '是'],
+      ['第 1 組', '子題1', 'GPU', '否'],
+      ['第 1 組', '子題2', '核心', '否'],
     ]);
     expect(rows[0]?.rankLabel).toBe(rows[1]?.rankLabel);
     expect(rows[0]?.submittedAt).toBe(rows[1]?.submittedAt);
   });
 
-  it('子題標記為 null 時使用「（序號）」；缺少某子題答案時答案為空字串', () => {
+  it('文件沒有標記時仍為「子題N」；缺少某子題答案時答案為空字串', () => {
     const base = groupQuestion(1);
     const question = {
       ...base,
@@ -91,9 +91,37 @@ describe('buildResultRows（題組與無人作答，FR-006～FR-008）', () => {
       }),
     );
     expect(rows.map((r) => [r.blankLabel, r.answer])).toEqual([
-      ['（1）', '只有第一個'],
-      ['（2）', ''],
+      ['子題1', '只有第一個'],
+      ['子題2', ''],
     ]);
+  });
+
+  it('不論文件標記是「(1)」「（1）」或其他寫法，一律輸出「子題N」（Excel 會把括號數字轉成 -1）', () => {
+    const base = groupQuestion(1);
+    const question = {
+      ...base,
+      blanks: base.blanks.map((blank, i) => ({ ...blank, label: `(${String(i + 1)})` })),
+    };
+    const rows = rowsOf(
+      readySession({
+        status: 'CLOSED',
+        questions: [question],
+        submissions: [submission(1, 1, 1, ['甲', '乙'])],
+      }),
+    );
+    expect(rows.map((r) => r.blankLabel)).toEqual(['子題1', '子題2']);
+    for (const r of rows) expect(r.blankLabel).not.toMatch(/[()（）]|\d-\d/);
+  });
+
+  it('送出時間為 YYYY-MM-DD HH:mm:ss，不含毫秒', () => {
+    const rows = rowsOf(
+      readySession({
+        status: 'CLOSED',
+        questions: [singleQuestion(1)],
+        submissions: [submission(1, 1, 1)],
+      }),
+    );
+    expect(rows[0]?.submittedAt).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
   });
 
   it('無人作答的題目（單題與題組）恰好一列，其他欄位為 null', () => {

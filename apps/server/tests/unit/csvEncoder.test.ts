@@ -1,6 +1,6 @@
 import { CSV_HEADERS } from '@crs/shared';
 import { describe, expect, it } from 'vitest';
-import { encodeCsv, encodeField } from '../../src/domain/export/csv/csvEncoder.js';
+import { encodeCsv, encodeField, toExcelText } from '../../src/domain/export/csv/csvEncoder.js';
 
 const row = ['1', null, '第 1 組', '小明', '答案', '第 1 名', '2026/11/23 08:00:01.000', '是'];
 
@@ -38,15 +38,14 @@ describe('encodeField（引號與公式防護，contracts/csv-format.md §2）',
     ['第一行\n第二行', '"第一行\n第二行"'],
     ['第一行\r第二行', '"第一行\r第二行"'],
     ['=1+1', "'=1+1"],
-    ['-5', "'-5"],
-    ['+3', "'+3"],
+    ['-abc', "'-abc"],
+    ['+x', "'+x"],
     ['@A', "'@A"],
     ['\t縮排', "'\t縮排"],
     ['=SUM(A1, B1)', `"'=SUM(A1, B1)"`],
     [' 前後空白 ', '" 前後空白 "'],
     ['A,B', '"A,B"'],
     ['a=b', 'a=b'],
-    ['1-2', '1-2'],
     ['蘋果🍎 こんにちは', '蘋果🍎 こんにちは'],
   ])('%j → %j', (input, expected) => {
     expect(encodeField(input)).toBe(expected);
@@ -54,5 +53,43 @@ describe('encodeField（引號與公式防護，contracts/csv-format.md §2）',
 
   it('null 輸出空字串', () => {
     expect(encodeField(null)).toBe('');
+  });
+});
+
+describe('toExcelText（Excel 會轉換的答案與暱稱，顯示原樣）', () => {
+  it.each([
+    '007',
+    '1/2',
+    '1-2',
+    '3:30',
+    '1e5',
+    '1,000',
+    '0.50',
+    '-5',
+    '+3',
+    '12345678901234567890',
+    '50%',
+    'TRUE',
+    'false',
+  ])('%j 以 ="…" 輸出，Excel 開啟後顯示原樣', (input) => {
+    const cell = toExcelText(input);
+    expect(cell).toEqual({ excelText: input });
+    expect(encodeField(cell)).toBe(`"=""${input}"""`);
+  });
+
+  it.each(['甲', 'CPU', '3 apples', 'GPU2', '=1+1', '(1)', '第1題', '', ' '])(
+    '%j 不需要處理，原樣交給 encodeField',
+    (input) => {
+      expect(toExcelText(input)).toBe(input);
+    },
+  );
+
+  it('null 維持 null', () => {
+    expect(toExcelText(null)).toBeNull();
+  });
+
+  it('encodeCsv 對 ExcelTextCell 與一般值混合輸出', () => {
+    const text = encodeCsv(['a', 'b'], [[{ excelText: '007' }, '=1+1']]);
+    expect(text.slice(1)).toBe('a,b\r\n"=""007""",\'=1+1\r\n');
   });
 });

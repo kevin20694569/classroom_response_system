@@ -106,7 +106,7 @@ describe('題組、無人作答與老師端一致（US2，SC-002）', () => {
         for (const blank of question.blanks) {
           expected.push([
             String(question.number),
-            question.blanks.length > 1 ? `（${String(blank.index)}）` : '',
+            question.blanks.length > 1 ? `子題${String(blank.index)}` : '',
             `第 ${String(sub.groupId)} 組`,
             sub.submitterNickname ?? '',
             sub.answers.find((a) => a.blankIndex === blank.index)?.text ?? '',
@@ -121,7 +121,8 @@ describe('題組、無人作答與老師端一致（US2，SC-002）', () => {
     const res = await call(app, 'GET', CSV_EXPORT_PATH, teacher);
     const actual = linesOf(res.body)
       .slice(1)
-      .map((line) => line.split(','));
+      // 純數字等 Excel 會轉換的值以 ="…" 輸出（CSV 中為 "=""0"""），比對前還原成原文
+      .map((line) => line.split(',').map((cell) => cell.replace(/^"=""(.*)"""$/, '$1')));
     expect(actual).toHaveLength(expected.length);
     actual.forEach((cells, i) => {
       const want = expected[i] ?? [];
@@ -130,7 +131,7 @@ describe('題組、無人作答與老師端一致（US2，SC-002）', () => {
       if (want.length === 8) {
         expect(cells[5]).toBe(want[5]);
         expect(cells[7]).toBe(want[7]);
-        expect(cells[6]).toMatch(/^\d{4}\/\d{2}\/\d{2} \d{2}:\d{2}:\d{2}\.\d{3}$/);
+        expect(cells[6]).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
       } else {
         expect(cells.slice(5)).toEqual(['', '', '']);
       }
@@ -193,9 +194,39 @@ describe('特殊字元不使欄位錯位（US3，SC-004）', () => {
       '第一行\n第二行',
       '他說"好"',
       "'=1+1",
-      "'-5",
+      '="-5"',
     ]);
     expect(q1[0]?.[3]).toBe('A,B');
+  });
+});
+
+describe('Excel 會轉換的答案與暱稱', () => {
+  it('007、1/2、TRUE 等以 ="…" 輸出，其他欄位不受影響', async () => {
+    app = await startTestApp();
+    const teacher = await teacherWithImport(app, 'single-example', 4);
+    await call(app, 'POST', '/api/session/open', teacher);
+    const cases: [string, string][] = [
+      ['007', '1/2'],
+      ['1/2', '3:30'],
+      ['TRUE', '甲'],
+      ['CPU', '乙'],
+    ];
+    for (const [i, [text, nickname]] of cases.entries()) {
+      const token = await joinStudent(app, i + 1, nickname);
+      expect((await submitAnswers(app, token, 1, [text])).statusCode).toBe(200);
+    }
+    await call(app, 'POST', '/api/session/close', teacher);
+
+    const res = await call(app, 'GET', CSV_EXPORT_PATH, teacher);
+    const q1 = parseCsv(res.body.slice(1))
+      .slice(1)
+      .filter((r) => r[0] === '1');
+    expect(q1.map((r) => r[4])).toEqual(['="007"', '="1/2"', '="TRUE"', 'CPU']);
+    expect(q1.map((r) => r[3])).toEqual(['="1/2"', '="3:30"', '甲', '乙']);
+    // 題號、組別、順位等欄位維持原樣
+    expect(q1[0]?.[0]).toBe('1');
+    expect(q1[0]?.[2]).toBe('第 1 組');
+    expect(q1[0]?.[5]).toBe('第 1 名');
   });
 });
 
@@ -299,7 +330,7 @@ async function teacherView(testApp: TestApp, teacher: string): Promise<TeacherVi
   return (await call(testApp, 'GET', '/api/session', teacher)).json<{ view: TeacherView }>().view;
 }
 
-/** 依老師端 view 組出預期的 CSV 列；子題欄使用 view 的子題標記（label ?? （序號））。 */
+/** 依老師端 view 組出預期的 CSV 列；題組的子題欄為「子題N」（N 為子題序號）。 */
 function expectedRows(view: TeacherView): string[][] {
   const rows: string[][] = [];
   for (const q of [...view.questions].sort((a, b) => a.number - b.number)) {
@@ -309,7 +340,7 @@ function expectedRows(view: TeacherView): string[][] {
     if (subs.length === 0) rows.push([String(q.number), '', '', '', '無人作答']);
     subs.forEach((sub, position) => {
       for (let index = 1; index <= q.blankCount; index += 1) {
-        const label = q.kind === 'group' ? (q.blankLabels[index - 1] ?? `（${String(index)}）`) : '';
+        const label = q.kind === 'group' ? `子題${String(index)}` : '';
         rows.push([
           String(q.number),
           label,
@@ -366,7 +397,7 @@ describe('單題與題組範例：每一列與老師端一致（SC-002）', () =
       if (want.length === 8) {
         expect(cells[5]).toBe(want[5]);
         expect(cells[7]).toBe(want[7]);
-        expect(cells[6]).toMatch(/^\d{4}\/\d{2}\/\d{2} \d{2}:\d{2}:\d{2}\.\d{3}$/);
+        expect(cells[6]).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
       } else {
         expect(cells.slice(5)).toEqual(['', '', '']);
       }

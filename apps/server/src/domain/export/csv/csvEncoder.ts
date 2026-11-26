@@ -26,16 +26,43 @@ function quoteIfNeeded(value: string): string {
   return needsQuotes ? `"${value.replaceAll('"', '""')}"` : value;
 }
 
+/**
+ * 要求 Excel 以文字顯示的儲存格：輸出 `="值"`，Excel 開啟後顯示值本身（沒有多餘的單引號）。
+ * 只用於 `toExcelText` 判定過、內容僅含數字與少數符號的值，不會夾帶任何可執行的公式。
+ */
+export interface ExcelTextCell {
+  excelText: string;
+}
+
+/** CSV 的一格：文字、空值，或要求 Excel 以文字顯示的值。 */
+export type CsvCell = string | null | ExcelTextCell;
+
+/** 只含數字與這些符號（至少一個數字）的值，Excel 會轉成數字、日期、時間或科學記號，例如 007、1/2、3:30、1e5、1,000。 */
+const EXCEL_CONVERTIBLE = /^[\s+\-\d.,/:%$eE]*\d[\s+\-\d.,/:%$eE]*$/;
+const EXCEL_BOOLEAN = /^(true|false)$/i;
+
+/**
+ * 答案與暱稱的 Excel 文字防護：Excel 會把「007」變 7、「1/2」變日期、「TRUE」變布林，
+ * 這類值改為 `ExcelTextCell`，開啟後顯示原樣；其他值原樣回傳（仍由 encodeField 做公式防護與引號）。
+ */
+export function toExcelText(value: string | null): CsvCell {
+  if (value === null) return null;
+  return EXCEL_CONVERTIBLE.test(value) || EXCEL_BOOLEAN.test(value) ? { excelText: value } : value;
+}
+
 /** 把單一欄位的值轉成 CSV 欄位文字；null 輸出空字串。 */
-export function encodeField(value: string | null): string {
+export function encodeField(value: CsvCell): string {
   if (value === null) return '';
+  if (typeof value === 'object') {
+    return `"=""${value.excelText.replaceAll('"', '""')}"""`;
+  }
   return quoteIfNeeded(neutralizeFormula(value));
 }
 
 /** 產生完整的 CSV 文字：BOM、表頭、各列；每列（含最後一列）都以 CRLF 結束。 */
 export function encodeCsv(
   headers: readonly string[],
-  rows: readonly (readonly (string | null)[])[],
+  rows: readonly (readonly CsvCell[])[],
 ): string {
   const lines = [headers, ...rows].map((record) => record.map(encodeField).join(','));
   return BOM + lines.map((line) => line + LINE_BREAK).join('');
