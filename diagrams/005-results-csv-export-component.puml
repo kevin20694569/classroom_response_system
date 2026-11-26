@@ -13,12 +13,14 @@ node "老師分頁（瀏覽器）" as TeacherBrowser {
     component "ExportPanel\n匯出至原 Guided Notes" as GnPanel #EEEEEE
     component "SubmissionBoard" as Board #EEEEEE
     component "useSessionState\nTeacherView.status" as SessionHook #EEEEEE
-    component "瀏覽器下載\n（Blob + 檔名）" as Download
+    component "apiDownload\n帶 Bearer token；錯誤丟 ApiError" as ApiDownload
+    component "fileNameFromContentDisposition\n解析 filename*（UTF-8）" as Cd
+    component "saveBlob\nobject URL + <a download>" as Download
   }
 }
 
 package "shared（前後端共用契約）" as Shared {
-  component "Contracts\nCSV_EXPORT_NOT_CLOSED 訊息 /\n錯誤回應格式" as Contracts
+  component "Contracts\nCSV_EXPORT_PATH / CSV_EXPORT_NOT_CLOSED_MESSAGE /\nCSV_HEADERS / CSV_NO_ANSWER_TEXT / 錯誤回應格式" as Contracts
 }
 
 node "本機伺服器" as Server {
@@ -30,10 +32,14 @@ node "本機伺服器" as Server {
   package "領域層" {
     component "QuizSessionService\n狀態機；exportCsv()\n只讀、不改狀態" as SessionService
     component "RankingStrategy\nFirstSubmissionStrategy" as Ranking #EEEEEE
-    component "resultRows\n送出 → 結果紀錄列：\n依題號、順位、子題排序；\n無人作答一列" as ResultRows
-    component "csvEncoder\nUTF-8 BOM、RFC 4180 引號、\n公式字元防護、CRLF" as CsvEncoder
-    component "csvFileName\n搶答結果_YYYYMMDD-HHmm.csv\n（開啟搶答時間）" as FileName
-    component "GuidedNotesExporter / exportPlan\n（002、004 規則不變）" as GnExporter #EEEEEE
+    interface "ResultExporter<TReport>\n（擴充點，加上泛型）" as ExporterIf
+    package "CSV 匯出（新增）" {
+      component "CsvResultExporter\nimplements ResultExporter<CsvExport>" as CsvExporter
+      component "resultRows\n送出 → 結果紀錄列：\n依題號、順位、子題排序；\n無人作答一列" as ResultRows
+      component "csvEncoder\nUTF-8 BOM、RFC 4180 引號、\n公式字元防護、CRLF" as CsvEncoder
+      component "csvFileName\n搶答結果_YYYYMMDD-HHmm.csv\n（開啟搶答時間）" as FileName
+    }
+    component "GuidedNotesExporter / exportPlan\nimplements ResultExporter\n（002、004 規則不變）" as GnExporter #EEEEEE
   }
   package "外部服務存取層" {
     component "LocalSessionRepository" as LocalRepo #EEEEEE
@@ -45,19 +51,26 @@ Dashboard --> CsvPanel
 Dashboard --> GnPanel
 Dashboard --> Board
 CsvPanel ..> SessionHook : 讀取 status
-CsvPanel --> HttpApi : 下載 CSV（老師 token）
+CsvPanel --> ApiDownload
+ApiDownload --> HttpApi : GET 下載 CSV（老師 token）
+ApiDownload --> Cd
 CsvPanel --> Download : 以回應的檔名存檔
 CsvPanel ..> Contracts
 HttpApi ..> RoleGuard : 非老師拒絕
 HttpApi --> SessionService : exportCsv()
-SessionService --> Ranking : 每題排序（第 1 名 = 搶答成功）
-SessionService --> ResultRows : session + 排序結果
+SessionService --> Ranking : deriveResults（第 1 名 = 搶答成功）
+SessionService --> CsvExporter : export(session, results, mode)
+CsvExporter ..|> ExporterIf
+GnExporter ..|> ExporterIf
+CsvExporter --> Ranking : 每題完整排序
+CsvExporter --> ResultRows : session + 排序 + results
 ResultRows --> CsvEncoder : ResultRow[]
-SessionService --> FileName : openedAt
+CsvExporter --> FileName : openedAt
 SessionService --> LocalRepo : 讀取（重新啟動後仍可匯出）
 Realtime --> SessionHook : status 變成 CLOSED → 按鈕啟用
 GnPanel --> HttpApi : POST /api/session/export（不變）
-HttpApi --> GnExporter
+HttpApi --> SessionService : exportResults(mode)（不變）
+SessionService --> GnExporter
 HttpApi ..> Contracts
 
 note right of SessionService

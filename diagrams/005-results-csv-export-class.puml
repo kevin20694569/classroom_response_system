@@ -4,8 +4,9 @@ skinparam defaultFontName "PingFang TC"
 hide empty members
 title 005 搶答結果匯出 CSV — 類別圖 (Class Diagram)
 
-package "shared（契約，沿用）" {
+package "shared（契約）" {
   class Submission <<沿用>> {
+    +id: string
     +questionNumber: number
     +groupId: number
     +answers: BlankAnswer[]
@@ -16,17 +17,42 @@ package "shared（契約，沿用）" {
   class Question <<沿用>> {
     +number: number
     +kind: single | group
-    +blankCount: number
-    +blankLabels: (string | null)[]
+    +blanks: { label: string | null }[]
   }
-  class CsvExportMessages <<module>> {
-    +CSV_EXPORT_NOT_CLOSED = 「搶答結束後才能匯出 CSV。」
+  class QuestionResult <<沿用>> {
+    +questionNumber: number
+    +winner: Submission | null
+  }
+  class csvExport <<module, 新增>> {
+    +CSV_EXPORT_PATH = /api/session/export.csv
+    +CSV_EXPORT_NOT_CLOSED_MESSAGE = 「搶答結束後才能匯出 CSV。」
     +CSV_HEADERS = 題號、子題、組別、送出者暱稱、答案、搶答順位、送出時間、是否搶答成功
-    +NO_ANSWER_TEXT = 「無人作答」
+    +CSV_NO_ANSWER_TEXT = 「無人作答」
   }
 }
 
 package "server（領域層）" {
+  interface "ResultExporter<TReport = ExportReport>" as ResultExporter {
+    +export(session, results, mode): Promise<TReport>（修改：加上泛型）
+  }
+  class GuidedNotesExporter <<沿用>> {
+    +export(session, results, mode): Promise<ExportReport>
+  }
+  class CsvResultExporter <<新增>> {
+    -ranking: RankingStrategy
+    +export(session, results, _mode): Promise<CsvExport>（忽略 mode）
+  }
+  note right of CsvResultExporter
+    非 CLOSED 由服務層先擋下；
+    搶答成功 = results 的 winner.id；
+    順位 = ranking.rank() 的位置
+  end note
+  class CsvExport {
+    +fileName: string（搶答結果_YYYYMMDD-HHmm.csv）
+    +asciiFileName: string（results_YYYYMMDD-HHmm.csv）
+    +content: string（BOM + 表頭 + 各列，CRLF）
+    +rowCount: number
+  }
   class ResultRow {
     +questionNumber: number
     +blankLabel: string | null（單題、無人作答為 null）
@@ -38,8 +64,7 @@ package "server（領域層）" {
     +isWinner: 是 | 否 | null
   }
   class resultRows <<module>> {
-    +buildResultRows(session, strategy): ResultRow[]
-    -rowsForQuestion(question, ranked): ResultRow[]
+    +buildResultRows(session, ranking, results): ResultRow[]
     -blankLabel(question, index): string（無標記時「（序號）」）
   }
   note right of resultRows
@@ -48,63 +73,79 @@ package "server（領域層）" {
     無人作答的題目恰好一列（FR-006～FR-008）
   end note
   class csvEncoder <<module>> {
-    +encodeCsv(headers, rows): string（含 UTF-8 BOM、CRLF）
-    -quoteField(value): string（RFC 4180）
-    -neutralizeFormula(value): string（= + - @ Tab CR 開頭）
+    +encodeCsv(headers, rows): string（UTF-8 BOM、CRLF）
+    +encodeField(value): string
+    -neutralizeFormula(value): string（= + - @ Tab CR 開頭加 '）
   }
-  class csvFileName <<function>> {
-    +csvFileName(openedAt): string（搶答結果_YYYYMMDD-HHmm.csv）
+  class csvFileName <<module>> {
+    +csvFileName(openedAt): string
+    +csvAsciiFileName(openedAt): string
   }
-  class CsvExport {
-    +fileName: string
-    +content: string
-    +rowCount: number
+  class formatSubmittedAt <<function, 沿用>> {
+    +formatSubmittedAt(iso): string
   }
-  class RankingStrategy <<interface, 沿用>> {
+  interface RankingStrategy <<沿用>> {
     +rank(submissions): Submission[]
   }
   class QuizSessionService {
-    +exportCsv(): CsvExport（新增：非 CLOSED 丟出 DomainError；不改狀態）
+    +exportCsv(): Promise<CsvExport>（新增：mutate 內讀取並回傳原 session；\n非 CLOSED 丟 INVALID_TRANSITION；log 只記列數）
     +exportResults(mode)（沿用：Guided Notes）
   }
-  class ResultExporter <<interface, 沿用>> {
-    +export(session, results, mode): Promise<ExportReport>
+  class QuizSessionServiceDeps {
+    +exporter?: ResultExporter（沿用）
+    +csvExporter?: ResultExporter<CsvExport>（新增，預設 CsvResultExporter）
   }
-  note bottom of ResultExporter
-    寫入外部文件的匯出介面；CSV 是回傳下載內容、
-    不寫入外部文件，是否共用此介面於 plan 決定
-  end note
 
-  QuizSessionService ..> resultRows
-  QuizSessionService ..> csvEncoder
-  QuizSessionService ..> csvFileName
-  QuizSessionService ..> CsvExport : 產生
-  resultRows ..> RankingStrategy
+  GuidedNotesExporter ..|> ResultExporter
+  CsvResultExporter ..|> ResultExporter : TReport = CsvExport
+  CsvResultExporter --> RankingStrategy
+  CsvResultExporter ..> resultRows
+  CsvResultExporter ..> csvEncoder
+  CsvResultExporter ..> csvFileName
+  CsvResultExporter ..> CsvExport : 產生
+  QuizSessionService ..> QuizSessionServiceDeps
+  QuizSessionService --> CsvResultExporter : csvExporter
   resultRows ..> Submission : 讀取
   resultRows ..> Question : 讀取
+  resultRows ..> QuestionResult : 讀取 winner
+  resultRows ..> formatSubmittedAt
   resultRows ..> ResultRow : 產生
+  resultRows ..> csvExport
   csvEncoder ..> ResultRow
-  resultRows ..> CsvExportMessages
 }
 
 package "server（傳輸層）" {
   class sessionRoutes {
-    +GET /api/session/export.csv（新增：requireTeacher；\nContent-Type text/csv; charset=utf-8；\nContent-Disposition 附檔名）
+    +GET /api/session/export.csv（新增：requireTeacher；\ntext/csv; charset=utf-8；Cache-Control: no-store；\nContent-Disposition: filename + filename*）
   }
   sessionRoutes ..> QuizSessionService
+  sessionRoutes ..> csvExport
 }
 
 package "web（老師端）" {
-  class CsvExportPanel {
+  class CsvExportPanel <<新增>> {
     +view: TeacherView
     -busy: boolean
+    -message: string | null
     -error: DisplayError | null
-    +handleDownload(): 取得 CSV → Blob → 觸發下載
+    +handleDownload(): apiDownload → saveBlob
+  }
+  class http <<module>> {
+    +apiDownload(path): Promise<{ blob, fileName }>（新增）
+  }
+  class contentDisposition <<module, 新增>> {
+    +fileNameFromContentDisposition(header): string | null
+  }
+  class download <<module, 新增>> {
+    +saveBlob(blob, fileName): void
   }
   class TeacherDashboard {
     （新增掛載 CsvExportPanel，ExportPanel 不變）
   }
   TeacherDashboard --> CsvExportPanel
-  CsvExportPanel ..> CsvExportMessages
+  CsvExportPanel ..> http
+  CsvExportPanel ..> download
+  http ..> contentDisposition
+  CsvExportPanel ..> csvExport
 }
 @enduml
