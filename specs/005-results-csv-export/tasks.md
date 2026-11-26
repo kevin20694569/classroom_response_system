@@ -276,3 +276,8 @@ Task: "T021 download.ts"
 - [X] T049 CRITICAL：依 constitution 原則 VI 先更新 `diagrams/005-results-csv-export-class.puml`（`blankLabelOf` 改為「子題N」、新增 `csvSubmittedAt` 的 `formatCsvSubmittedAt`、`resultRows` 改依賴它而非 `formatSubmittedAt`、`csvEncoder` 新增 `CsvCell`／`ExcelTextCell`／`toExcelText`，`toCsvRecord` 回傳 `CsvCell[]`），必要時一併檢查 component 與 sequence 圖，重新產生 `.png`（`java -jar plantuml.jar "./diagrams/005-*.puml"`），並更新 `specs/005-results-csv-export/diagram-verification.md` 的比對結果 per Constitution VI (contradicts)
 - [X] T050 修正 `spec.md` 的 FR 編號重複：把「Excel 文字儲存格」規則由第二個 FR-014 改為未使用的編號（建議 FR-017），保留「匯出失敗處理」為 FR-014；同步更新 `spec.md` 內的引用（Clarifications、SC-004）、`contracts/csv-format.md`、`openspec-notice.md` 與其他文件中指向該規則的 `FR-014`（程式碼中指匯出失敗處理的 `FR-014` 引用不動） per spec FR-014 (partial)
 - [X] T051 更新 `plan.md` 的原始碼結構清單與圖表對應表：csv 模組新增 `csvSubmittedAt.ts`（`formatCsvSubmittedAt`）與 `csvEncoder.ts` 的 `toExcelText`、`CsvCell`，並移除「formatSubmittedAt（沿用）」的說法 per plan: 專案結構 (partial)
+
+## Phase 10: Convergence
+
+- [X] T052 修正 `spec.md` 的 FR-013 與 FR-017 衝突：FR-013 加註「符合 FR-017 的數字型值（如「-5」「+3」）改以文字儲存格 `="值"` 輸出、不加單引號；其餘以 `=`、`+`、`-`、`@`、Tab 或 CR 開頭的值才加單引號」，並確認 US3 的驗收情境與 SC-004 的敘述一致 per FR-013 (partial)
+- [X] T053 更新 `research.md` R4：記錄 Excel 文字儲存格（`="值"`）的決策與理由（Excel 會把 007、1/2、3:30、TRUE 等轉換、單引號會原樣顯示），並在 Alternatives 補上「純數字也加單引號」被放棄的原因 per plan: research R4 (partial)
