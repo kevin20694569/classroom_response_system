@@ -46,10 +46,10 @@ group mutate()（在鎖內讀取，回傳原 session → 不保存、不推播�
     Rows -> Rank : rank(該題送出)
     Rank --> Rows : 依順位排序
   end
-  Rows -> Rows : 單題一列；題組每個子題一列（相鄰）；\n無人作答一列「無人作答」；\n搶答成功 = results 的 winner
+  Rows -> Rows : 單題一列；題組每個子題一列「子題N」（相鄰）；\n無人作答一列「無人作答」；\n搶答成功 = results 的 winner；\n送出時間 YYYY-MM-DD HH:mm:ss
   Rows --> Csv : ResultRow[]
   Csv -> Enc : encodeCsv(CSV_HEADERS, rows)
-  Enc -> Enc : UTF-8 BOM、RFC 4180 引號、\n公式字元防護、CRLF
+  Enc -> Enc : UTF-8 BOM、RFC 4180 引號、\n公式字元防護、Excel 文字儲存格、CRLF
   Csv -> Enc : csvFileName(openedAt)
   Enc --> Csv : 內容 + 「搶答結果_20261126-1032.csv」
   Csv --> Svc : CsvExport
