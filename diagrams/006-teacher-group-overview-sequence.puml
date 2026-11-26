@@ -1,0 +1,93 @@
+@startuml 006-teacher-group-overview-sequence
+' 子功能 006：老師端學生分組情況面板 — 時序圖
+skinparam defaultFontName "PingFang TC"
+title 006 老師端學生分組情況面板 — 時序圖 (Sequence Diagram)
+
+actor "老師" as T
+participant "老師分頁\nTeacherDashboard\n＋GroupOverviewPanel" as Panel
+actor "學生分頁\n（第 1 組 Milo）" as S
+actor "學生分頁\n（第 2 組 Leo）" as S2
+participant "RealtimeGateway" as RT
+participant "HttpApi" as Http
+participant "GroupRoster" as Roster
+participant "SubmissionService" as Sub
+participant "VisibilityPolicy" as Vis
+participant "groupOverview" as Ov
+participant "RankingStrategy" as Rank
+
+== 老師開啟老師端 ==
+T -> Panel : 登入後開啟主畫面
+Panel -> RT : 連線（老師 token）
+RT -> Vis : toTeacherView(session, roster)
+Vis -> Ov : buildGroupOverview(session, roster, results)
+Ov -> Roster : membersOf(每一組)
+Ov --> Vis : GroupOverview[]（目前各組 0 人）
+Vis --> RT : TeacherView
+RT --> Panel : TeacherView（含 groupOverview）
+alt 視窗寬度 ≥ 1600 px
+  Panel -> Panel : 主畫面置中；面板在主畫面右緣到視窗右緣的\n固定框架中置中，不隨主畫面捲動
+else 視窗寬度 < 1600 px
+  Panel -> Panel : 面板收合，視窗右上角浮動「分組情況」按鈕\n（捲動時仍在原位）
+  T -> Panel : 按下「分組情況」
+  Panel -> Panel : 面板從右側抽屜展開，焦點到「關閉」
+  T -> Panel : 按「關閉」／點背景／按 Esc
+  Panel -> Panel : 收合，焦點回到浮動按鈕
+end
+
+== 學生加入組別（待開始） ==
+S -> RT : 連線（token：第 1 組、memberId、暱稱 Milo）
+RT -> Roster : connected(memberId, 1, Milo)
+Roster --> RT : 名冊改變（joined）
+RT -> Vis : 各分頁重新產生檢視
+Vis -> Ov : buildGroupOverview(...)
+RT --> Panel : TeacherView（第 1 組：1 人，Milo）
+RT --> S : StudentView（各組人數 + 本組成員，不含他組名單）
+Panel -> Panel : 1 秒內更新第 1 組
+
+== 搶答進行中：送出答案 ==
+S -> Http : POST 送出第 1 題（token）
+Http -> Sub : submit(submitter = token 的 groupId、memberId、暱稱)
+Sub -> Sub : 保存 Submission\n（submitterMemberId、submitterNickname）
+Sub --> RT : 狀態改變
+S2 -> Http : POST 送出第 1 題（較晚）
+Http -> Sub : submit(...)
+Sub --> RT : 狀態改變
+RT -> Vis : toTeacherView
+Vis -> Rank : 每題第 1 名
+Vis -> Ov : buildGroupOverview(session, roster, results)
+Ov -> Ov : 依 submitterMemberId 對應組員（不依暱稱）
+Ov --> Vis : Milo：第 1 題（搶答成功）\nLeo：第 1 題
+RT --> Panel : TeacherView
+Panel -> Panel : Milo 旁「第 1 題」醒目標示；Leo 旁一般樣式
+
+== 送出者斷線 ==
+S -> RT : 斷線（最後一個分頁）
+RT -> Roster : disconnected(memberId)
+Roster --> RT : 名冊改變（disconnected，進入 30 秒緩衝）
+RT -> Vis : toTeacherView
+Vis -> Ov : buildGroupOverview(...)
+Ov -> Roster : isInGrace(memberId) = true
+RT --> Panel : TeacherView
+Panel -> Panel : 1 秒內 Milo 旁標示「連線中斷」，仍計入人數
+alt 30 秒內重新連線
+  S -> RT : 連線（同一 token）
+  RT -> Roster : connected(memberId, 1, Milo)
+  Roster --> RT : 名冊改變（reconnected）
+  RT --> Panel : TeacherView
+  Panel -> Panel : 「連線中斷」標示消失，位置不變
+else 超過 30 秒仍未重連
+  Roster -> Roster : 緩衝結束，移除
+  Roster --> RT : 名冊改變（removed）
+  RT -> Vis : toTeacherView
+  Vis -> Ov : buildGroupOverview(...)
+  Ov -> Ov : 送出過但不在名冊 → inGroup = false
+  RT --> Panel : TeacherView
+  Panel -> Panel : 第 1 組 0 人；Milo 灰色「不在組內」，保留「第 1 題」
+end
+
+== 老師開始新的活動 ==
+T -> Http : 重新匯入 Guided Notes
+Http --> RT : 狀態改變（reset）
+RT -> Roster : clear()
+RT --> Panel : TeacherView（各組 0 人、無標註）
+@enduml
