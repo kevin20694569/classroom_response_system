@@ -19,7 +19,7 @@
   非 `CLOSED` 回 `INVALID_TRANSITION`「搶答結束後才能匯出 CSV。」（R3）。
 - 自行實作 CSV 編碼：UTF-8 BOM、CRLF、RFC 4180 引號、`= + - @ Tab CR` 開頭加 `'`；不新增相依套件（R4）。
 - 新增 `GET /api/session/export.csv`（只限老師），以 `Content-Disposition` 的 `filename*` 傳中文檔名；
-  前端以 fetch＋Bearer 取得 Blob 後下載（R5）。檔名用開啟搶答時間、送出時間沿用 `formatSubmittedAt`（R6）。
+  前端以 fetch＋Bearer 取得 Blob 後下載（R5）。檔名用開啟搶答時間、送出時間用 CSV 專用的 `formatCsvSubmittedAt`（R6）。
 
 ## Technical Context
 
@@ -77,7 +77,7 @@ log 不含答案與暱稱（FR-015）；Guided Notes 匯出行為與契約不變
 | resultRows、ResultRow | 組件圖、類別圖、時序圖 | `apps/server/src/domain/export/csv/resultRows.ts` |
 | csvEncoder | 組件圖、類別圖、時序圖 | `apps/server/src/domain/export/csv/csvEncoder.ts` |
 | csvFileName | 組件圖、類別圖、時序圖 | `apps/server/src/domain/export/csv/csvFileName.ts` |
-| formatSubmittedAt（沿用） | 類別圖 | `apps/server/src/domain/export/submittedAt.ts` |
+| formatCsvSubmittedAt（新增；002 的 formatSubmittedAt 不變） | 類別圖 | `apps/server/src/domain/export/csv/csvSubmittedAt.ts` |
 | QuizSessionService.exportCsv、csvExporter 依賴 | 組件圖、類別圖、時序圖 | `apps/server/src/domain/session/quizSessionService.ts` |
 | RankingStrategy／deriveResults（沿用） | 組件圖、時序圖 | `apps/server/src/domain/ranking/{rankingStrategy,results}.ts` |
 | HttpApi／sessionRoutes `GET /api/session/export.csv` | 組件圖、類別圖、時序圖 | `apps/server/src/transport/http/routes/sessionRoutes.ts` |

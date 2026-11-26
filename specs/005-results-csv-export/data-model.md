@@ -23,12 +23,12 @@ CSV 的一列資料（尚未編碼），全部欄位都已轉成要輸出的文�
 | 欄位 | 型別 | CSV 表頭 | 規則 |
 |------|------|----------|------|
 | `questionNumber` | `number` | 題號 | 題號數字 |
-| `blankLabel` | `string \| null` | 子題 | 題組：`blanks[i].label`，沒有標記時為 `（i）`（i 從 1 起算）；單題與無人作答：`null` |
+| `blankLabel` | `string \| null` | 子題 | 題組：`子題N`（N = 子題序號 `blanks[i].index`，不使用文件標記）；單題與無人作答：`null` |
 | `groupLabel` | `string \| null` | 組別 | `groupName(groupId)` →「第 N 組」；無人作答：`null` |
 | `submitterNickname` | `string \| null` | 送出者暱稱 | `Submission.submitterNickname`；舊資料與無人作答：`null` |
 | `answer` | `string` | 答案 | 該子題（或單題）的 `text` 原文；無人作答：`無人作答` |
 | `rankLabel` | `string \| null` | 搶答順位 | 「第 N 名」，N = 依 `RankingStrategy` 排序後的位置（從 1 起算）；無人作答：`null` |
-| `submittedAt` | `string \| null` | 送出時間 | `formatSubmittedAt(receivedAt)` →「YYYY/MM/DD HH:mm:ss.SSS」；無人作答：`null` |
+| `submittedAt` | `string \| null` | 送出時間 | `formatCsvSubmittedAt(receivedAt)` →「YYYY-MM-DD HH:mm:ss」（無毫秒，Excel 可完整顯示）；無人作答：`null` |
 | `isWinner` | `'是' \| '否' \| null` | 是否搶答成功 | `submission.id === result.winner?.id` 為「是」，否則「否」；無人作答：`null` |
 
 **產生規則（FR-006～FR-008）**：
