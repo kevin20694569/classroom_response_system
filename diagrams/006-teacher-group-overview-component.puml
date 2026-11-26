@@ -1,0 +1,94 @@
+@startuml 006-teacher-group-overview-component
+' 子功能 006：老師端學生分組情況面板 — 組件圖（灰色為沿用 001～005、本子功能預期不改動的元件）
+skinparam defaultFontName "PingFang TC"
+skinparam componentStyle uml2
+title 006 老師端學生分組情況面板 — 組件圖 (Component Diagram)
+
+actor "老師" as TeacherActor
+actor "學生（各組）" as StudentActor
+
+node "老師分頁（瀏覽器）" as TeacherBrowser {
+  package "TeacherClient（老師端畫面）" {
+    component "TeacherDashboard\n主畫面置中 + 分組情況版面切換\n（≥ 1600 px 主畫面右緣到視窗右緣的固定框架、面板置中；\n< 1600 px 收合）" as Dashboard
+    component "GroupOverviewPanel\n各組標示、人數、組員\n（捲動由外層 aside / dialog）" as Panel
+    component "GroupOverviewToggle\n窄視窗：右上角浮動「分組情況」按鈕\n抽屜展開；關閉 / 點背景 / Esc 收合" as Toggle
+    component "MemberAnswerTags\n第 N 題標記；\n搶答成功醒目標示" as Tags
+    component "「連線中斷」標示\n（30 秒緩衝期內）" as GraceMark
+    component "useWideLayout\n監看視窗寬度 1600 px" as WideHook
+    component "SubmissionBoard / ExportPanel /\nCsvExportPanel / SessionControls" as Existing #EEEEEE
+    component "useSessionState" as SessionHook #EEEEEE
+  }
+}
+
+node "學生分頁（瀏覽器）" as StudentBrowser {
+  component "StudentClient\n（不變：只看各組人數與本組成員）" as StudentClient #EEEEEE
+}
+
+package "shared（前後端共用契約）" as Shared {
+  component "Contracts\nTeacherView.groupOverview /\nGroupOverview / OverviewMember /\nMemberAnswerTag /\nSubmission.submitterMemberId" as Contracts
+}
+
+node "本機伺服器" as Server {
+  package "傳輸層" {
+    component "HttpApi\nPOST /api/session/submissions\n（token 帶 memberId）" as HttpApi #EEEEEE
+    component "RealtimeGateway\n名冊或送出改變時推播 TeacherView；\n連線狀態變更只推老師" as Realtime
+    component "viewFor\nHTTP 與推播共用；\n老師檢視傳入 roster" as ViewFor
+  }
+  package "存取控制" {
+    component "VisibilityPolicy\ntoTeacherView 加入 groupOverview；\n學生 / 公開檢視不變" as Visibility
+  }
+  package "領域層" {
+    component "GroupRoster\n組員名冊；新增：連線歸零 / 恢復時通知、\n查詢是否在斷線緩衝期" as Roster
+    component "groupOverview\n名冊 + 送出紀錄 → 各組組員與題號；\n不在組內的送出者" as Overview
+    component "RankingStrategy\n每題第 1 名" as Rank #EEEEEE
+    component "SubmissionService\n保存送出者 memberId" as SubmissionService
+  }
+  package "外部服務存取層" {
+    component "LocalSessionRepository" as LocalRepo #EEEEEE
+  }
+}
+
+TeacherActor --> Dashboard : 登入後查看
+TeacherActor --> Toggle : 窄視窗展開 / 關閉
+StudentActor --> StudentClient : 加入組別、送出答案
+
+Dashboard --> WideHook
+Dashboard --> Panel : 寬視窗固定在右側
+Dashboard --> Toggle : 窄視窗
+Toggle --> Panel : 展開時顯示
+Dashboard --> Existing
+Dashboard --> SessionHook
+Panel --> Tags
+Panel --> GraceMark
+Panel ..> Contracts
+
+StudentClient --> HttpApi : 送出答案
+HttpApi --> SubmissionService
+SubmissionService --> LocalRepo : 連同送出者 memberId、暱稱保存
+StudentClient --> Realtime : 連線 / 斷線
+Realtime --> Roster : 連線 / 斷線
+Roster --> Realtime : 名冊改變（含進入 / 離開緩衝期）
+Realtime --> Visibility
+Realtime --> ViewFor : 連線時送完整檢視
+HttpApi --> ViewFor : GET /api/session
+ViewFor --> Visibility
+Visibility --> Overview : 只在 toTeacherView
+Overview --> Roster : membersOf（依加入先後）\n＋是否在緩衝期
+Overview --> Rank : 每題搶答成功的送出
+Realtime --> SessionHook : TeacherView（含 groupOverview）
+HttpApi ..> Contracts
+
+note right of Visibility
+  groupOverview（含組員連線狀態）只放在
+  TeacherView（FR-016、FR-021）；
+  StudentView 仍只有各組人數 + 本組成員，
+  PublicView 仍只有各組人數（004 FR-014）
+end note
+
+note bottom of Overview
+  標註依 submitterMemberId 對應，不依暱稱（FR-008）；
+  不在名冊但送出過的身分列在該組之後、
+  標示「不在組內」，人數不計入（FR-009）；
+  舊紀錄（無 memberId）不標註
+end note
+@enduml

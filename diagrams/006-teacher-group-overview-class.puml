@@ -1,0 +1,107 @@
+@startuml 006-teacher-group-overview-class
+' 子功能 006：老師端學生分組情況面板 — 類別圖（只列出本子功能新增或修改的成員；其餘沿用 001～005 類別圖）
+skinparam defaultFontName "PingFang TC"
+hide empty members
+title 006 老師端學生分組情況面板 — 類別圖 (Class Diagram)
+
+package "shared（契約）" {
+  class Submission {
+    +submitterNickname: string | null
+    +submitterMemberId: string | null（新增：舊資料為 null）
+  }
+  class GroupOverview {
+    +groupId: number
+    +memberCount: number（只算在組內）
+    +members: OverviewMember[]（在組內依加入先後，之後是不在組內的送出者）
+  }
+  class OverviewMember {
+    +memberId: string
+    +nickname: string
+    +inGroup: boolean（false = 「不在組內」）
+    +disconnected: boolean（在組內、所有分頁斷線、仍在 30 秒緩衝期 = 「連線中斷」）
+    +answered: MemberAnswerTag[]（依題號由小到大）
+  }
+  class MemberAnswerTag {
+    +questionNumber: number
+    +isWinner: boolean（該題搶答成功）
+  }
+  class TeacherView {
+    +groupOverview: GroupOverview[]（新增：依組別編號）
+  }
+  TeacherView *-- "0..*" GroupOverview
+  GroupOverview *-- "0..*" OverviewMember
+  OverviewMember *-- "0..*" MemberAnswerTag
+  class StudentView <<不變>>
+  class PublicView <<不變>>
+}
+
+package "server" {
+  class GroupRoster {
+    +membersOf(groupId): GroupMember[]
+    +headcounts(groups): GroupHeadcount[]
+    +isInGrace(memberId): boolean（新增：連線數歸零、尚未移除）
+    -emit(change)（修改：連線歸零時 disconnected、緩衝期內重連時 reconnected）
+  }
+  class groupOverview <<module>> {
+    +UNKNOWN_NICKNAME = '（未記錄暱稱）'
+    +buildGroupOverview(session, roster, results): GroupOverview[]
+    -bySubmitter(submissions): Map<memberId, SubmitterRecords>（依 sequence）
+    -tagsOf(records, winnerIds): MemberAnswerTag[]（依題號）
+  }
+  note right of groupOverview
+    純函式，不依賴傳輸層（原則 IV）；
+    submitterMemberId 為 null 的舊紀錄略過；
+    不在組內的送出者暱稱取該身分最早一筆送出的 submitterNickname，
+    排序依各自第一筆送出的 sequence
+  end note
+  class VisibilityPolicy <<module>> {
+    +toTeacherView(session, strategy, roster, now): TeacherView（修改：需要 roster）
+    +toStudentView(...)（不變）
+    +toPublicView(...)（不變）
+  }
+  class RealtimeGateway {
+    -onRosterChange(change)（修改：joined / removed / left / cleared → 公開、各組、老師；\ndisconnected / reconnected → 只推老師）
+  }
+  RealtimeGateway ..> VisibilityPolicy : toTeacherView（含 roster）
+  RealtimeGateway ..> GroupRoster : onChange
+  class SubmissionService {
+    +submit(submitter, request): SubmitResponse（修改：一併保存 submitter.memberId）
+  }
+  VisibilityPolicy ..> groupOverview : 只在老師檢視呼叫
+  groupOverview ..> GroupRoster : 讀取
+  groupOverview ..> Submission : 讀取
+  groupOverview ..> GroupOverview : 產生
+  SubmissionService ..> Submission : 保存
+}
+
+package "web（老師端）" {
+  class TeacherDashboard {
+    -wide: boolean（useWideLayout）
+    +render(): 寬：置中 main（max-w-5xl）+ fixed aside 框架（left = 50% + 32rem，面板 mx-auto 置中）；\n窄：main（pr-28 保留按鈕欄）+ GroupOverviewToggle
+  }
+  class useWideLayout <<hook>> {
+    +WIDE_LAYOUT_MIN_WIDTH = 1600（主畫面 1024 px ＋ 兩側各 288 px）
+    +(): boolean（視窗寬度跨過門檻即更新）
+  }
+  class GroupOverviewPanel {
+    +view: TeacherView
+    +render(): 標題「分組情況」；尚未匯入提示 / 每組卡片；「連線中斷」「不在組內」標示
+    （不設高度；定位與捲動由外層 aside 或 dialog 負責）
+  }
+  class GroupOverviewToggle {
+    -open: boolean（只存在畫面，重新整理後收合）
+    +render(): 視窗右上角浮動「分組情況」按鈕 + 右側抽屜（role=dialog）
+    -close(): 關閉按鈕 / 點背景 / Esc；焦點回到浮動按鈕
+  }
+  class MemberAnswerTags {
+    +tags: MemberAnswerTag[]
+    +render(): 「第 N 題」；isWinner 醒目樣式 + 「搶答成功」文字說明
+  }
+  TeacherDashboard ..> useWideLayout
+  TeacherDashboard --> GroupOverviewPanel : 寬視窗
+  TeacherDashboard --> GroupOverviewToggle : 窄視窗
+  GroupOverviewToggle --> GroupOverviewPanel
+  GroupOverviewPanel --> MemberAnswerTags
+  GroupOverviewPanel ..> TeacherView : 讀取 groupOverview
+}
+@enduml
