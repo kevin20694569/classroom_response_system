@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { CSV_EXPORT_NOT_CLOSED_MESSAGE, CSV_EXPORT_PATH, CSV_HEADERS } from '@crs/shared';
 import { afterEach, describe, expect, it } from 'vitest';
+import { csvAsciiFileName } from '../../src/domain/export/csv/csvFileName.js';
 import { LocalSessionRepository } from '../../src/infrastructure/persistence/localSessionRepository.js';
 import {
   call,
@@ -274,5 +275,143 @@ describe('重新啟動與既有功能不受影響（US4，FR-004、FR-016）', (
       view: { lastExport: { writtenQuestionCount: number } | null };
     }>().view;
     expect(view.lastExport?.writtenQuestionCount).toBe(1);
+  });
+});
+
+interface TeacherView {
+  openedAt: string | null;
+  questions: {
+    number: number;
+    kind: string;
+    blankCount: number;
+    blankLabels: (string | null)[];
+  }[];
+  submissions: {
+    questionNumber: number;
+    groupId: number;
+    sequence: number;
+    submitterNickname: string | null;
+    answers: { blankIndex: number; text: string }[];
+  }[];
+}
+
+async function teacherView(testApp: TestApp, teacher: string): Promise<TeacherView> {
+  return (await call(testApp, 'GET', '/api/session', teacher)).json<{ view: TeacherView }>().view;
+}
+
+/** 依老師端 view 組出預期的 CSV 列；子題欄使用 view 的子題標記（label ?? （序號））。 */
+function expectedRows(view: TeacherView): string[][] {
+  const rows: string[][] = [];
+  for (const q of [...view.questions].sort((a, b) => a.number - b.number)) {
+    const subs = view.submissions
+      .filter((s) => s.questionNumber === q.number)
+      .sort((a, b) => a.sequence - b.sequence);
+    if (subs.length === 0) rows.push([String(q.number), '', '', '', '無人作答']);
+    subs.forEach((sub, position) => {
+      for (let index = 1; index <= q.blankCount; index += 1) {
+        const label = q.kind === 'group' ? (q.blankLabels[index - 1] ?? `（${String(index)}）`) : '';
+        rows.push([
+          String(q.number),
+          label,
+          `第 ${String(sub.groupId)} 組`,
+          sub.submitterNickname ?? '',
+          sub.answers.find((a) => a.blankIndex === index)?.text ?? '',
+          `第 ${String(position + 1)} 名`,
+          '',
+          position === 0 ? '是' : '否',
+        ]);
+      }
+    });
+  }
+  return rows;
+}
+
+describe('單題與題組範例：每一列與老師端一致（SC-002）', () => {
+  it.each(['single-example', 'group-example'])('%s：4 組、含無人作答的題目', async (fixture) => {
+    app = await startTestApp();
+    const teacher = await teacherWithImport(app, fixture, 4);
+    await call(app, 'POST', '/api/session/open', teacher);
+    const tokens = [
+      await joinStudent(app, 1, '甲'),
+      await joinStudent(app, 2, '乙'),
+      await joinStudent(app, 3, '丙'),
+      await joinStudent(app, 4, '丁'),
+    ];
+    const before = await teacherView(app, teacher);
+    const numbers = before.questions.map((q) => q.number).sort((a, b) => a - b);
+    const unanswered = numbers[numbers.length - 1];
+    let n = 0;
+    for (const q of before.questions) {
+      if (q.number === unanswered) continue;
+      // 每題由不同的組、不同的順序作答；第 4 組永遠不作答
+      const order = [(q.number % 3) + 1, ((q.number + 1) % 3) + 1].map((i) => tokens[i - 1] ?? '');
+      for (const token of order) {
+        n += 1;
+        const texts = Array.from({ length: q.blankCount }, (_, i) => `答${String(n)}-${String(i)}`);
+        const res = await submitAnswers(app, token, q.number, texts);
+        expect(res.statusCode).toBe(200);
+      }
+    }
+    await call(app, 'POST', '/api/session/close', teacher);
+
+    const view = await teacherView(app, teacher);
+    const expected = expectedRows(view);
+    const res = await call(app, 'GET', CSV_EXPORT_PATH, teacher);
+    const actual = parseCsv(res.body.slice(1)).slice(1);
+    expect(actual).toHaveLength(expected.length);
+    actual.forEach((cells, i) => {
+      const want = expected[i] ?? [];
+      expect(cells).toHaveLength(8);
+      expect(cells.slice(0, 5)).toEqual(want.slice(0, 5));
+      if (want.length === 8) {
+        expect(cells[5]).toBe(want[5]);
+        expect(cells[7]).toBe(want[7]);
+        expect(cells[6]).toMatch(/^\d{4}\/\d{2}\/\d{2} \d{2}:\d{2}:\d{2}\.\d{3}$/);
+      } else {
+        expect(cells.slice(5)).toEqual(['', '', '']);
+      }
+    });
+    expect(actual.some((c) => c[0] === String(unanswered) && c[4] === '無人作答')).toBe(true);
+  });
+});
+
+describe('重新匯入新文件（Edge Cases）', () => {
+  it('新的一場結束前回 409；結束後的 CSV 只含新一場且檔名用新的開啟時間', async () => {
+    app = await startTestApp();
+    const teacher = await teacherWithImport(app, 'single-example', 2);
+    await call(app, 'POST', '/api/session/open', teacher);
+    const old = await joinStudent(app, 1, '舊場');
+    await submitAnswers(app, old, 1, ['舊答案']);
+    await call(app, 'POST', '/api/session/close', teacher);
+    expect((await call(app, 'GET', CSV_EXPORT_PATH, teacher)).statusCode).toBe(200);
+
+    const reimport = await call(app, 'POST', '/api/session/import', teacher, {
+      spreadsheetUrl: 'https://docs.google.com/spreadsheets/d/single-example/edit',
+      groupCount: 2,
+      confirmDiscard: true,
+    });
+    expect(reimport.statusCode).toBe(200);
+    const rejected = await call(app, 'GET', CSV_EXPORT_PATH, teacher);
+    expect(rejected.statusCode).toBe(409);
+    expect(rejected.json<{ error: { code: string; message: string } }>().error).toMatchObject({
+      code: 'INVALID_TRANSITION',
+      message: CSV_EXPORT_NOT_CLOSED_MESSAGE,
+    });
+
+    await call(app, 'POST', '/api/session/open', teacher);
+    const fresh = await joinStudent(app, 2, '新場');
+    await submitAnswers(app, fresh, 1, ['新答案']);
+    await call(app, 'POST', '/api/session/close', teacher);
+
+    const res = await call(app, 'GET', CSV_EXPORT_PATH, teacher);
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toContain('新答案');
+    expect(res.body).not.toContain('舊答案');
+    expect(res.body).not.toContain('舊場');
+    const openedAt = (await teacherView(app, teacher)).openedAt;
+    expect(openedAt).not.toBeNull();
+    expect(String(res.headers['content-disposition'])).toContain(
+      `filename="${csvAsciiFileName(openedAt ?? '')}"`,
+    );
   });
 });

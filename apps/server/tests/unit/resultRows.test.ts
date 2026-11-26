@@ -1,5 +1,6 @@
-import { CSV_NO_ANSWER_TEXT, type QuizSession } from '@crs/shared';
+import { CSV_NO_ANSWER_TEXT, groupName, type QuizSession } from '@crs/shared';
 import { describe, expect, it } from 'vitest';
+import { CsvResultExporter } from '../../src/domain/export/csv/csvResultExporter.js';
 import { buildResultRows, toCsvRecord } from '../../src/domain/export/csv/resultRows.js';
 import { formatSubmittedAt } from '../../src/domain/export/submittedAt.js';
 import { FirstSubmissionStrategy } from '../../src/domain/ranking/firstSubmissionStrategy.js';
@@ -148,5 +149,48 @@ describe('buildResultRows（題組與無人作答，FR-006～FR-008）', () => {
       }),
     );
     expect(rows[0]?.submitterNickname).toBeNull();
+  });
+});
+
+describe('大量資料（Edge Cases：20 組 × 30 題）', () => {
+  const groupCount = 20;
+  const questionCount = 30;
+  const questions = Array.from({ length: questionCount }, (_, i) => singleQuestion(i + 1));
+  // 每題由 20 組全部作答；順位（sequence）刻意倒著給，確認依順位而非組別排序
+  const submissions = questions.flatMap((q) =>
+    Array.from({ length: groupCount }, (_, i) =>
+      submission(q.number, i + 1, groupCount - i, [`答${String(q.number)}-${String(i + 1)}`]),
+    ),
+  );
+  const session = readySession({
+    status: 'CLOSED',
+    openedAt: new Date(Date.UTC(2026, 10, 23, 0, 0, 0)).toISOString(),
+    groups: Array.from({ length: groupCount }, (_, i) => ({ id: i + 1, name: groupName(i + 1) })),
+    questions,
+    submissions,
+  });
+
+  it('列數恰為 600，每題 20 列且依順位排序、沒有截斷', () => {
+    const rows = rowsOf(session);
+    expect(rows).toHaveLength(groupCount * questionCount);
+    for (const q of questions) {
+      const qRows = rows.filter((r) => r.questionNumber === q.number);
+      expect(qRows).toHaveLength(groupCount);
+      expect(qRows.map((r) => r.rankLabel)).toEqual(
+        Array.from({ length: groupCount }, (_, i) => `第 ${String(i + 1)} 名`),
+      );
+      // sequence 1 對應第 20 組，因此組別由 20 往 1 排列
+      expect(qRows[0]?.groupLabel).toBe('第 20 組');
+      expect(qRows[groupCount - 1]?.groupLabel).toBe('第 1 組');
+    }
+  });
+
+  it('CsvResultExporter 的 rowCount 為 600', async () => {
+    const exported = await new CsvResultExporter(ranking).export(
+      session,
+      deriveResults(session, ranking),
+      'answers-with-columns',
+    );
+    expect(exported.rowCount).toBe(600);
   });
 });
