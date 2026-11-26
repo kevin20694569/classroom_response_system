@@ -69,16 +69,16 @@ Technical Context 沒有 NEEDS CLARIFICATION（沿用 001～004 技術棧）。�
 ## R6. 檔名與時間
 
 - **Decision**: `csvFileName(openedAt)` 產生 `搶答結果_YYYYMMDD-HHmm.csv`（伺服器所在時區，與 002 的時間格式一樣用本機時區）；
-  ASCII 備用檔名為 `results_YYYYMMDD-HHmm.csv`。送出時間沿用既有的 `formatSubmittedAt()`（002 FR-018）。
-- **Rationale**: clarify Q4 選定開啟搶答時間；`CLOSED` 狀態一定有 `openedAt`。沿用既有格式函式，CSV 與 Guided Notes
-  匯出的時間字串完全相同。
+  ASCII 備用檔名為 `results_YYYYMMDD-HHmm.csv`。送出時間使用 CSV 專用的 `formatCsvSubmittedAt()`：「YYYY-MM-DD HH:mm:ss」（人工驗證發現含毫秒的「YYYY/MM/DD HH:mm:ss.SSS」在 Excel 會被當成「分:秒.小數」；002 的 `formatSubmittedAt()` 維持不變）。
+- **Rationale**: clarify Q4 選定開啟搶答時間；`CLOSED` 狀態一定有 `openedAt`。CSV 與 Guided Notes 的時間格式刻意不同，
+  Excel 相容性優先。
 - **Alternatives considered**: 由前端組檔名——時間會依老師瀏覽器的時區，與 CSV 內容中伺服器時區的時間可能不一致。
 
 ## R7. 測試策略
 
 - **Decision**:
   - 單元測試：`csvEncoder`（BOM、CRLF、引號、公式防護、空值）、`resultRows`（排序、題組拆列、無人作答、送出者 null、
-    無標記子題用「（序號）」、題號不連續）、`csvFileName`、`CsvResultExporter`（重複匯出內容逐位元組相同、mode 不影響結果）、
+    子題欄一律「子題N」、題號不連續）、`csvFileName`、`CsvResultExporter`（重複匯出內容逐位元組相同、mode 不影響結果）、
     `QuizSessionService.exportCsv`（各狀態的限制；不保存、不推播、`lastExport` 不變）。
   - 整合測試（Fastify `inject`）：未匯入／待開始／進行中回 409 與指定訊息；未登入 401、學生 403 且 body 沒有任何答案；
     `CLOSED` 回 200、header 正確、內容與預期 CSV 相同；伺服器重新啟動後仍可匯出且內容相同；匯出 CSV 後 Guided Notes 匯出
