@@ -265,8 +265,14 @@ Task: "T021 download.ts"
 
 ## Phase 8: Convergence
 
-- [ ] T044 依 `specs/005-results-csv-export/checklists/manual-verification.md`（A 單題、B 題組、C 錯誤處理與既有功能，老師＋兩組學生）完成人工驗證：以 Windows 版 Excel 直接開啟確認中文無亂碼、從按下「匯出 CSV」到存下檔案在 3 秒內、結束搶答後 1 秒內按鈕啟用、停止伺服器後的錯誤訊息；逐項勾選並在清單末尾記錄日期、環境與結果（T024、T028、T038、T043 的人工部分尚未執行） per SC-001, SC-003, T043 (partial)
+- [X] T044 依 `specs/005-results-csv-export/checklists/manual-verification.md`（A 單題、B 題組、C 錯誤處理與既有功能，老師＋兩組學生）完成人工驗證：以 Windows 版 Excel 直接開啟確認中文無亂碼、從按下「匯出 CSV」到存下檔案在 3 秒內、結束搶答後 1 秒內按鈕啟用、停止伺服器後的錯誤訊息；逐項勾選並在清單末尾記錄日期、環境與結果（T024、T028、T038、T043 的人工部分尚未執行） per SC-001, SC-003, T043 (partial)
 - [X] T045 擴充 `apps/server/tests/integration/csvExport.test.ts`：以「單題範例」（`single-example`）與「題組範例」（`group-example`）各跑一場、皆設定 4 組並各含至少一題無人作答，將 CSV 每一列（題號、子題、組別、送出者、答案、第 N 名、搶答成功）與老師端 `GET /api/session` 的送出列表逐筆比對；子題預期值取自 view 中題目的子題標記（`label ?? （序號）`），不自行組字串（目前只有題組範例、3 組的比對，單題範例只對照寫死的預期值） per SC-002 (partial)
 - [X] T046 [P] 在 `apps/server/tests/unit/resultRows.test.ts` 新增大量資料案例：20 組 × 30 題（單題）全部作答，列數恰為 600、每題 20 列且依順位排序、沒有截斷；並以 `CsvResultExporter` 確認 `rowCount` 為 600 per spec Edge Cases「20 組 × 30 題」 (partial)
 - [X] T047 [P] 在 `apps/server/tests/integration/csvExport.test.ts` 新增案例：一場活動結束並可匯出後，老師重新匯入（`confirmDiscard: true`）開始新的一場，此時 `GET /api/session/export.csv` 回 409 `CSV_EXPORT_NOT_CLOSED_MESSAGE`；新的一場結束後匯出的 CSV 只含新一場的送出、檔名使用新一場的開啟時間 per spec Edge Cases「重新匯入新文件」 (partial)
-- [ ] T048 依 constitution 將本子功能的對外行為變更（新增 `GET /api/session/export.csv`、老師端「匯出 CSV」區塊、CSV 格式）整理成摘要，連結 `contracts/http-api.md`、`contracts/csv-format.md`、`contracts/teacher-ui.md`，記錄於 `specs/005-results-csv-export/openspec-notice.md` 並告知 OpenSpec 小組 per plan: 開發流程「需告知 OpenSpec 小組」 (missing)
+- [X] T048 依 constitution 將本子功能的對外行為變更（新增 `GET /api/session/export.csv`、老師端「匯出 CSV」區塊、CSV 格式）整理成摘要，連結 `contracts/http-api.md`、`contracts/csv-format.md`、`contracts/teacher-ui.md`，記錄於 `specs/005-results-csv-export/openspec-notice.md` 並告知 OpenSpec 小組 per plan: 開發流程「需告知 OpenSpec 小組」 (missing)
+
+## Phase 9: Convergence
+
+- [X] T049 CRITICAL：依 constitution 原則 VI 先更新 `diagrams/005-results-csv-export-class.puml`（`blankLabelOf` 改為「子題N」、新增 `csvSubmittedAt` 的 `formatCsvSubmittedAt`、`resultRows` 改依賴它而非 `formatSubmittedAt`、`csvEncoder` 新增 `CsvCell`／`ExcelTextCell`／`toExcelText`，`toCsvRecord` 回傳 `CsvCell[]`），必要時一併檢查 component 與 sequence 圖，重新產生 `.png`（`java -jar plantuml.jar "./diagrams/005-*.puml"`），並更新 `specs/005-results-csv-export/diagram-verification.md` 的比對結果 per Constitution VI (contradicts)
+- [X] T050 修正 `spec.md` 的 FR 編號重複：把「Excel 文字儲存格」規則由第二個 FR-014 改為未使用的編號（建議 FR-017），保留「匯出失敗處理」為 FR-014；同步更新 `spec.md` 內的引用（Clarifications、SC-004）、`contracts/csv-format.md`、`openspec-notice.md` 與其他文件中指向該規則的 `FR-014`（程式碼中指匯出失敗處理的 `FR-014` 引用不動） per spec FR-014 (partial)
+- [X] T051 更新 `plan.md` 的原始碼結構清單與圖表對應表：csv 模組新增 `csvSubmittedAt.ts`（`formatCsvSubmittedAt`）與 `csvEncoder.ts` 的 `toExcelText`、`CsvCell`，並移除「formatSubmittedAt（沿用）」的說法 per plan: 專案結構 (partial)
