@@ -73,7 +73,7 @@ describe('GroupRoster（004 FR-009～FR-015、research R4）', () => {
     expect(changes.at(-1)).toEqual({ kind: 'removed', memberId: 'm1', groupId: 2 });
   });
 
-  it('30 秒內重新連線取消移除，加入順序不變且不通知', () => {
+  it('30 秒內重新連線取消移除，加入順序不變；只通知連線狀態（006 FR-021），不通知成員變動', () => {
     const { roster, clock, changes } = setup();
     roster.connected('m1', 1, 'Milo');
     roster.connected('m2', 1, 'Ava');
@@ -82,7 +82,7 @@ describe('GroupRoster（004 FR-009～FR-015、research R4）', () => {
     roster.connected('m1', 1, 'Milo');
     clock.advance(60_000);
     expect(roster.membersOf(1).map((m) => m.memberId)).toEqual(['m1', 'm2']);
-    expect(changes.map((c) => c.kind)).toEqual(['joined', 'joined']);
+    expect(changes.map((c) => c.kind)).toEqual(['joined', 'joined', 'disconnected', 'reconnected']);
     expect(clock.pendingCount()).toBe(0);
   });
 
@@ -149,5 +149,72 @@ describe('GroupRoster（004 FR-009～FR-015、research R4）', () => {
     for (let i = 1; i <= 30; i += 1) roster.connected(`m${i}`, 1, `S${i}`);
     expect(roster.membersOf(1)).toHaveLength(30);
     expect(roster.headcounts(GROUPS)[0]?.memberCount).toBe(30);
+  });
+});
+
+describe('GroupRoster：斷線緩衝狀態（006 FR-021、research R3）', () => {
+  it('最後一個連線斷開時通知 disconnected，並進入緩衝期', () => {
+    const { roster, changes } = setup();
+    roster.connected('m1', 2, 'Milo');
+    expect(roster.isInGrace('m1')).toBe(false);
+    roster.disconnected('m1');
+    expect(changes.at(-1)).toEqual({ kind: 'disconnected', memberId: 'm1', groupId: 2 });
+    expect(roster.isInGrace('m1')).toBe(true);
+    // 緩衝期內仍計入人數
+    expect(roster.headcounts(GROUPS)[1]?.memberCount).toBe(1);
+  });
+
+  it('同一 memberId 兩個連線只斷一個：不通知、不在緩衝期', () => {
+    const { roster, changes } = setup();
+    roster.connected('m1', 1, 'Milo');
+    roster.connected('m1', 1, 'Milo');
+    roster.disconnected('m1');
+    expect(changes.map((c) => c.kind)).toEqual(['joined']);
+    expect(roster.isInGrace('m1')).toBe(false);
+  });
+
+  it('緩衝期內重新連線通知 reconnected，排序不變', () => {
+    const { roster, clock, changes } = setup();
+    roster.connected('m1', 1, 'Milo');
+    roster.connected('m2', 1, 'Ava');
+    roster.disconnected('m1');
+    clock.advance(5_000);
+    roster.connected('m1', 1, 'Milo');
+    expect(changes.at(-1)).toEqual({ kind: 'reconnected', memberId: 'm1', groupId: 1 });
+    expect(roster.isInGrace('m1')).toBe(false);
+    expect(roster.membersOf(1).map((m) => m.memberId)).toEqual(['m1', 'm2']);
+  });
+
+  it('連線中再多開一個分頁不通知 reconnected', () => {
+    const { roster, changes } = setup();
+    roster.connected('m1', 1, 'Milo');
+    roster.connected('m1', 1, 'Milo');
+    expect(changes.map((c) => c.kind)).toEqual(['joined']);
+  });
+
+  it('緩衝到期仍通知 removed（004 行為不變），之後不在緩衝期', () => {
+    const { roster, clock, changes } = setup();
+    roster.connected('m1', 3, 'Milo');
+    roster.disconnected('m1');
+    clock.advance(30_000);
+    expect(changes.map((c) => c.kind)).toEqual(['joined', 'disconnected', 'removed']);
+    expect(roster.isInGrace('m1')).toBe(false);
+  });
+
+  it('緩衝中離開組別或清空後都不在緩衝期', () => {
+    const { roster } = setup();
+    roster.connected('m1', 1, 'Milo');
+    roster.connected('m2', 2, 'Ava');
+    roster.disconnected('m1');
+    roster.disconnected('m2');
+    roster.leave('m1', 1);
+    expect(roster.isInGrace('m1')).toBe(false);
+    roster.clear();
+    expect(roster.isInGrace('m2')).toBe(false);
+  });
+
+  it('不在名冊的 memberId 不在緩衝期', () => {
+    const { roster } = setup();
+    expect(roster.isInGrace('nobody')).toBe(false);
   });
 });

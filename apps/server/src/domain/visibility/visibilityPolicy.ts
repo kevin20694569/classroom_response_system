@@ -12,6 +12,7 @@ import type {
 } from '@crs/shared';
 import type { RankingStrategy } from '../ranking/rankingStrategy.js';
 import type { RosterReader } from '../roster/groupRoster.js';
+import { buildGroupOverview } from '../overview/groupOverview.js';
 import { deriveResults } from '../ranking/results.js';
 
 /**
@@ -126,12 +127,16 @@ function toTeacherResult(result: QuestionResult): TeacherResultView {
 /**
  * 老師檢視：所有組別的作答紀錄與順位；搶答進行中時 results 為目前第一名。
  * serverNow 為產生這份資料的伺服器時間，前端據此校正計時（002 FR-012）。
+ * 006：groupOverview（各組組員、連線狀態與題號標註）只放在老師檢視，學生與公開檢視永遠沒有（FR-016）。
  */
 export function toTeacherView(
   session: QuizSession,
   strategy: RankingStrategy,
+  roster: RosterReader,
   now: Date,
 ): TeacherView {
+  // 搶答成功的判定只算一次，送出列表與分組情況的標示一定一致（006 SC-004）
+  const results = deriveResults(session, strategy);
   return {
     viewer: 'teacher',
     ...base(session),
@@ -139,10 +144,11 @@ export function toTeacherView(
     activityId: session.activityId,
     source: session.source,
     submissions: session.submissions,
-    results: deriveResults(session, strategy).map(toTeacherResult),
+    results: results.map(toTeacherResult),
     openedAt: session.openedAt,
     closedAt: session.closedAt,
     lastExport: session.lastExport,
     serverNow: now.toISOString(),
+    groupOverview: buildGroupOverview(session, roster, results),
   };
 }

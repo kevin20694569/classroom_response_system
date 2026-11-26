@@ -22,7 +22,7 @@ export function registerSessionRoutes(
   roster: RosterReader,
 ): void {
   const teacherView = (): TeacherViewResponse => ({
-    view: toTeacherView(service.getSession(), service.deps.ranking, service.deps.now()),
+    view: toTeacherView(service.getSession(), service.deps.ranking, roster, service.deps.now()),
   });
 
   app.get('/api/session', (request, reply) => {

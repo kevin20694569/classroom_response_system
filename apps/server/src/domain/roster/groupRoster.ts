@@ -26,15 +26,22 @@ export interface RosterTimers {
 
 /**
  * 名冊變更：joined（第一次加入）、removed（斷線超過緩衝時間）、left（離開組別）、cleared（新的活動）。
- * 重新連線、重複連線不算變更。
+ * 006：另有連線狀態變更 disconnected（最後一個連線斷開、開始 30 秒緩衝）與 reconnected（緩衝期內重新連線），
+ * 只影響老師端的「連線中斷」標示，人數與成員名單不變（FR-021）。
+ * 同一組員多開分頁、或仍有其他連線時斷開其中一個，都不算變更。
  */
 export type RosterChange =
-  { kind: 'joined' | 'removed' | 'left'; memberId: string; groupId: GroupId } | { kind: 'cleared' };
+  | {
+      kind: 'joined' | 'removed' | 'left' | 'disconnected' | 'reconnected';
+      memberId: string;
+      groupId: GroupId;
+    }
+  | { kind: 'cleared' };
 
 export type RosterListener = (change: RosterChange) => void;
 
-/** 可見性政策只需要讀取人數與本組成員。 */
-export type RosterReader = Pick<GroupRoster, 'headcounts' | 'membersOf'>;
+/** 可見性政策只需要讀取人數、本組成員，以及（老師檢視用的）是否在斷線緩衝期。 */
+export type RosterReader = Pick<GroupRoster, 'headcounts' | 'membersOf' | 'isInGrace'>;
 
 export interface GroupRosterOptions {
   graceMs?: number;
@@ -87,6 +94,8 @@ export class GroupRoster {
       if (entry.removeTimer !== null) {
         this.timers.clearTimeout(entry.removeTimer);
         entry.removeTimer = null;
+        // 緩衝期內重新連線：老師端的「連線中斷」標示要消失（006 FR-021）
+        this.emit({ kind: 'reconnected', memberId, groupId: entry.groupId });
       }
       return;
     }
@@ -114,6 +123,8 @@ export class GroupRoster {
       this.entries.delete(memberId);
       this.emit({ kind: 'removed', memberId, groupId: entry.groupId });
     }, this.graceMs);
+    // 所有分頁都斷線、開始緩衝：老師端標示「連線中斷」，仍計入人數（006 FR-021）
+    this.emit({ kind: 'disconnected', memberId, groupId: entry.groupId });
   }
 
   /** 離開組別：立即移出名冊並記為已離開（呼叫端負責檢查只在「待開始」）。 */
@@ -125,6 +136,15 @@ export class GroupRoster {
     this.entries.delete(memberId);
     this.leftMemberIds.add(memberId);
     this.emit({ kind: 'left', memberId, groupId: entry?.groupId ?? groupId });
+  }
+
+  /**
+   * 是否在斷線緩衝期（006 FR-021）：仍在名冊、但所有分頁都已斷線、移除計時器正在倒數。
+   * 老師端據此標示「連線中斷」；這段期間仍算在組內、計入人數（004 FR-012 不變）。
+   */
+  isInGrace(memberId: string): boolean {
+    const entry = this.entries.get(memberId);
+    return entry !== undefined && entry.connections === 0 && entry.removeTimer !== null;
   }
 
   hasLeft(memberId: string): boolean {

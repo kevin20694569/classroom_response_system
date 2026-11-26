@@ -148,6 +148,74 @@ export const StudentViewSchema = z.object({
 });
 export type StudentView = z.infer<typeof StudentViewSchema>;
 
+/** 數列是否嚴格遞增（不重複且由小到大）。 */
+function isAscending(values: readonly number[]): boolean {
+  return values.every((v, i) => i === 0 || (values[i - 1] ?? Number.NEGATIVE_INFINITY) < v);
+}
+
+/** 在組內的成員是否都排在不在組內的成員之前（出現第一位不在組內者後，不能再有在組內者）。 */
+function inGroupFirst(members: readonly { inGroup: boolean }[]): boolean {
+  let seenOutside = false;
+  for (const m of members) {
+    if (!m.inGroup) seenOutside = true;
+    else if (seenOutside) return false;
+  }
+  return true;
+}
+
+/**
+ * 分組情況的題號標註（006 FR-007、FR-010）：組員替本組送出且被採計的題目。
+ * isWinner：該送出是此題的搶答成功（依既有的 deriveResults 判定，不另訂規則）。
+ */
+export const MemberAnswerTagSchema = z.object({
+  questionNumber: z.number().int().positive(),
+  isWinner: z.boolean(),
+});
+export type MemberAnswerTag = z.infer<typeof MemberAnswerTagSchema>;
+
+/**
+ * 分組情況中的一位成員（006 data-model §2）：
+ * - inGroup：目前在名冊中（在組內）；false 為已不在組內、但送出過題目的送出者（FR-009）。
+ * - disconnected：在組內但所有分頁都斷線、仍在 30 秒緩衝期（「連線中斷」，FR-021）。
+ * - answered：依題號由小到大。
+ */
+export const OverviewMemberSchema = z
+  .object({
+    memberId: z.uuid(),
+    nickname: z.string(),
+    inGroup: z.boolean(),
+    disconnected: z.boolean(),
+    answered: z.array(MemberAnswerTagSchema),
+  })
+  .refine((m) => m.inGroup || (!m.disconnected && m.answered.length > 0), {
+    message: '不在組內的成員不會是「連線中斷」，且一定送出過題目',
+  })
+  .refine((m) => isAscending(m.answered.map((t) => t.questionNumber)), {
+    message: 'answered 的題號必須不重複且由小到大',
+  });
+export type OverviewMember = z.infer<typeof OverviewMemberSchema>;
+
+/**
+ * 一組的分組情況（006 FR-002、FR-003、FR-009）：memberCount 只算在組內的組員（與學生端人數一致），
+ * members 先列在組內的組員（依加入先後），再列不在組內的送出者。只出現在老師檢視（FR-016）。
+ */
+export const GroupOverviewSchema = z
+  .object({
+    groupId: GroupIdSchema,
+    memberCount: z.number().int().nonnegative(),
+    members: z.array(OverviewMemberSchema),
+  })
+  .refine((g) => g.memberCount === g.members.filter((m) => m.inGroup).length, {
+    message: 'memberCount 必須等於在組內的成員數',
+  })
+  .refine((g) => inGroupFirst(g.members), {
+    message: '在組內的成員必須排在不在組內的成員之前',
+  })
+  .refine((g) => new Set(g.members.map((m) => m.memberId)).size === g.members.length, {
+    message: '同一組的成員不可重複',
+  });
+export type GroupOverview = z.infer<typeof GroupOverviewSchema>;
+
 export const TeacherViewSchema = z.object({
   viewer: z.literal('teacher'),
   ...BaseViewShape,
@@ -162,6 +230,8 @@ export const TeacherViewSchema = z.object({
   lastExport: LastExportSchema.nullable(),
   /** 伺服器產生這份資料時的時間，前端據此校正計時（002 FR-012、research R5） */
   serverNow: z.string(),
+  /** 分組情況（006）：依組別編號排列；尚未匯入時為空陣列。只有老師檢視有（FR-016） */
+  groupOverview: z.array(GroupOverviewSchema),
 });
 export type TeacherView = z.infer<typeof TeacherViewSchema>;
 

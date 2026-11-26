@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { FirstSubmissionStrategy } from '../../src/domain/ranking/firstSubmissionStrategy.js';
-import { GroupRoster } from '../../src/domain/roster/groupRoster.js';
+import { buildGroupOverview } from '../../src/domain/overview/groupOverview.js';
+import { deriveResults } from '../../src/domain/ranking/results.js';
+import { GroupRoster, type TimerHandle } from '../../src/domain/roster/groupRoster.js';
 import {
   toPublicView,
   toStudentView,
@@ -44,7 +46,7 @@ describe('VisibilityPolicy', () => {
   });
 
   it('老師看得到所有作答與目前第一名', () => {
-    const view = toTeacherView(openSession, strategy, new Date());
+    const view = toTeacherView(openSession, strategy, roster, new Date());
     expect(view.submissions).toHaveLength(2);
     expect(view.results[0]?.winnerGroupId).toBe(1);
     expect(view.results[1]?.winnerGroupId).toBeNull();
@@ -53,7 +55,7 @@ describe('VisibilityPolicy', () => {
   it('老師檢視含題目敘述、子題、結果提交時間與 serverNow（002）', () => {
     const now = new Date('2026-11-23T02:10:00.000Z');
     const closed = { ...openSession, status: 'CLOSED' as const };
-    const view = toTeacherView(closed, strategy, now);
+    const view = toTeacherView(closed, strategy, roster, now);
     expect(view.serverNow).toBe(now.toISOString());
     expect(view.questions[0]).toMatchObject({ number: 1, prompt: '第 1 題的敘述', blankCount: 1 });
     expect(view.questions[2]?.blanks).toEqual([
@@ -100,7 +102,7 @@ describe('VisibilityPolicy', () => {
     const views = [
       toPublicView(closed, roster),
       toStudentView(closed, 1, strategy, roster, NOW),
-      toTeacherView(closed, strategy, new Date()),
+      toTeacherView(closed, strategy, roster, new Date()),
     ];
     for (const view of views) {
       expect(view.questions.map((q) => q.blankLabels)).toEqual([
@@ -138,7 +140,7 @@ describe('VisibilityPolicy — 004 人數與本組成員（FR-009、FR-010、FR-
   });
 
   it('老師檢視不含人數與成員名單', () => {
-    const view = toTeacherView(openSession, strategy, new Date());
+    const view = toTeacherView(openSession, strategy, roster, new Date());
     expect(Object.keys(view)).not.toContain('headcounts');
     expect(Object.keys(view)).not.toContain('members');
   });
@@ -157,5 +159,34 @@ describe('VisibilityPolicy — 004 搶答計時（FR-029、FR-030）', () => {
       closedAt: '2026-11-25T01:05:00.000Z',
       serverNow: NOW.toISOString(),
     });
+  });
+});
+
+describe('VisibilityPolicy — 006 分組情況只給老師（FR-016、SC-005）', () => {
+  const members = new GroupRoster({
+    timers: { setTimeout: () => 0 as unknown as TimerHandle, clearTimeout: () => undefined },
+  });
+  members.connected('a1', 1, '第一組的小明');
+  members.connected('a2', 1, 'Ava');
+  members.connected('b1', 2, 'Leo');
+  members.disconnected('a2');
+
+  it('老師檢視含 groupOverview，內容等於 buildGroupOverview 的結果', () => {
+    const view = toTeacherView(openSession, strategy, members, NOW);
+    expect(view.groupOverview).toEqual(
+      buildGroupOverview(openSession, members, deriveResults(openSession, strategy)),
+    );
+    expect(view.groupOverview.map((g) => g.memberCount)).toEqual([2, 1]);
+  });
+
+  it('學生與公開檢視沒有 groupOverview、連線狀態或他組名單', () => {
+    const student = toStudentView(openSession, 2, strategy, members, NOW);
+    const publicView = toPublicView(openSession, members);
+    for (const view of [student, publicView]) {
+      expect(Object.keys(view)).not.toContain('groupOverview');
+      expect(JSON.stringify(view)).not.toContain('disconnected');
+      expect(JSON.stringify(view)).not.toContain('第一組的小明');
+    }
+    expect(student.members).toEqual([{ memberId: 'b1', nickname: 'Leo' }]);
   });
 });

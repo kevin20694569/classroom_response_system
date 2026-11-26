@@ -66,6 +66,7 @@ export function submission(
   sequence: number,
   texts: string[] = ['答案'],
   submitterNickname: string | null = null,
+  submitterMemberId: string | null = null,
 ): Submission {
   return {
     id: randomUUID(),
@@ -75,5 +76,6 @@ export function submission(
     sequence,
     receivedAt: new Date(Date.UTC(2026, 10, 23, 0, 0, sequence)).toISOString(),
     submitterNickname,
+    submitterMemberId,
   };
 }
