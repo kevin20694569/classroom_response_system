@@ -74,6 +74,7 @@ export function teacherView(overrides: Partial<TeacherView> = {}): TeacherView {
     closedAt: null,
     lastExport: null,
     serverNow: '2026-11-23T02:00:00.000Z',
+    groupOverview: [],
     ...overrides,
   };
 }

@@ -1,7 +1,8 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { TeacherPage } from '../src/pages/teacher/TeacherPage';
+import { installMatchMedia } from './fakeMatchMedia';
 import { mockFetch } from './helpers';
 
 // 不建立真實的 Socket.IO 連線
@@ -10,6 +11,11 @@ vi.mock('../src/api/socket', () => ({
 }));
 
 describe('老師登入（FR-003、FR-003a）', () => {
+  // 老師端主畫面依視窗寬度切換版面（006）；jsdom 沒有 matchMedia
+  beforeEach(() => {
+    installMatchMedia(true);
+  });
+
   it('登入成功後 token 只寫入 sessionStorage，並進入老師端', async () => {
     mockFetch([
       {
