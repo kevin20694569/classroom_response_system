@@ -1,0 +1,61 @@
+@startuml 005-results-csv-export-sequence
+' 子功能 005：搶答結果匯出 CSV — 時序圖
+skinparam defaultFontName "PingFang TC"
+title 005 搶答結果匯出 CSV — 時序圖 (Sequence Diagram)
+
+actor "老師" as T
+participant "老師分頁\nCsvExportPanel" as Panel
+participant "RealtimeGateway" as RT
+participant "HttpApi\n＋roleGuard" as Http
+participant "QuizSessionService" as Svc
+participant "RankingStrategy" as Rank
+participant "resultRows" as Rows
+participant "csvEncoder\n＋csvFileName" as Enc
+actor "學生分頁" as S
+
+== 搶答結束前 ==
+RT --> Panel : TeacherView（status = OPEN）
+Panel -> Panel : 停用「匯出 CSV」\n顯示「搶答結束後才能匯出 CSV。」
+T -> Http : （繞過畫面）GET /api/session/export.csv
+Http -> Svc : exportCsv()
+Svc --> Http : DomainError（非 CLOSED）
+Http --> T : 409「搶答結束後才能匯出 CSV。」
+
+S -> Http : GET /api/session/export.csv（學生 token）
+Http --> S : 403 拒絕（不含任何送出紀錄）
+
+== 結束搶答 ==
+T -> Http : POST /api/session/close
+Http -> Svc : close()
+Svc -> RT : 狀態改變
+RT --> Panel : TeacherView（status = CLOSED）
+Panel -> Panel : 1 秒內啟用「匯出 CSV」
+
+== 匯出 CSV ==
+T -> Panel : 按下「匯出 CSV」
+Panel -> Http : GET /api/session/export.csv（老師 token）
+Http -> Http : requireTeacher
+Http -> Svc : exportCsv()
+Svc -> Svc : 確認 status = CLOSED
+loop 每一題（依題號由小到大）
+  Svc -> Rank : rank(該題送出)
+  Rank --> Svc : 依順位排序（第 1 名 = 搶答成功）
+end
+Svc -> Rows : buildResultRows(session, 排序結果)
+Rows -> Rows : 單題一列；題組每個子題一列（相鄰）；\n無人作答一列「無人作答」
+Rows --> Svc : ResultRow[]
+Svc -> Enc : encodeCsv(表頭, rows)
+Enc -> Enc : UTF-8 BOM、RFC 4180 引號、\n公式字元防護
+Svc -> Enc : csvFileName(openedAt)
+Enc --> Svc : 內容 + 「搶答結果_20261126-1032.csv」
+Svc -> Svc : 結構化 log（列數，不含答案與暱稱）\n不改狀態、不推播
+Svc --> Http : CsvExport
+Http --> Panel : 200 text/csv; charset=utf-8\nContent-Disposition: attachment（檔名）
+Panel -> Panel : Blob 下載
+Panel --> T : 瀏覽器存下 CSV
+
+alt 下載失敗（連線中斷等）
+  Http --> Panel : 錯誤
+  Panel --> T : 顯示看得懂的錯誤訊息，不下載不完整檔案
+end
+@enduml
