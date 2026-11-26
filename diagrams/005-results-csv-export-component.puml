@@ -1,0 +1,73 @@
+@startuml 005-results-csv-export-component
+' 子功能 005：搶答結果匯出 CSV — 組件圖（灰色為沿用 001～004、本子功能預期不改動的元件）
+skinparam defaultFontName "PingFang TC"
+skinparam componentStyle uml2
+title 005 搶答結果匯出 CSV — 組件圖 (Component Diagram)
+
+actor "老師" as TeacherActor
+
+node "老師分頁（瀏覽器）" as TeacherBrowser {
+  package "TeacherClient（老師端畫面）" {
+    component "TeacherDashboard" as Dashboard #EEEEEE
+    component "CsvExportPanel\n「匯出 CSV」按鈕；\n非 CLOSED 時停用並提示" as CsvPanel
+    component "ExportPanel\n匯出至原 Guided Notes" as GnPanel #EEEEEE
+    component "SubmissionBoard" as Board #EEEEEE
+    component "useSessionState\nTeacherView.status" as SessionHook #EEEEEE
+    component "瀏覽器下載\n（Blob + 檔名）" as Download
+  }
+}
+
+package "shared（前後端共用契約）" as Shared {
+  component "Contracts\nCSV_EXPORT_NOT_CLOSED 訊息 /\n錯誤回應格式" as Contracts
+}
+
+node "本機伺服器" as Server {
+  package "傳輸層" {
+    component "HttpApi\nGET /api/session/export.csv\n（只限老師）" as HttpApi
+    component "roleGuard\nrequireTeacher" as RoleGuard #EEEEEE
+    component "RealtimeGateway\n狀態改變推播" as Realtime #EEEEEE
+  }
+  package "領域層" {
+    component "QuizSessionService\n狀態機；exportCsv()\n只讀、不改狀態" as SessionService
+    component "RankingStrategy\nFirstSubmissionStrategy" as Ranking #EEEEEE
+    component "resultRows\n送出 → 結果紀錄列：\n依題號、順位、子題排序；\n無人作答一列" as ResultRows
+    component "csvEncoder\nUTF-8 BOM、RFC 4180 引號、\n公式字元防護、CRLF" as CsvEncoder
+    component "csvFileName\n搶答結果_YYYYMMDD-HHmm.csv\n（開啟搶答時間）" as FileName
+    component "GuidedNotesExporter / exportPlan\n（002、004 規則不變）" as GnExporter #EEEEEE
+  }
+  package "外部服務存取層" {
+    component "LocalSessionRepository" as LocalRepo #EEEEEE
+  }
+}
+
+TeacherActor --> CsvPanel : 按下「匯出 CSV」
+Dashboard --> CsvPanel
+Dashboard --> GnPanel
+Dashboard --> Board
+CsvPanel ..> SessionHook : 讀取 status
+CsvPanel --> HttpApi : 下載 CSV（老師 token）
+CsvPanel --> Download : 以回應的檔名存檔
+CsvPanel ..> Contracts
+HttpApi ..> RoleGuard : 非老師拒絕
+HttpApi --> SessionService : exportCsv()
+SessionService --> Ranking : 每題排序（第 1 名 = 搶答成功）
+SessionService --> ResultRows : session + 排序結果
+ResultRows --> CsvEncoder : ResultRow[]
+SessionService --> FileName : openedAt
+SessionService --> LocalRepo : 讀取（重新啟動後仍可匯出）
+Realtime --> SessionHook : status 變成 CLOSED → 按鈕啟用
+GnPanel --> HttpApi : POST /api/session/export（不變）
+HttpApi --> GnExporter
+HttpApi ..> Contracts
+
+note right of SessionService
+  非 CLOSED：拒絕
+  「搶答結束後才能匯出 CSV。」（FR-003）
+  不寫入 lastExport、不推播、不改狀態（FR-004）
+end note
+
+note bottom of CsvEncoder
+  同一場活動多次匯出，
+  檔名與位元組內容完全相同（SC-006）
+end note
+@enduml
