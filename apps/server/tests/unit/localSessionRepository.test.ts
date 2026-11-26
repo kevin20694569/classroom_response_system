@@ -56,3 +56,24 @@ describe('LocalSessionRepository', () => {
     await expect(new LocalSessionRepository(dir).load()).rejects.toBeInstanceOf(PersistedDataError);
   });
 });
+
+describe('LocalSessionRepository — 006 舊保存檔相容（research R1）', () => {
+  it('送出紀錄沒有 submitterMemberId 的舊檔可以載入，該欄位為 null', async () => {
+    const legacy = submission(1, 1, 1, ['答案'], 'Milo');
+    const { submitterMemberId: _omitted, ...withoutMemberId } = legacy;
+    const session = readySession({
+      status: 'OPEN',
+      submissions: [legacy],
+      nextSequence: 2,
+    });
+    const file = path.join(dir, 'session.json');
+    await writeFile(
+      file,
+      JSON.stringify({ schemaVersion: 1, session: { ...session, submissions: [withoutMemberId] } }),
+      'utf8',
+    );
+    const loaded = await new LocalSessionRepository(dir).load();
+    expect(loaded?.submissions[0]?.submitterMemberId).toBeNull();
+    expect(loaded?.submissions[0]?.submitterNickname).toBe('Milo');
+  });
+});

@@ -238,3 +238,50 @@ describe('004：送出者暱稱（FR-023）', () => {
     expect(app.service.getSession().submissions[0]?.submitterNickname).toBe('Leo');
   });
 });
+
+describe('006：送出者身分（FR-008、research R1）', () => {
+  const memberIdOf = (a: TestApp, token: string): string | undefined => {
+    const identity = a.auth.resolve(token, a.service.getSession().activityId);
+    return identity?.role === 'student' ? identity.memberId : undefined;
+  };
+
+  it('送出紀錄保存 token 的 memberId，老師檢視看得到，學生自己的送出不含此欄位', async () => {
+    const { a, teacher } = await openGroupExample();
+    const token = await joinStudent(a, 1, 'Milo');
+    expect((await submitAnswers(a, token, 3, ['0'])).statusCode).toBe(200);
+    const memberId = memberIdOf(a, token);
+    expect(memberId).toBeDefined();
+
+    const teacherView = (await call(a, 'GET', '/api/session', teacher)).json<{
+      view: { submissions: { submitterMemberId: string | null }[] };
+    }>();
+    expect(teacherView.view.submissions[0]?.submitterMemberId).toBe(memberId);
+
+    const studentBody = (await call(a, 'GET', '/api/session', token)).body;
+    expect(studentBody).not.toContain('submitterMemberId');
+  });
+
+  it('請求附帶 submitterMemberId 時回 400，不產生紀錄（身分只能取自 token）', async () => {
+    const { a } = await openGroupExample();
+    const token = await joinStudent(a, 1, 'Milo');
+    const res = await call(a, 'POST', '/api/submissions', token, {
+      questionNumber: 3,
+      answers: [{ blankIndex: 1, text: '0' }],
+      submitterMemberId: '00000000-0000-4000-8000-000000000001',
+    });
+    expect(res.statusCode).toBe(400);
+    expect(a.service.getSession().submissions).toHaveLength(0);
+  });
+
+  it('伺服器重新啟動後送出者身分仍保留', async () => {
+    dataDir = await mkdtemp(path.join(tmpdir(), 'crs-submitter-id-'));
+    app = await startTestApp({ repository: new LocalSessionRepository(dataDir) });
+    const teacher = await teacherWithImport(app, 'group-example', 2);
+    await call(app, 'POST', '/api/session/open', teacher);
+    const token = await joinStudent(app, 2, 'Leo');
+    const memberId = memberIdOf(app, token);
+    await submitAnswers(app, token, 3, ['0']);
+    app = await restartApp(app, dataDir);
+    expect(app.service.getSession().submissions[0]?.submitterMemberId).toBe(memberId);
+  });
+});

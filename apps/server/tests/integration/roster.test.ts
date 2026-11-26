@@ -1,4 +1,10 @@
-import type { PublicView, SessionStatePayload, StudentView } from '@crs/shared';
+import {
+  SessionStatePayloadSchema,
+  type GroupOverview,
+  type PublicView,
+  type SessionStatePayload,
+  type StudentView,
+} from '@crs/shared';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
   call,
@@ -42,6 +48,14 @@ const reach = (s: TestSocket, expected: number[]): Promise<SessionStatePayload> 
   return s.nextState(sameCounts(expected), 1000);
 };
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+/**
+ * 006 Constitution V：老師收到的每一份推播都必須通過共用契約（含 groupOverview 的不變式）；
+ * 前端以同一個 schema 驗證，不通過的推播會被丟棄、面板就不會更新。
+ */
+const expectValidStates = (s: TestSocket): void => {
+  expect(s.states.length).toBeGreaterThan(0);
+  for (const p of s.states) expect(SessionStatePayloadSchema.safeParse(p).success).toBe(true);
+};
 
 describe('組員名冊與各組人數', () => {
   it('學生連線後，選組中的分頁與同組分頁在 1 秒內收到新的人數與成員（SC-003）', async () => {
@@ -186,5 +200,150 @@ describe('組員名冊與各組人數', () => {
     for (const secret of ['留下的暱稱', '離開的暱稱', stay, leave]) {
       expect(logs).not.toContain(secret);
     }
+  });
+});
+
+describe('006：老師端分組情況推播（FR-005、FR-016、FR-021、SC-002、SC-005）', () => {
+  const overviewOf = (p: SessionStatePayload): GroupOverview[] =>
+    p.view.viewer === 'teacher' ? p.view.groupOverview : [];
+  const groupMembers = (p: SessionStatePayload, groupId: number) =>
+    overviewOf(p).find((g) => g.groupId === groupId)?.members ?? [];
+  const names = (p: SessionStatePayload, groupId: number): string[] =>
+    groupMembers(p, groupId).map((m) => m.nickname);
+
+  it('加入、斷線、緩衝內重連、緩衝到期、離開組別與重新匯入，老師都在 1 秒內收到更新', async () => {
+    app = await startTestApp({ rosterGraceMs: 400 });
+    const teacherToken = await teacherWithImport(app, 'single-example', 2);
+    const teacher = await open(teacherToken);
+    expect(overviewOf(teacher.states[0] as SessionStatePayload).map((g) => g.memberCount)).toEqual([
+      0, 0,
+    ]);
+
+    const miloToken = await joinStudent(app, 1, 'Milo');
+    const joined = teacher.nextState((p) => names(p, 1).join() === 'Milo', 1000);
+    const milo = await open(miloToken);
+    await joined;
+
+    const disconnected = teacher.nextState(
+      (p) => groupMembers(p, 1)[0]?.disconnected === true,
+      1000,
+    );
+    milo.socket.close();
+    const graceState = await disconnected;
+    expect(overviewOf(graceState)[0]?.memberCount).toBe(1);
+
+    const reconnected = teacher.nextState(
+      (p) => groupMembers(p, 1)[0]?.disconnected === false,
+      1000,
+    );
+    const miloAgain = await open(miloToken);
+    await reconnected;
+
+    const removed = teacher.nextState((p) => names(p, 1).length === 0, 2000);
+    miloAgain.socket.close();
+    await removed;
+    expect(app.logLines.join('\n')).toContain('student.roster.disconnected');
+    expect(app.logLines.join('\n')).toContain('student.roster.reconnected');
+
+    const avaToken = await joinStudent(app, 2, 'Ava');
+    const avaJoined = teacher.nextState((p) => names(p, 2).join() === 'Ava', 1000);
+    await open(avaToken);
+    await avaJoined;
+    const avaLeft = teacher.nextState((p) => names(p, 2).length === 0, 1000);
+    expect((await call(app, 'POST', '/api/auth/student/leave', avaToken, {})).statusCode).toBe(204);
+    await avaLeft;
+
+    await open(await joinStudent(app, 1, 'Leo'));
+    await teacher.nextState((p) => names(p, 1).join() === 'Leo', 1000);
+    const cleared = teacher.nextState(
+      (p) => overviewOf(p).length === 2 && overviewOf(p).every((g) => g.memberCount === 0),
+      1000,
+    );
+    await call(app, 'POST', '/api/session/import', teacherToken, {
+      spreadsheetUrl: 'https://docs.google.com/spreadsheets/d/single-example/edit',
+      groupCount: 2,
+    });
+    await cleared;
+    expectValidStates(teacher);
+  });
+
+  it('斷線與緩衝內重連只推給老師；學生與未登入分頁收不到連線狀態', async () => {
+    app = await startTestApp({ rosterGraceMs: 5000 });
+    const teacher = await open(await teacherWithImport(app, 'single-example', 2));
+    const lobby = await open();
+    const aToken = await joinStudent(app, 1, 'Milo');
+    const a = await open(aToken);
+    const b = await open(await joinStudent(app, 1, 'Ava'));
+    await reach(lobby, [2, 0]);
+    // 推播可能已經先到：最新一份就是兩人時不必再等
+    const latest = teacher.states.at(-1);
+    if (latest === undefined || names(latest, 1).length !== 2) {
+      await teacher.nextState((p) => names(p, 1).length === 2, 1000);
+    }
+    await wait(100);
+    const lobbyCount = lobby.states.length;
+    const bCount = b.states.length;
+
+    const disconnected = teacher.nextState(
+      (p) => groupMembers(p, 1)[0]?.disconnected === true,
+      1000,
+    );
+    a.socket.close();
+    await disconnected;
+    const reconnected = teacher.nextState(
+      (p) => groupMembers(p, 1)[0]?.disconnected === false,
+      1000,
+    );
+    await open(aToken);
+    await reconnected;
+    await wait(100);
+
+    expect(lobby.states.length).toBe(lobbyCount);
+    expect(b.states.length).toBe(bCount);
+    for (const s of [lobby, b]) {
+      const json = s.states.map((p) => JSON.stringify(p)).join('\n');
+      expect(json).not.toContain('groupOverview');
+      expect(json).not.toContain('disconnected');
+    }
+    expectValidStates(teacher);
+  });
+});
+
+describe('006：老師端回答標註推播（FR-007～FR-010、US2）', () => {
+  const overviewOf = (p: SessionStatePayload): GroupOverview[] =>
+    p.view.viewer === 'teacher' ? p.view.groupOverview : [];
+  const firstMember = (p: SessionStatePayload, groupId: number) =>
+    overviewOf(p).find((g) => g.groupId === groupId)?.members[0];
+
+  it('送出後老師在送出者旁看到題號；送出者斷線逾時後以「不在組內」保留；他組學生收不到事件', async () => {
+    app = await startTestApp({ rosterGraceMs: 300 });
+    const teacherToken = await teacherWithImport(app, 'single-example', 2);
+    const teacher = await open(teacherToken);
+    const miloToken = await joinStudent(app, 1, 'Milo');
+    const milo = await open(miloToken);
+    const other = await open(await joinStudent(app, 2, 'Leo'));
+    await call(app, 'POST', '/api/session/open', teacherToken);
+    await wait(100);
+    const otherCount = other.states.length;
+
+    const tagged = teacher.nextState(
+      (p) => firstMember(p, 1)?.answered.some((t) => t.questionNumber === 1) === true,
+      1000,
+    );
+    expect((await submitAnswers(app, miloToken, 1, ['CPU'])).statusCode).toBe(200);
+    const taggedState = await tagged;
+    expect(firstMember(taggedState, 1)?.answered).toEqual([{ questionNumber: 1, isWinner: true }]);
+    await wait(100);
+    expect(other.states.length).toBe(otherCount);
+
+    const absent = teacher.nextState((p) => firstMember(p, 1)?.inGroup === false, 2000);
+    milo.socket.close();
+    const absentState = await absent;
+    expect(overviewOf(absentState)[0]?.memberCount).toBe(0);
+    expect(firstMember(absentState, 1)).toMatchObject({
+      nickname: 'Milo',
+      answered: [{ questionNumber: 1, isWinner: true }],
+    });
+    expectValidStates(teacher);
   });
 });

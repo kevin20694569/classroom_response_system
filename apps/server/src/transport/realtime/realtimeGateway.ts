@@ -44,6 +44,7 @@ const groupRoom = (groupId: number): string => `group:${groupId}`;
  * 即時推播（contracts/realtime-events.md）：Socket.IO 只負責伺服器推播。
  * 學生只會加入自己組別的 room，因此伺服器不可能把他組資料送到該分頁（原則 I）。
  * 004：學生連線、斷線時通知組員名冊；名冊改變時以目前的活動版本推播人數與本組成員（research R6）。
+ * 006：名冊的任何改變也推播老師檢視（分組情況）；組員連線狀態只推給老師（research R3）。
  */
 export class RealtimeGateway {
   readonly io: RealtimeServer;
@@ -108,7 +109,9 @@ export class RealtimeGateway {
 
   /**
    * 名冊改變（加入、斷線逾時移除、離開組別、清空）：人數改變所有組都要更新，
-   * 推播公開檢視與每一組的學生檢視；老師端不顯示名冊，不推播。名冊不是活動狀態，版本不遞增。
+   * 推播公開檢視與每一組的學生檢視，並推播老師檢視讓「分組情況」1 秒內更新（006 FR-005）。
+   * 連線狀態改變（disconnected、reconnected）人數與成員名單不變，只推給老師（006 FR-016、FR-021）。
+   * 名冊不是活動狀態，版本不遞增。
    */
   private onRosterChange(change: RosterChange): void {
     if (change.kind === 'removed') {
@@ -126,9 +129,25 @@ export class RealtimeGateway {
         }
       }
     }
+    if (change.kind === 'disconnected' || change.kind === 'reconnected') {
+      // 以 memberId 辨識，不記錄暱稱（004 FR-022）
+      this.logger.info(
+        {
+          event: `student.roster.${change.kind}`,
+          groupId: change.groupId,
+          memberId: change.memberId,
+        },
+        change.kind === 'disconnected' ? '組員所有分頁斷線，進入緩衝期' : '組員於緩衝期內重新連線',
+      );
+    }
     const session = this.service.getSession();
     const ranking = this.service.deps.ranking;
     const version = this.service.getVersion();
+    this.io.to(TEACHERS_ROOM).emit(SESSION_STATE, {
+      view: toTeacherView(session, ranking, this.roster, this.service.deps.now()),
+      version,
+    });
+    if (change.kind === 'disconnected' || change.kind === 'reconnected') return;
     this.io
       .to(PUBLIC_ROOM)
       .emit(SESSION_STATE, { view: toPublicView(session, this.roster), version });
@@ -160,7 +179,7 @@ export class RealtimeGateway {
             .to(PUBLIC_ROOM)
             .emit(SESSION_STATE, { view: toPublicView(session, this.roster), version });
           this.io.to(TEACHERS_ROOM).emit(SESSION_STATE, {
-            view: toTeacherView(session, ranking, this.service.deps.now()),
+            view: toTeacherView(session, ranking, this.roster, this.service.deps.now()),
             version,
           });
           for (const group of session.groups) {
@@ -173,7 +192,7 @@ export class RealtimeGateway {
         case 'submission':
           // 只送給老師與送出的那一組；其他組別不會收到任何事件，避免透露作答狀況
           this.io.to(TEACHERS_ROOM).emit(SESSION_STATE, {
-            view: toTeacherView(session, ranking, this.service.deps.now()),
+            view: toTeacherView(session, ranking, this.roster, this.service.deps.now()),
             version,
           });
           if (change.groupId !== undefined) {
@@ -191,7 +210,7 @@ export class RealtimeGateway {
           break;
         case 'export':
           this.io.to(TEACHERS_ROOM).emit(SESSION_STATE, {
-            view: toTeacherView(session, ranking, this.service.deps.now()),
+            view: toTeacherView(session, ranking, this.roster, this.service.deps.now()),
             version,
           });
           break;

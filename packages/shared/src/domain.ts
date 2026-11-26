@@ -135,6 +135,11 @@ export const SubmissionSchema = z.object({
    * 004 之前保存的送出紀錄沒有這個欄位，讀取時視為 null。
    */
   submitterNickname: z.string().nullable().default(null),
+  /**
+   * 送出者的學生身分，取自 token 的 memberId（006 FR-008）：老師端「分組情況」依此把題號標註到實際送出的組員，
+   * 不依暱稱比對（同組可能有相同暱稱）。只由伺服器寫入；006 之前保存的送出紀錄讀取時為 null，不標註到任何組員。
+   */
+  submitterMemberId: z.uuid().nullable().default(null),
 });
 export type Submission = z.infer<typeof SubmissionSchema>;
 

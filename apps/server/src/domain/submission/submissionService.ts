@@ -22,7 +22,7 @@ export class SubmissionService {
   constructor(private readonly sessions: QuizSessionService) {}
 
   /**
-   * 組別與送出者暱稱一律取自送出者的 token，請求內容無法指定（原則 I）。
+   * 組別、送出者暱稱與送出者身分（memberId）一律取自送出者的 token，請求內容無法指定（原則 I、006 FR-008）。
    * 送出者暱稱只用於顯示，不影響順位與搶答判定（004 FR-020）。
    */
   async submit(submitter: Submitter, request: SubmitRequest): Promise<SubmitResponse> {
@@ -60,6 +60,8 @@ export class SubmissionService {
           sequence: current.nextSequence,
           receivedAt: now().toISOString(),
           submitterNickname: submitter.nickname,
+          // 006 FR-008：老師端分組情況依身分（不依暱稱）把題號標到實際送出的組員
+          submitterMemberId: submitter.memberId,
         };
         return {
           next: {

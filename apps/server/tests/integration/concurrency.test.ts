@@ -59,7 +59,7 @@ describe('20 組同時送出同一題（重複 100 次）', () => {
       expect(winner?.sequence).toBe(1);
       expect(session.submissions.filter((s) => s.sequence === 1)).toHaveLength(1);
 
-      const view = toTeacherView(session, new FirstSubmissionStrategy(), new Date());
+      const view = toTeacherView(session, new FirstSubmissionStrategy(), app.roster, new Date());
       expect(view.results.filter((r) => r.winnerGroupId !== null)).toHaveLength(1);
       expect(view.results[0]?.winnerGroupId).toBe(winner?.groupId);
     }

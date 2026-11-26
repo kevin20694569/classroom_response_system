@@ -17,6 +17,7 @@ export function viewFor(
   const session = service.getSession();
   const ranking = service.deps.ranking;
   if (identity === null) return toPublicView(session, roster);
-  if (identity.role === 'teacher') return toTeacherView(session, ranking, service.deps.now());
+  if (identity.role === 'teacher')
+    return toTeacherView(session, ranking, roster, service.deps.now());
   return toStudentView(session, identity.groupId, ranking, roster, service.deps.now());
 }

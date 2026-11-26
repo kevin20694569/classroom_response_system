@@ -5,8 +5,11 @@ import {
   CSV_HEADERS,
   CSV_NO_ANSWER_TEXT,
   GroupIdSchema,
+  GroupOverviewSchema,
   NICKNAME_MAX_LENGTH,
   NicknameSchema,
+  OverviewMemberSchema,
+  OwnSubmissionSchema,
   PersistedStateSchema,
   PublicViewSchema,
   StudentJoinRequestSchema,
@@ -18,6 +21,7 @@ import {
   SubmitRequestSchema,
   TeacherViewSchema,
   unicodeLength,
+  type OverviewMember,
 } from '../src/index.js';
 
 const location = { sheetTitle: '學習單', rowIndex: 4, columnIndex: 6 };
@@ -189,6 +193,7 @@ describe('002：題目敘述與老師檢視（research R2、R3）', () => {
       closedAt: '2026-11-23T02:05:00.000Z',
       lastExport: null,
       serverNow: '2026-11-23T02:06:00.000Z',
+      groupOverview: [],
     };
     expect(TeacherViewSchema.safeParse(view).success).toBe(true);
   });
@@ -374,6 +379,20 @@ describe('004：送出者暱稱（FR-023、research R9）', () => {
     });
     expect(parsed.session.submissions[0]?.submitterNickname).toBeNull();
   });
+
+  it('006：沒有 submitterMemberId 的舊送出紀錄解析為 null（FR-008）', () => {
+    expect(SubmissionSchema.parse(submission).submitterMemberId).toBeNull();
+  });
+
+  it('006：保留送出者身分，非 uuid 字串被拒絕', () => {
+    const memberId = '3f2a1b4c-5d6e-4f70-8a91-b2c3d4e5f607';
+    expect(
+      SubmissionSchema.parse({ ...submission, submitterMemberId: memberId }).submitterMemberId,
+    ).toBe(memberId);
+    expect(
+      SubmissionSchema.safeParse({ ...submission, submitterMemberId: 'not-a-uuid' }).success,
+    ).toBe(false);
+  });
 });
 
 describe('005：CSV 匯出共用常數（contracts/http-api.md）', () => {
@@ -393,5 +412,88 @@ describe('005：CSV 匯出共用常數（contracts/http-api.md）', () => {
   it('路徑與無人作答文字', () => {
     expect(CSV_EXPORT_PATH).toBe('/api/session/export.csv');
     expect(CSV_NO_ANSWER_TEXT).toBe('無人作答');
+  });
+});
+
+describe('006：分組情況（contracts/teacher-view.md、data-model §2）', () => {
+  const id = (n: number): string => `00000000-0000-4000-8000-00000000000${n}`;
+  const member = (overrides: Partial<OverviewMember> = {}): OverviewMember => ({
+    memberId: id(1),
+    nickname: 'Milo',
+    inGroup: true,
+    disconnected: false,
+    answered: [],
+    ...overrides,
+  });
+
+  it('在組內的組員可以是「連線中斷」、可以沒有送出', () => {
+    expect(OverviewMemberSchema.safeParse(member({ disconnected: true })).success).toBe(true);
+  });
+
+  it('不在組內的成員必須送出過題目、不可是「連線中斷」', () => {
+    const tag = [{ questionNumber: 1, isWinner: false }];
+    expect(OverviewMemberSchema.safeParse(member({ inGroup: false, answered: tag })).success).toBe(
+      true,
+    );
+    expect(OverviewMemberSchema.safeParse(member({ inGroup: false })).success).toBe(false);
+    expect(
+      OverviewMemberSchema.safeParse(member({ inGroup: false, disconnected: true, answered: tag }))
+        .success,
+    ).toBe(false);
+  });
+
+  it('answered 題號必須不重複且由小到大', () => {
+    const tags = (...ns: number[]) => ns.map((n) => ({ questionNumber: n, isWinner: false }));
+    expect(OverviewMemberSchema.safeParse(member({ answered: tags(1, 3) })).success).toBe(true);
+    expect(OverviewMemberSchema.safeParse(member({ answered: tags(3, 1) })).success).toBe(false);
+    expect(OverviewMemberSchema.safeParse(member({ answered: tags(2, 2) })).success).toBe(false);
+  });
+
+  it('memberCount 必須等於在組內的成員數', () => {
+    const absent = member({
+      memberId: id(2),
+      inGroup: false,
+      answered: [{ questionNumber: 1, isWinner: true }],
+    });
+    const group = { groupId: 1, memberCount: 1, members: [member(), absent] };
+    expect(GroupOverviewSchema.safeParse(group).success).toBe(true);
+    expect(GroupOverviewSchema.safeParse({ ...group, memberCount: 2 }).success).toBe(false);
+  });
+
+  it('在組內的成員必須排在不在組內的成員之前', () => {
+    const absent = member({
+      memberId: id(2),
+      inGroup: false,
+      answered: [{ questionNumber: 1, isWinner: false }],
+    });
+    expect(
+      GroupOverviewSchema.safeParse({ groupId: 1, memberCount: 1, members: [member(), absent] })
+        .success,
+    ).toBe(true);
+    expect(
+      GroupOverviewSchema.safeParse({ groupId: 1, memberCount: 1, members: [absent, member()] })
+        .success,
+    ).toBe(false);
+  });
+
+  it('同一組的成員不可重複', () => {
+    expect(
+      GroupOverviewSchema.safeParse({
+        groupId: 1,
+        memberCount: 2,
+        members: [member(), member({ memberId: id(2) })],
+      }).success,
+    ).toBe(true);
+    expect(
+      GroupOverviewSchema.safeParse({ groupId: 1, memberCount: 2, members: [member(), member()] })
+        .success,
+    ).toBe(false);
+  });
+
+  it('學生與公開檢視沒有 groupOverview，學生的送出紀錄不含 submitterMemberId（FR-016）', () => {
+    expect(Object.keys(StudentViewSchema.shape)).not.toContain('groupOverview');
+    expect(Object.keys(PublicViewSchema.shape)).not.toContain('groupOverview');
+    expect(Object.keys(OwnSubmissionSchema.shape)).not.toContain('submitterMemberId');
+    expect(Object.keys(TeacherViewSchema.shape)).toContain('groupOverview');
   });
 });
