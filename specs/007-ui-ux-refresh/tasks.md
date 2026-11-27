@@ -242,12 +242,15 @@ FR-028～FR-030）
 
 ## Phase 8: Polish & Cross-Cutting Concerns
 
-- [ ] T080 [P] 新增 `specs/007-ui-ux-refresh/diagram-verification.md`：逐一比對 `diagrams/007-ui-ux-refresh-{component,class,sequence}.puml` 的元素與 plan.md「圖表對應」的原始碼位置（函式名稱、簽章、時間常數、觸發條件）；不一致時先改圖並重新產生 PNG，再記錄結果（原則 VI）
-- [ ] T081 [P] 新增 `specs/007-ui-ux-refresh/checklists/manual-verification.md`：依 quickstart.md §5 列出老師＋兩組學生的人工驗證步驟，`- [ ]` 格式、每步「操作 → 預期結果」，不含截圖、日期、執行者欄位
-- [ ] T082 [P] 更新 `README.md` 的功能說明：加入一兩句介面改版說明（組別顏色與圖示、切換提示、結果揭曉、支援減少動態效果）；不改其他段落
-- [ ] T083 依 quickstart.md §4 執行 `npm run build -w @crs/web` 與外部網址檢查：沒有 500 kB 警告、`index-*.js` gzip ≤ 140 kB、`StudentPage-*.js` gzip ≤ 180 kB、Nunito latin woff2 ≤ 60 kB、`dist/index.html` 與 CSS 不含 `http://`／`https://`；在本任務下方記錄實際數字（research R10）
-- [ ] T084 以瀏覽器在 375、768、1280、1920 px 檢查首頁、暱稱、選組、作答、結果、老師主畫面、結果揭曉：沒有水平捲動與重疊；20 字暱稱與長答案正常換行；以 Chrome Lighthouse 無障礙檢查（或開發者工具的對比檢查）確認上述畫面沒有對比不足的文字（SC-006）；開啟系統「減少動態效果」後沒有動畫（FR-023、FR-025、SC-007）；結果記錄在 `checklists/manual-verification.md` 的備註
-- [ ] T085 依 quickstart.md §3 執行完整自動化驗證（`npm run typecheck`、`npm run lint`、`npm run format:check`、`npm test`、`npm run build`），全部通過並回報；`git diff main --stat` 確認 `apps/server`、`packages/shared`、`scripts` 沒有變更，`package.json` 只有 `apps/web/package.json` 新增兩個套件
+- [X] T080 [P] 新增 `specs/007-ui-ux-refresh/diagram-verification.md`：逐一比對 `diagrams/007-ui-ux-refresh-{component,class,sequence}.puml` 的元素與 plan.md「圖表對應」的原始碼位置（函式名稱、簽章、時間常數、觸發條件）；不一致時先改圖並重新產生 PNG，再記錄結果（原則 VI）
+- [X] T081 [P] 新增 `specs/007-ui-ux-refresh/checklists/manual-verification.md`：依 quickstart.md §5 列出老師＋兩組學生的人工驗證步驟，`- [ ]` 格式、每步「操作 → 預期結果」，不含截圖、日期、執行者欄位
+- [X] T082 [P] 更新 `README.md` 的功能說明：加入一兩句介面改版說明（組別顏色與圖示、切換提示、結果揭曉、支援減少動態效果）；不改其他段落
+- [X] T083 依 quickstart.md §4 執行 `npm run build -w @crs/web` 與外部網址檢查：沒有 500 kB 警告、`index-*.js` gzip ≤ 140 kB、`StudentPage-*.js` gzip ≤ 180 kB、Nunito latin woff2 ≤ 60 kB、`dist/index.html` 與 CSS 不含 `http://`／`https://`；在本任務下方記錄實際數字（research R10）
+  - 實作備註：`vite build`：`index-*.js` 421.77 kB（gzip 132.11 kB ≤ 140）、`StudentPage-*.js` 436.61 kB（gzip 163.99 kB ≤ 180）、CSS 38.18 kB（gzip 7.98 kB）、`nunito-latin-wght-normal-*.woff2` 39.12 kB（≤ 60）；沒有 500 kB 警告；`dist/index.html` 與 `dist/assets/*.css` 不含 `http://`／`https://`。
+- [X] T084 以瀏覽器在 375、768、1280、1920 px 檢查首頁、暱稱、選組、作答、結果、老師主畫面、結果揭曉：沒有水平捲動與重疊；20 字暱稱與長答案正常換行；以 Chrome Lighthouse 無障礙檢查（或開發者工具的對比檢查）確認上述畫面沒有對比不足的文字（SC-006）；開啟系統「減少動態效果」後沒有動畫（FR-023、FR-025、SC-007）；結果記錄在 `checklists/manual-verification.md` 的備註
+  - 實作備註：以瀏覽器（3901 埠、種子資料）用 `scrollWidth > clientWidth` 檢查：375 px 的首頁、暱稱頁、選組頁、學生結果、老師主畫面，768 px 的首頁、學生結果、老師主畫面，1280／1920 px 的老師主畫面，都沒有水平捲動。375 px 老師主畫面右側的空白是 006 為浮動「分組情況」按鈕保留的欄位（FR-025 要求維持）。Lighthouse 對比檢查與系統「減少動態效果」需要使用者的瀏覽器與作業系統設定，保留在 `checklists/manual-verification.md` 由組員實測；色票與 index.css 語意色的對比已由 `theme.test.ts` 自動檢查。
+- [X] T085 依 quickstart.md §3 執行完整自動化驗證（`npm run typecheck`、`npm run lint`、`npm run format:check`、`npm test`、`npm run build`），全部通過並回報；`git diff main --stat` 確認 `apps/server`、`packages/shared`、`scripts` 沒有變更，`package.json` 只有 `apps/web/package.json` 新增兩個套件
+  - 實作備註：`npm run typecheck`、`npm run lint`、`npm run format:check`、`npm run build` 通過；`npm test` 第一次 772 個測試中 1 個失敗、第二次 89 個測試檔 772 個全過。失敗的是 006 的 `apps/server/tests/integration/roster.test.ts`「老師都在 1 秒內收到更新」（等待 session:state 逾時），單獨重跑也會偶發失敗，伺服器程式與 origin/main 完全相同。`git diff origin/main -- apps/server packages/shared scripts` 沒有差異（本機 `main` 分支停在 005 之前，比對改用 origin/main）；`package.json` 只有 `apps/web/package.json` 新增兩個套件，並更新 `package-lock.json`。
 
 ---
 

@@ -13,8 +13,9 @@ node "瀏覽器分頁（老師端 / 學生端 / 首頁）" as Browser {
     component "Button\n主要 / 次要 / 危險；\n移上、按下、停用、處理中（FR-004）" as Button
     component "Icon\n包裝 lucide-react（打包進程式）；\n同一意義同一圖示、aria-hidden（FR-006、FR-026）" as Icon
     component "groupIdentity\n組別編號 → 顏色 + 圖示\n2～20 組兩兩不同（FR-007、FR-008）" as GroupIdentity
-    component "GroupBadge\n顏色 + 圖示 + 組別名稱" as GroupBadge
-    component "phaseStyle\n階段 → 強調色、圖示、提示文字\n（FR-010、FR-011）" as PhaseStyle
+    component "GroupBadge\n顏色 + 圖示 + 組別名稱\n（showName=false：只有圓形標記）" as GroupBadge
+    component "SectionHeading / styles\n區塊標題、卡片與輸入欄的共用 class" as Styles
+    component "phaseStyle\n階段 → 強調色、圖示\n（FR-010、FR-011）" as PhaseStyle
     component "PhaseTransitionToast\n「搶答開始！」「搶答結束」\n2 秒內消失、不攔截操作（FR-012～014）" as Toast
     component "usePhaseTransition\n只在同一分頁看到階段改變時觸發；\n首次載入 / 重整 / 重連不觸發" as PhaseHook
     component "RankMedal\n第 1～3 名金銀銅、獎盃（FR-017、FR-018）" as Medal
@@ -31,9 +32,10 @@ node "瀏覽器分頁（老師端 / 學生端 / 首頁）" as Browser {
     component "TeacherLoginPage / TeacherDashboard /\nImportPanel / SessionControls / ExportPanel /\nCsvExportPanel" as TeacherPages
     component "SubmissionBoard\n每筆送出加 GroupBadge、RankMedal；\n新送出滑入並亮起（1 秒內）" as SubmissionBoard
     component "GroupOverviewPanel / MemberAnswerTags\n各組加 GroupBadge" as OverviewPanel
-    component "NicknamePanel / JoinGroupPanel /\nPhaseBanner（底色 = 本組顏色，內含階段標籤、連線中斷膠囊）/\nGroupMemberList（GroupBadge + 本組顏色邊條）（FR-009、FR-009a）" as StudentPages
+    component "StudentPage（切換提示、慶祝效果、連線橫幅）/\nNicknamePanel / JoinGroupPanel /\nPhaseBanner（底色 = 本組顏色，內含階段標籤、連線中斷膠囊）/\nGroupMemberList（GroupBadge + 本組顏色邊條）（FR-009、FR-009a）" as StudentPages
     component "AnswerSheet / QuestionAnswerForm\n送出中、送出成功動畫（FR-015）" as AnswerSheet
-    component "StudentResultBoard\n獎盃標示、慶祝效果" as ResultBoard
+    component "StudentResultBoard\n獎盃標示、組別標記" as ResultBoard
+    component "AnswerLines\n每個子題一行「（n）答案」\n（SubmissionBoard、ResultReveal 共用）" as AnswerLines
     component "SessionTimer\n進行中脈動、結束定格（FR-016）" as Timer
     component "StatusBadge\n套用 phaseStyle" as StatusBadge
   }
@@ -71,7 +73,12 @@ NewHighlight ..> ReducedMotion
 OverviewPanel --> GroupBadge
 ResultBoard --> GroupBadge
 ResultBoard --> Medal
-ResultBoard --> Celebration
+StudentPages --> Celebration : 提示消失後播放
+SubmissionBoard --> AnswerLines
+Reveal --> AnswerLines
+Pages ..> Styles
+TeacherPages --> ConnBanner
+StudentPages --> ConnBanner
 GroupBadge --> GroupIdentity
 GroupBadge --> Icon
 StatusBadge --> PhaseStyle
