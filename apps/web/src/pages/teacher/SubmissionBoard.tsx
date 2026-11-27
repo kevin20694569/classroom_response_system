@@ -1,9 +1,6 @@
 import type { BlankAnswer, TeacherView } from '@crs/shared';
 import { TimeHint } from '../../components/TimeHint';
-
-function groupLabel(view: TeacherView, groupId: number): string {
-  return view.groups.find((g) => g.id === groupId)?.name ?? `第 ${groupId} 組`;
-}
+import { GroupBadge } from '../../ui/GroupBadge';
 
 /**
  * 答案逐行顯示（004 FR-037）：題組每個子題一行「（n）答案」，單題一行答案；
@@ -73,7 +70,8 @@ export function SubmissionBoard({ view }: { view: TeacherView }) {
                       <li key={record.id} className="min-w-0 space-y-0.5">
                         {/* 第一行：名次、組別、送出者、提交時間與搶答成功標籤（004 FR-037） */}
                         <div className={won ? 'font-semibold text-green-700' : 'font-medium'}>
-                          第 {i + 1} 名・{groupLabel(view, record.groupId)}
+                          第 {i + 1} 名・
+                          <GroupBadge groupId={record.groupId} size="sm" />
                           {/* 送出者暱稱（004 FR-026）；004 之前的紀錄沒有送出者時只顯示組別 */}
                           {record.submitterNickname !== null && `・${record.submitterNickname}`}：
                           <TimeHint receivedAt={record.receivedAt} openedAt={view.openedAt} />

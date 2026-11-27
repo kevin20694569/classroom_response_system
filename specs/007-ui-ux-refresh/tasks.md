@@ -118,22 +118,23 @@ description: "子功能 007：介面視覺與互動體驗改版 — 實作任務
 
 ### Tests for User Story 2
 
-- [ ] T025 [P] [US2] 新增 `apps/web/tests/groupIdentity.test.ts`：`groupIdentity(n)` 對 1～20 回傳 `{ groupId, color, icon, name }`，「1～20 任兩組的 `(color, icon)` 不相同」；同一 n 重複呼叫結果相同；`color === GROUP_COLORS[(n − 1) % 10]`、`icon === GROUP_ICON_NAMES[n − 1]`、`name === groupName(n)`（data-model §1，FR-007、FR-008、SC-003）
-- [ ] T026 [P] [US2] 新增 `apps/web/tests/GroupBadge.test.tsx`：顯示「第 N 組」文字、背景為該組顏色（inline style 或 CSS 變數）、圖示 `aria-hidden`；可存取文字只有「第 N 組」，不含圖示名稱（FR-007）
-- [ ] T027 [P] [US2] 修改 `apps/web/tests/JoinGroupPanel.test.tsx`：新增案例「每組按鈕的背景為各自的組別色、內含組別圖示（`aria-hidden`），按鈕的可存取名稱仍為『第 N 組』、仍顯示『已加入：N 人』」；既有斷言不變
-- [ ] T028 [P] [US2] 修改 `apps/web/tests/PhaseBanner.test.tsx` 與 `apps/web/tests/GroupMemberList.test.tsx`：頂端列根元素的底色為本組顏色並含本組圖示；組員名單標題列有本組 `GroupBadge`（FR-009）、卡片有本組顏色的左側邊條（FR-009a）；既有斷言不變
-- [ ] T029 [P] [US2] 修改 `apps/web/tests/SubmissionBoard.test.tsx` 與 `apps/web/tests/GroupOverviewPanel.test.tsx`：送出列表每筆、分組情況每組都有該組的 `GroupBadge`（以顏色與「第 N 組」文字判斷）；`GroupOverviewPanel` 原本檢查 `text-slate-400` 的斷言改為檢查新的「不在組內」樣式 class（語意不變，research R9）
+- [X] T025 [P] [US2] 新增 `apps/web/tests/groupIdentity.test.ts`：`groupIdentity(n)` 對 1～20 回傳 `{ groupId, color, icon, name }`，「1～20 任兩組的 `(color, icon)` 不相同」；同一 n 重複呼叫結果相同；`color === GROUP_COLORS[(n − 1) % 10]`、`icon === GROUP_ICON_NAMES[n − 1]`、`name === groupName(n)`（data-model §1，FR-007、FR-008、SC-003）
+- [X] T026 [P] [US2] 新增 `apps/web/tests/GroupBadge.test.tsx`：顯示「第 N 組」文字、背景為該組顏色（inline style 或 CSS 變數）、圖示 `aria-hidden`；可存取文字只有「第 N 組」，不含圖示名稱（FR-007）
+- [X] T027 [P] [US2] 修改 `apps/web/tests/JoinGroupPanel.test.tsx`：新增案例「每組按鈕的背景為各自的組別色、內含組別圖示（`aria-hidden`），按鈕的可存取名稱仍為『第 N 組』、仍顯示『已加入：N 人』」；既有斷言不變
+- [X] T028 [P] [US2] 修改 `apps/web/tests/PhaseBanner.test.tsx` 與 `apps/web/tests/GroupMemberList.test.tsx`：頂端列根元素的底色為本組顏色並含本組圖示；組員名單標題列有本組 `GroupBadge`（FR-009）、卡片有本組顏色的左側邊條（FR-009a）；既有斷言不變
+- [X] T029 [P] [US2] 修改 `apps/web/tests/SubmissionBoard.test.tsx` 與 `apps/web/tests/GroupOverviewPanel.test.tsx`：送出列表每筆、分組情況每組都有該組的 `GroupBadge`（以顏色與「第 N 組」文字判斷）；`GroupOverviewPanel` 原本檢查 `text-slate-400` 的斷言改為檢查新的「不在組內」樣式 class（語意不變，research R9）
 
 ### Implementation for User Story 2
 
-- [ ] T030 [US2] 新增 `apps/web/src/ui/groupIdentity.ts`：`groupIdentity(groupId: GroupId): GroupIdentity`，`color = GROUP_COLORS[(groupId − 1) % 10]`、`icon = GROUP_ICON_NAMES[groupId − 1]`、`name = groupName(groupId)`；註解說明「1～20 任兩組的 (color, icon) 不相同，因圖示兩兩不同」（讓 T025 通過）
-- [ ] T031 [US2] 新增 `apps/web/src/ui/GroupBadge.tsx`：組別色圓角膠囊＋白色 `Icon`＋「第 N 組」；`size?: 'sm' | 'md'`（讓 T026 通過，contracts/ui-visual.md §3）
-- [ ] T032 [US2] 修改 `apps/web/src/pages/student/JoinGroupPanel.tsx`：每顆組別按鈕整顆為組別色底、白字，含組別圖示、「第 N 組」與「已加入：N 人」；`aria-label={group.name}` 不變（讓 T027 通過）
-- [ ] T033 [US2] 修改 `apps/web/src/pages/student/PhaseBanner.tsx`：頂端列整條為本組顏色底、白字，左側本組圖示＋「第 N 組・暱稱」；「離開組別」改為 `Button variant="danger"`（文字、出現條件不變）；頁面背景不隨組別改變（讓 T028 頂端列部分通過，FR-009a）
-- [ ] T034 [US2] 修改 `apps/web/src/pages/student/GroupMemberList.tsx`：接收 `groupId`，標題列加本組 `GroupBadge`（FR-009），卡片左側為本組顏色邊條（FR-009a）；修改 `apps/web/src/pages/student/StudentPage.tsx` 傳入 `groupId`（讓 T028 組員部分通過）
-- [ ] T035 [US2] 修改 `apps/web/src/pages/student/StudentResultBoard.tsx`：每題搶答成功組別以 `GroupBadge` 顯示，本組的列有本組顏色邊條；結果文字（`本組搶答成功` 等）不變
-- [ ] T036 [US2] 修改 `apps/web/src/pages/teacher/SubmissionBoard.tsx`：每筆送出的組別改用 `GroupBadge`（文字「第 N 名・第 X 組・暱稱：」的順序與內容不變）；修改 `apps/web/src/pages/teacher/GroupOverviewPanel.tsx` 與 `MemberAnswerTags.tsx`：每組標題用 `GroupBadge`，「不在組內」改用主題的灰色樣式；保留 `break-words`、`flex-wrap`、`gap-1` 與 006 的版面 class（讓 T029 通過）
-- [ ] T037 [US2] 品質關卡：`npm run typecheck`、`npm run lint`、`npm run format:check`、`npm test` 全部通過，回報指令與結果；在瀏覽器以 20 組確認選組畫面識別不重複
+- [X] T030 [US2] 新增 `apps/web/src/ui/groupIdentity.ts`：`groupIdentity(groupId: GroupId): GroupIdentity`，`color = GROUP_COLORS[(groupId − 1) % 10]`、`icon = GROUP_ICON_NAMES[groupId − 1]`、`name = groupName(groupId)`；註解說明「1～20 任兩組的 (color, icon) 不相同，因圖示兩兩不同」（讓 T025 通過）
+- [X] T031 [US2] 新增 `apps/web/src/ui/GroupBadge.tsx`：組別色圓角膠囊＋白色 `Icon`＋「第 N 組」；`size?: 'sm' | 'md'`（讓 T026 通過，contracts/ui-visual.md §3）
+- [X] T032 [US2] 修改 `apps/web/src/pages/student/JoinGroupPanel.tsx`：每顆組別按鈕整顆為組別色底、白字，含組別圖示、「第 N 組」與「已加入：N 人」；`aria-label={group.name}` 不變（讓 T027 通過）
+- [X] T033 [US2] 修改 `apps/web/src/pages/student/PhaseBanner.tsx`：頂端列整條為本組顏色底、白字，左側本組圖示＋「第 N 組・暱稱」；「離開組別」改為 `Button variant="danger"`（文字、出現條件不變）；頁面背景不隨組別改變（讓 T028 頂端列部分通過，FR-009a）
+- [X] T034 [US2] 修改 `apps/web/src/pages/student/GroupMemberList.tsx`：接收 `groupId`，標題列加本組 `GroupBadge`（FR-009），卡片左側為本組顏色邊條（FR-009a）；修改 `apps/web/src/pages/student/StudentPage.tsx` 傳入 `groupId`（讓 T028 組員部分通過）
+- [X] T035 [US2] 修改 `apps/web/src/pages/student/StudentResultBoard.tsx`：每題搶答成功組別以 `GroupBadge` 顯示，本組的列有本組顏色邊條；結果文字（`本組搶答成功` 等）不變
+- [X] T036 [US2] 修改 `apps/web/src/pages/teacher/SubmissionBoard.tsx`：每筆送出的組別改用 `GroupBadge`（文字「第 N 名・第 X 組・暱稱：」的順序與內容不變）；修改 `apps/web/src/pages/teacher/GroupOverviewPanel.tsx` 與 `MemberAnswerTags.tsx`：每組標題用 `GroupBadge`，「不在組內」改用主題的灰色樣式；保留 `break-words`、`flex-wrap`、`gap-1` 與 006 的版面 class（讓 T029 通過）
+- [X] T037 [US2] 品質關卡：`npm run typecheck`、`npm run lint`、`npm run format:check`、`npm test` 全部通過，回報指令與結果；在瀏覽器以 20 組確認選組畫面識別不重複
+  - 實作備註：typecheck、lint、format:check 通過，web 39 個測試檔 265 個測試全過。既有 `StudentPage.test.tsx` 以 `getByText('第 2 組')` 要求畫面上只有一處組名，因此組員名單標題與學生端結果的組別識別改用圓形標記（`GroupBadge showName={false}`：顏色＋圖示，aria-hidden），組名由頂端列或同一行文字提供，已同步更新 contracts/ui-visual.md §3。`GroupOverviewPanel` 的「不在組內」由 slate-400 改為 slate-500（原本對白底只有約 2.6:1，未達 FR-024），測試斷言同步更新。瀏覽器以 20 組種子資料確認選組畫面 20 組識別不重複、頂端列為本組顏色與圖示、組員卡片有本組邊條。
 
 **Checkpoint**: 組別識別完成，US1＋US2 可展示
 

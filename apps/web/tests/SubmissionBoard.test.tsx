@@ -2,6 +2,7 @@ import type { Submission } from '@crs/shared';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { SubmissionBoard } from '../src/pages/teacher/SubmissionBoard';
+import { groupIdentity } from '../src/ui/groupIdentity';
 import { teacherView } from './viewBuilders';
 
 /** 送出列表每筆的第一行（名次、組別、送出者、標籤）與下方逐行答案（004 FR-037）。 */
@@ -300,5 +301,26 @@ describe('SubmissionBoard — 004 送出列表版面（FR-037）', () => {
     expect(headerOf(items[1])).toMatch(/^第 2 名・第 2 組・Mary：/);
     expect(answerLinesOf(items[1])).toEqual(['（1）GPU', '（2）Linux']);
     expect(document.body.textContent).not.toMatch(/第 \d+ 位/);
+  });
+
+  it('每筆送出的組別以該組的組別徽章顯示（007 FR-009）', () => {
+    const view = teacherView({
+      status: 'OPEN',
+      submissions: [record(1, 2, 2, ['GPU', 'Linux']), record(1, 1, 1, ['CPU', '作業系統'])],
+    });
+    render(<SubmissionBoard view={view} />);
+    const items = within(screen.getByRole('article', { name: '第 1 題' })).getAllByRole('listitem');
+    for (const [index, groupId] of [
+      [0, 1],
+      [1, 2],
+    ] as const) {
+      const badge = items[index]?.firstElementChild?.querySelector(
+        `[data-group="${String(groupId)}"]`,
+      );
+      expect(badge?.textContent).toBe(`第 ${String(groupId)} 組`);
+      expect(
+        badge?.querySelector(`svg[data-icon="${groupIdentity(groupId).icon}"]`),
+      ).not.toBeNull();
+    }
   });
 });

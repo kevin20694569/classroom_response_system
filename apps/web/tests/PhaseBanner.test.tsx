@@ -3,6 +3,13 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { PhaseBanner } from '../src/pages/student/PhaseBanner';
+import { groupIdentity } from '../src/ui/groupIdentity';
+
+/** jsdom 會把 inline style 的顏色轉成 rgb()，比對前先轉換。 */
+function rgbOf(hex: string): string {
+  const n = Number.parseInt(hex.slice(1), 16);
+  return `rgb(${String((n >> 16) & 255)}, ${String((n >> 8) & 255)}, ${String(n & 255)})`;
+}
 
 describe('PhaseBanner（003 FR-004、FR-005、FR-009、FR-010）', () => {
   it.each<[SessionStatus, string, boolean]>([
@@ -37,5 +44,14 @@ describe('PhaseBanner（003 FR-004、FR-005、FR-009、FR-010）', () => {
       <PhaseBanner groupId={1} nickname="Milo" status="OPEN" connected={false} onLeave={vi.fn()} />,
     );
     expect(screen.getByText('連線中斷，正在重新連線')).toBeTruthy();
+  });
+
+  it('頂端列底色為本組顏色並顯示本組圖示（007 FR-009a）', () => {
+    const { container } = render(
+      <PhaseBanner groupId={7} nickname="Milo" status="READY" connected onLeave={vi.fn()} />,
+    );
+    const banner = container.querySelector('header') as HTMLElement;
+    expect(banner.style.backgroundColor).toBe(rgbOf(groupIdentity(7).color));
+    expect(banner.querySelector(`svg[data-icon="${groupIdentity(7).icon}"]`)).not.toBeNull();
   });
 });

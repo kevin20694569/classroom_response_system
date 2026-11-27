@@ -4,6 +4,13 @@ import { describe, expect, it, vi } from 'vitest';
 import { ApiError } from '../src/api/http';
 import { JoinGroupPanel } from '../src/pages/student/JoinGroupPanel';
 import { publicView } from './viewBuilders';
+import { groupIdentity } from '../src/ui/groupIdentity';
+
+/** jsdom 會把 inline style 的顏色轉成 rgb()，比對前先轉換。 */
+function rgbOf(hex: string): string {
+  const n = Number.parseInt(hex.slice(1), 16);
+  return `rgb(${String((n >> 16) & 255)}, ${String((n >> 8) & 255)}, ${String(n & 255)})`;
+}
 
 describe('JoinGroupPanel（003 FR-001、FR-002）', () => {
   it('尚未匯入時顯示等待訊息、沒有組別按鈕', () => {
@@ -136,5 +143,27 @@ describe('JoinGroupPanel（003 FR-001、FR-002）', () => {
     expect(screen.getByRole('button', { name: '第 1 組' }).textContent).toContain('已加入：2 人');
     expect(screen.getByRole('button', { name: '第 2 組' }).textContent).toContain('已加入：0 人');
     expect(screen.getByRole('button', { name: '第 3 組' }).textContent).toContain('已加入：1 人');
+  });
+
+  it('每組按鈕為各自的組別色，含組別圖示，名稱與人數不變（007 FR-009）', () => {
+    const view = publicView({ status: 'READY' });
+    render(
+      <JoinGroupPanel
+        status={view.status}
+        groups={view.groups}
+        headcounts={view.headcounts}
+        notice={null}
+        nickname="Milo"
+        onEditNickname={vi.fn()}
+        onJoin={vi.fn()}
+      />,
+    );
+    for (const id of [1, 2, 3]) {
+      const button = screen.getByRole('button', { name: `第 ${String(id)} 組` });
+      expect(button.style.backgroundColor).toBe(rgbOf(groupIdentity(id).color));
+      const icon = button.querySelector(`svg[data-icon="${groupIdentity(id).icon}"]`);
+      expect(icon?.getAttribute('aria-hidden')).toBe('true');
+      expect(button.textContent).toContain('已加入：');
+    }
   });
 });

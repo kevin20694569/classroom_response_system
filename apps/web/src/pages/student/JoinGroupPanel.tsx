@@ -2,6 +2,9 @@ import type { Group, GroupHeadcount, SessionStatus } from '@crs/shared';
 import { useState } from 'react';
 import { ApiError } from '../../api/http';
 import { Button } from '../../ui/Button';
+import { groupIdentity } from '../../ui/groupIdentity';
+import { Icon } from '../../ui/icons';
+import { ON_COLOR } from '../../ui/theme';
 
 export interface JoinGroupPanelProps {
   status: SessionStatus;
@@ -43,20 +46,20 @@ export function JoinGroupPanel({
 
   return (
     <main className="mx-auto mt-16 max-w-md space-y-4 p-6 text-center">
-      <h1 className="text-2xl font-bold">課堂搶答 — 學生端</h1>
-      <p className="flex items-center justify-center gap-3 text-slate-700">
+      <h1 className="text-3xl font-black text-ink">課堂搶答 — 學生端</h1>
+      <p className="flex flex-wrap items-center justify-center gap-3 font-bold text-ink">
         <span>暱稱：{nickname}</span>
         <Button variant="secondary" size="sm" onClick={onEditNickname} disabled={pending}>
           修改暱稱
         </Button>
       </p>
       {notice !== null && (
-        <p role="status" className="rounded-md bg-amber-50 p-3 text-amber-800">
+        <p role="status" className="rounded-xl bg-amber-50 p-3 font-semibold text-amber-900">
           {notice}
         </p>
       )}
       {error !== null && (
-        <p role="alert" className="rounded-md bg-red-50 p-3 text-red-800">
+        <p role="alert" className="rounded-xl bg-red-50 p-3 font-semibold text-red-800">
           {error}
         </p>
       )}
@@ -64,25 +67,33 @@ export function JoinGroupPanel({
         <p className="rounded-md bg-slate-100 p-4 text-slate-600">老師尚未匯入題目，請稍候</p>
       ) : (
         <section aria-label="選擇組別" className="space-y-3">
-          <p className="text-slate-600">請選擇你的組別</p>
+          <p className="font-semibold text-ink-muted">請選擇你的組別</p>
           <div className="grid grid-cols-2 gap-3">
-            {groups.map((group) => (
-              <button
-                key={group.id}
-                type="button"
-                aria-label={group.name}
-                disabled={pending}
-                onClick={() => {
-                  void join(group.id);
-                }}
-                className="rounded-md bg-indigo-600 px-4 py-3 font-medium text-white disabled:opacity-50"
-              >
-                <span className="block">{group.name}</span>
-                <span className="block text-sm font-normal text-indigo-100">
-                  已加入：{headcounts.find((h) => h.groupId === group.id)?.memberCount ?? 0} 人
-                </span>
-              </button>
-            ))}
+            {groups.map((group) => {
+              // 每組按鈕為各自的組別色、白字，含組別圖示（007 FR-009）；可存取名稱仍為「第 N 組」
+              const { color, icon } = groupIdentity(group.id);
+              return (
+                <button
+                  key={group.id}
+                  type="button"
+                  aria-label={group.name}
+                  disabled={pending}
+                  onClick={() => {
+                    void join(group.id);
+                  }}
+                  style={{ backgroundColor: color, color: ON_COLOR }}
+                  className="flex flex-col items-center gap-1 rounded-2xl px-4 py-4 font-black shadow-card transition hover:-translate-y-1 hover:brightness-110 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-300 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-55 motion-reduce:transform-none"
+                >
+                  <span className="grid size-11 place-items-center rounded-xl bg-white/20">
+                    <Icon name={icon} size={26} />
+                  </span>
+                  <span className="block text-lg">{group.name}</span>
+                  <span className="block text-sm font-bold">
+                    已加入：{headcounts.find((h) => h.groupId === group.id)?.memberCount ?? 0} 人
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </section>
       )}
