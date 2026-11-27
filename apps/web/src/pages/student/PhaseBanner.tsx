@@ -47,10 +47,12 @@ export function PhaseBanner({
         </span>
         <StatusBadge status={status} />
         {!connected && (
+          // 007 FR-021：醒目的紅底膠囊；文字與 role 留在頂端列（學生已加入組別時唯一的中斷提示）
           <span
             role="status"
-            className="rounded-full bg-white px-3 py-1 text-sm font-bold text-red-700"
+            className="inline-flex items-center gap-1.5 rounded-full bg-red-700 px-3 py-1 text-sm font-bold text-white ring-2 ring-white"
           >
+            <Icon name="disconnected" size={16} />
             連線中斷，正在重新連線
           </span>
         )}

@@ -1,5 +1,6 @@
 import { lazy, Suspense } from 'react';
 import { HomePage } from './pages/HomePage';
+import { LoadingState } from './ui/EmptyState';
 import { TeacherPage } from './pages/teacher/TeacherPage';
 
 /**
@@ -17,11 +18,11 @@ export function App() {
   if (path === '/teacher') return <TeacherPage />;
   if (path === '/student') {
     return (
-      <Suspense fallback={<p className="p-6 text-center text-slate-500">連線中…</p>}>
+      <Suspense fallback={<LoadingState />}>
         <StudentPage />
       </Suspense>
     );
   }
   if (path === '/') return <HomePage />;
-  return <p className="p-6 text-center text-slate-500">找不到這個頁面。</p>;
+  return <p className="p-6 text-center font-bold text-ink-muted">找不到這個頁面。</p>;
 }

@@ -27,6 +27,10 @@ describe('JoinGroupPanel（003 FR-001、FR-002）', () => {
       />,
     );
     expect(screen.getByText('老師尚未匯入題目，請稍候')).toBeTruthy();
+    // 007 FR-020：等待插圖（圖示）與循環動態
+    const waiting = screen.getByText('老師尚未匯入題目，請稍候').parentElement as HTMLElement;
+    expect(waiting.querySelector('svg[data-icon="notImported"]')).not.toBeNull();
+    expect(waiting.querySelector('.ui-anim')).not.toBeNull();
     // 只有「修改暱稱」，沒有組別按鈕
     expect(screen.getAllByRole('button').map((b) => b.textContent)).toEqual(['修改暱稱']);
   });

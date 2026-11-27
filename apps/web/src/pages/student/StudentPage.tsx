@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { ApiError } from '../../api/http';
 import { SessionTimer } from '../../components/SessionTimer';
 import { useSessionState } from '../../hooks/useSessionState';
@@ -11,6 +11,8 @@ import { JoinGroupPanel } from './JoinGroupPanel';
 import { NicknamePanel } from './NicknamePanel';
 import { groupOutcomes, wonCount } from '../../student/groupOutcomes';
 import { Celebration } from '../../ui/Celebration';
+import { ConnectionBanner } from '../../ui/ConnectionBanner';
+import { LoadingState } from '../../ui/EmptyState';
 import { PhaseTransitionToast } from '../../ui/PhaseTransitionToast';
 import { CELEBRATION_MS, PHASE_TOAST_MS } from '../../ui/timing';
 import { usePhaseTransition } from '../../ui/usePhaseTransition';
@@ -80,107 +82,122 @@ export function StudentPage() {
     setEditingNickname(false);
   }
 
-  if (view === null || stale) {
-    return <p className="p-6 text-center text-slate-500">連線中…</p>;
-  }
+  // 畫面內容依身分與檢視切換；連線橫幅放在外層只掛一次，才能跨畫面記得「是否曾經連上」（007 FR-021）
+  const content = ((): ReactNode => {
+    if (view === null || stale) {
+      return <LoadingState />;
+    }
 
-  if (view.viewer === 'teacher') {
-    // 以伺服器回傳的檢視類型判斷老師身分，不清除老師 token（FR-008、research R3）
-    return (
-      <p className="mx-auto mt-16 max-w-md rounded-md bg-amber-50 p-4 text-center text-amber-800">
-        這個分頁目前是老師身分，請另開新分頁以學生身分加入。
-      </p>
-    );
-  }
-
-  if (view.viewer === 'public') {
-    if (nickname === null || editingNickname) {
+    if (view.viewer === 'teacher') {
+      // 以伺服器回傳的檢視類型判斷老師身分，不清除老師 token（FR-008、research R3）
       return (
-        <NicknamePanel
-          // 修改暱稱與第一次進入的初始值不同，切換時重新掛載
-          key={editingNickname ? 'edit' : 'new'}
-          initial={nickname}
-          onConfirm={confirmNickname}
-          {...(editingNickname && {
-            onCancel: () => {
-              setEditingNickname(false);
-            },
-          })}
+        <p className="mx-auto mt-16 max-w-md rounded-md bg-amber-50 p-4 text-center text-amber-800">
+          這個分頁目前是老師身分，請另開新分頁以學生身分加入。
+        </p>
+      );
+    }
+
+    if (view.viewer === 'public') {
+      if (nickname === null || editingNickname) {
+        return (
+          <NicknamePanel
+            // 修改暱稱與第一次進入的初始值不同，切換時重新掛載
+            key={editingNickname ? 'edit' : 'new'}
+            initial={nickname}
+            onConfirm={confirmNickname}
+            {...(editingNickname && {
+              onCancel: () => {
+                setEditingNickname(false);
+              },
+            })}
+          />
+        );
+      }
+      return (
+        <JoinGroupPanel
+          status={view.status}
+          groups={view.groups}
+          headcounts={view.headcounts}
+          notice={auth.notice}
+          nickname={nickname}
+          onEditNickname={() => {
+            setEditingNickname(true);
+          }}
+          onJoin={(groupId) => auth.join(groupId, nickname)}
         />
       );
     }
+
+    const { identity } = auth;
+    if (identity === null) {
+      return <LoadingState />;
+    }
+
     return (
-      <JoinGroupPanel
-        status={view.status}
-        groups={view.groups}
-        headcounts={view.headcounts}
-        notice={auth.notice}
-        nickname={nickname}
-        onEditNickname={() => {
-          setEditingNickname(true);
-        }}
-        onJoin={(groupId) => auth.join(groupId, nickname)}
-      />
-    );
-  }
-
-  const { identity } = auth;
-  if (identity === null) {
-    return <p className="p-6 text-center text-slate-500">連線中…</p>;
-  }
-
-  return (
-    <div className="mx-auto max-w-3xl space-y-4 p-4 sm:p-6">
-      <PhaseTransitionToast transition={transition} />
-      <Celebration active={celebrating} />
-      <PhaseBanner
-        groupId={view.groupId}
-        nickname={identity.nickname}
-        status={view.status}
-        connected={connected}
-        onLeave={() => {
-          void leaveGroup();
-        }}
-        timer={
-          // 與老師端同步的搶答計時（004 FR-029）
-          <SessionTimer
-            status={view.status}
-            openedAt={view.openedAt}
-            closedAt={view.closedAt}
-            serverNow={view.serverNow}
-          />
-        }
-      />
-      {leaveError !== null && (
-        <p role="alert" className="rounded-md bg-red-50 p-3 text-red-800">
-          {leaveError}
-        </p>
-      )}
-      <GroupMemberList
-        groupId={view.groupId}
-        members={view.members}
-        selfMemberId={identity.memberId}
-      />
-      {view.status === 'CLOSED' ? (
-        <StudentResultBoard
-          questions={view.questions}
-          results={view.results ?? []}
-          ownSubmissions={view.ownSubmissions}
+      <div className="mx-auto max-w-3xl space-y-4 p-4 sm:p-6">
+        <PhaseTransitionToast transition={transition} />
+        <Celebration active={celebrating} />
+        <PhaseBanner
           groupId={view.groupId}
-          showUnsentNotice={AnswerDraftStore.hasUnsent(identity.activityId, identity.groupId)}
-        />
-      ) : (
-        <AnswerSheet
-          // 換組或換活動時重新掛載，草稿不會帶到別組
-          key={`${identity.activityId}.${identity.groupId}`}
-          questions={view.questions}
-          ownSubmissions={view.ownSubmissions}
+          nickname={identity.nickname}
           status={view.status}
           connected={connected}
-          identity={identity}
-          onInvalidated={auth.onInvalidated}
+          onLeave={() => {
+            void leaveGroup();
+          }}
+          timer={
+            // 與老師端同步的搶答計時（004 FR-029）
+            <SessionTimer
+              status={view.status}
+              openedAt={view.openedAt}
+              closedAt={view.closedAt}
+              serverNow={view.serverNow}
+            />
+          }
         />
-      )}
-    </div>
+        {leaveError !== null && (
+          <p role="alert" className="rounded-md bg-red-50 p-3 text-red-800">
+            {leaveError}
+          </p>
+        )}
+        <GroupMemberList
+          groupId={view.groupId}
+          members={view.members}
+          selfMemberId={identity.memberId}
+        />
+        {view.status === 'CLOSED' ? (
+          <StudentResultBoard
+            questions={view.questions}
+            results={view.results ?? []}
+            ownSubmissions={view.ownSubmissions}
+            groupId={view.groupId}
+            showUnsentNotice={AnswerDraftStore.hasUnsent(identity.activityId, identity.groupId)}
+          />
+        ) : (
+          <AnswerSheet
+            // 換組或換活動時重新掛載，草稿不會帶到別組
+            key={`${identity.activityId}.${identity.groupId}`}
+            questions={view.questions}
+            ownSubmissions={view.ownSubmissions}
+            status={view.status}
+            connected={connected}
+            identity={identity}
+            onInvalidated={auth.onInvalidated}
+          />
+        )}
+      </div>
+    );
+  })();
+
+  // 已加入組別時，中斷文字由頂端列顯示；其他畫面（暱稱、選組）由頂端橫幅顯示，同一時間只有一處
+  const joined = view?.viewer === 'student' && !stale;
+  return (
+    <>
+      <ConnectionBanner
+        connected={connected}
+        {...(!joined && { disconnectedText: '連線中斷，正在重新連線' })}
+      />
+      {content}
+    </>
   );
 }

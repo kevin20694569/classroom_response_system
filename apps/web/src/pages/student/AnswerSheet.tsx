@@ -4,6 +4,7 @@ import type { StudentIdentity } from '../../api/identity';
 import type { InvalidationReason } from '../../hooks/useSessionState';
 import * as AnswerDraftStore from '../../student/answerDraftStore';
 import { QuestionAnswerForm } from './QuestionAnswerForm';
+import { EmptyState } from '../../ui/EmptyState';
 import { CARD } from '../../ui/styles';
 
 export interface AnswerSheetProps {
@@ -47,9 +48,7 @@ export function AnswerSheet({
 
   return (
     <div className="space-y-4">
-      {status === 'READY' && (
-        <p className="rounded-md bg-amber-50 p-3 text-amber-800">等待老師開啟搶答</p>
-      )}
+      {status === 'READY' && <EmptyState icon="waiting" message="等待老師開啟搶答" animated />}
       <nav aria-label="題號清單" className="flex flex-wrap gap-2">
         {questions.map((q) => {
           const done = submittedByNumber.has(q.number);

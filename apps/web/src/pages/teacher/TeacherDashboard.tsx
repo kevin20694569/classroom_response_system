@@ -7,6 +7,8 @@ import { PhaseTransitionToast } from '../../ui/PhaseTransitionToast';
 import { PHASE_TOAST_MS } from '../../ui/timing';
 import { usePhaseTransition } from '../../ui/usePhaseTransition';
 import { Button } from '../../ui/Button';
+import { ConnectionBanner } from '../../ui/ConnectionBanner';
+import { LoadingState } from '../../ui/EmptyState';
 import { Icon } from '../../ui/icons';
 import { SectionHeading } from '../../ui/SectionHeading';
 import { CARD } from '../../ui/styles';
@@ -50,6 +52,7 @@ export function TeacherDashboard({ token, onLogout }: { token: string; onLogout:
   const main = (
     <div className="mx-auto max-w-5xl space-y-6 p-6">
       <PhaseTransitionToast transition={transition} />
+      <ConnectionBanner connected={connected} disconnectedText="連線中…" />
       {revealOpen && teacherView?.status === 'CLOSED' && (
         <ResultReveal
           view={teacherView}
@@ -65,7 +68,8 @@ export function TeacherDashboard({ token, onLogout }: { token: string; onLogout:
           </span>
           <h1 className="text-2xl font-black text-ink">課堂搶答 — 老師端</h1>
           {view !== null && <StatusBadge status={view.status} />}
-          {!connected && <span className="text-sm text-ink-muted">連線中…</span>}
+          {/* 第一次連上前標題旁顯示「連線中…」；之後的斷線改由頂端橫幅提示（007 FR-021） */}
+          {view === null && <LoadingState inline />}
         </div>
         <Button variant="secondary" size="sm" onClick={onLogout}>
           <Icon name="logout" size={16} />
