@@ -71,14 +71,15 @@ package "ui（新增）" {
   }
 
   class Celebration <<component>> {
-    +transition: PhaseTransition | null（to = CLOSED 才可能播放）
-    +shouldCelebrate: boolean（本組搶到 ≥ 1 題）
-    -durationMs: ≤ 3000（疊在上方、不攔截點擊或捲動）
-    ' 只在本分頁當場看到 OPEN → CLOSED 時、提示消失後播放一次；首次載入 / 重整 / 重連不播（FR-019）
+    +active: boolean
+    ' StudentPage 決定何時播放：當場看到 OPEN → CLOSED 且本組搶到 ≥ 1 題，
+    ' PHASE_TOAST_MS 後 active = true，CELEBRATION_MS 後 false；首次載入 / 重整 / 重連不播（FR-019）
+    ' 減少動態效果時不渲染；疊在上方、不攔截點擊或捲動
   }
   class ResultReveal <<component>> {
-    +results: 每題搶答成功的送出（組別、暱稱、各子題答案）
+    +view: TeacherView（results：每題搶答成功組別、暱稱、各子題答案）
     +onClose(): void
+    ' TeacherDashboard 在 transition.to = CLOSED 後 PHASE_TOAST_MS 開啟；之後的變化會關閉
     ' 只在本分頁看到 OPEN → CLOSED 時顯示一次；無人送出的題目顯示「本題無人搶答」（FR-029）
   }
   class useNewSubmissionHighlight <<hook>> {
@@ -108,7 +109,8 @@ package "ui（新增）" {
 
   class Button <<component>> {
     +variant: primary | secondary | danger
-    +pending: boolean
+    +size: sm | md | lg
+    +pending: boolean（aria-busy、停用、旋轉圖示）
     +disabled: boolean
   }
   class EmptyState <<component>> {
@@ -139,8 +141,7 @@ PhaseStyle --> IconName
 usePhaseTransition ..> PhaseTransition : 產生
 PhaseTransitionToast --> PhaseTransition
 PhaseTransitionToast ..> useReducedMotion
-Celebration ..> usePhaseTransition : 只在 to = CLOSED 時播放
-Celebration ..> useReducedMotion
+Celebration ..> useReducedMotion : 減少動態時不渲染
 EmptyState --> IconName
 ResultReveal ..> usePhaseTransition : 只在 to = CLOSED 時開啟
 ResultReveal ..> groupIdentity
