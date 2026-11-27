@@ -1,5 +1,6 @@
 import type { SessionStatus } from '@crs/shared';
 import { useEffect, useMemo, useState } from 'react';
+import { PHASE_COLORS } from '../ui/theme';
 import { formatElapsed } from '../utils/timeFormat';
 
 interface SessionTimerProps {
@@ -41,13 +42,28 @@ export function SessionTimer({ status, openedAt, closedAt, serverNow }: SessionT
     elapsed = now + offset - Date.parse(openedAt);
   }
 
+  // 007 FR-016：進行中為進行中強調色＋脈動圓點，結束後定格為已結束強調色
+  const color = running
+    ? PHASE_COLORS.OPEN
+    : status === 'CLOSED'
+      ? PHASE_COLORS.CLOSED
+      : 'var(--color-ink)';
   return (
-    <span className="inline-flex items-baseline gap-2">
-      <span className="text-sm text-slate-600">搶答計時</span>
+    <span className="inline-flex items-center gap-2">
+      {running && (
+        <span
+          data-testid="timer-pulse"
+          aria-hidden="true"
+          style={{ backgroundColor: PHASE_COLORS.OPEN }}
+          className="ui-anim size-2.5 animate-pulse-dot rounded-full"
+        />
+      )}
+      <span className="text-sm font-bold text-ink-muted">搶答計時</span>
       <span
         aria-label="搶答計時"
         aria-live="off"
-        className={`font-mono text-2xl font-semibold tabular-nums ${running ? 'text-green-700' : 'text-slate-700'}`}
+        style={{ color }}
+        className="font-mono text-2xl font-black tabular-nums"
       >
         {formatElapsed(elapsed)}
       </span>

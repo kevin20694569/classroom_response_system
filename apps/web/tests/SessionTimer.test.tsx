@@ -2,6 +2,8 @@ import type { SessionStatus } from '@crs/shared';
 import { act, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SessionTimer } from '../src/components/SessionTimer';
+import { PHASE_COLORS } from '../src/ui/theme';
+import { rgbOf } from './helpers';
 
 /** 以手動推進的假 requestAnimationFrame 取代瀏覽器影格（research R5）。 */
 let frames = new Map<number, FrameRequestCallback>();
@@ -136,5 +138,36 @@ describe('SessionTimer（002 US2）', () => {
     );
     unmount();
     expect(cancelFrame).toHaveBeenCalled();
+  });
+});
+
+describe('SessionTimer — 007 計時樣式（FR-016）', () => {
+  it('進行中：脈動圓點與進行中強調色', () => {
+    render(
+      <SessionTimer
+        status="OPEN"
+        openedAt={OPENED}
+        closedAt={null}
+        serverNow={new Date().toISOString()}
+      />,
+    );
+    const pulse = screen.getByTestId('timer-pulse');
+    expect(pulse.className).toContain('ui-anim');
+    expect(pulse.getAttribute('aria-hidden')).toBe('true');
+    expect(timer().style.color).toBe(rgbOf(PHASE_COLORS.OPEN));
+  });
+
+  it('已結束：沒有脈動圓點，數字為已結束強調色並定格', () => {
+    render(
+      <SessionTimer
+        status="CLOSED"
+        openedAt={OPENED}
+        closedAt="2026-11-23T02:00:10.000Z"
+        serverNow={new Date().toISOString()}
+      />,
+    );
+    expect(screen.queryByTestId('timer-pulse')).toBeNull();
+    expect(timer().style.color).toBe(rgbOf(PHASE_COLORS.CLOSED));
+    expect(timer().textContent).toBe('00:10.00');
   });
 });

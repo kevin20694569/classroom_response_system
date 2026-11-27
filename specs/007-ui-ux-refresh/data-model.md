@@ -42,21 +42,22 @@
 | `text` | `'搶答開始！' \| '搶答結束' \| null` | 只有 READY→OPEN、OPEN→CLOSED 有提示文字 |
 | `key` | number | 每次變化遞增；新的提示以新的 key 取代舊提示 |
 
-**產生規則**（`usePhaseTransition(status, connected)`，research R6）
+**產生規則**（`usePhaseTransition(view, connected)`，research R6）：以伺服器每次推來的 view 物件為單位判斷——
+重新連線時 `connected` 先變回 true，但畫面上的 view 還是斷線前那一份；要等伺服器送來新的 view，才建立 baseline。
 
 ```text
             ┌──────────────────────────────┐
             │ 需要 baseline（初始狀態）      │
             └──────────────┬───────────────┘
-   收到 status（非 null）    │  記下 baseline，不產生變化
+   收到新的 view（非 null）  │  記下 baseline，不產生變化
                            ▼
             ┌──────────────────────────────┐
             │ 已有 baseline                 │◀───────────────┐
             └──┬───────────────┬───────────┘                │
-               │ status ≠ baseline                           │
+               │ 新的 view 且 status ≠ baseline                           │
                │  → 產生 PhaseTransition，更新 baseline ───────┘
                │
-               │ status 為 null，或 connected 變為 false
+               │ view 為 null，或 connected 變為 false
                ▼
             回到「需要 baseline」
 ```
@@ -83,7 +84,7 @@
 | `seen` | `Set<Submission.id>` | 第一份資料（含重連後第一份）中的所有送出 |
 | `fresh` | `Set<Submission.id>` | 之後才出現的送出；對應的列套用滑入亮起動畫（≤ 0.9 秒） |
 
-規則同 §3 的 baseline：`connected` 變為 `false` 時，下一份資料的送出全部視為已看過（FR-030）。
+規則同 §3 的 baseline（`useNewSubmissionHighlight(submissions, connected)`，以伺服器推來的送出陣列為單位）：`connected` 變為 `false` 時，下一份新資料的送出全部視為已看過（FR-030）。
 
 ## 6. 主題 token（不屬於資料，列出以便對照）
 

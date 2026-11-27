@@ -18,7 +18,7 @@
 - 組別識別 = 10 色循環 × 20 個不重複的圖示，保證 2～20 組兩兩不同、白字對比 ≥ 4.5:1（R2）。
 - 新增 `lucide-react`（圖示）與 `@fontsource-variable/nunito`（英數字圓體），都打包進建置結果、離線可用（R3、R4）。
 - 動畫全用 CSS keyframes＋`prefers-reduced-motion`；慶祝紙片自己實作，不加動畫函式庫（R5）。
-- `usePhaseTransition(status, connected)` 以「本分頁 baseline」判斷當場看到的階段變化，切換提示、慶祝效果、結果揭曉
+- `usePhaseTransition(view, connected)` 以「本分頁 baseline」判斷當場看到的階段變化，切換提示、慶祝效果、結果揭曉
   共用；重連與重新整理不觸發，也不需要儲存（R6）。
 - 伺服器、`packages/shared` 完全不改（R11）。
 

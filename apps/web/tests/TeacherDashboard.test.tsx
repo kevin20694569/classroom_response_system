@@ -1,5 +1,5 @@
-import type { GroupOverview } from '@crs/shared';
-import { act, fireEvent, render, screen, within } from '@testing-library/react';
+import type { GroupOverview, Submission } from '@crs/shared';
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TeacherDashboard } from '../src/pages/teacher/TeacherDashboard';
 import { PHASE_TOAST_MS } from '../src/ui/timing';
@@ -169,5 +169,44 @@ describe('TeacherDashboard 切換提示（007 FR-012、US3 驗收情境 4）', (
     socket.serverConnect();
     socket.sendState(teacherView({ status: 'OPEN', groupOverview: overview() }));
     expect(screen.queryByText('搶答開始！')).toBeNull();
+  });
+});
+
+describe('TeacherDashboard 新送出動態（007 FR-030）', () => {
+  const sub = (n: number, groupId: number): Submission => ({
+    id: `00000000-0000-4000-8000-00000000010${String(n)}`,
+    questionNumber: 1,
+    groupId,
+    answers: [
+      { blankIndex: 1, text: 'CPU' },
+      { blankIndex: 2, text: '作業系統' },
+    ],
+    sequence: n,
+    receivedAt: '2026-11-23T02:00:05.000Z',
+    submitterNickname: null,
+    submitterMemberId: null,
+  });
+  const rowsOfQ1 = () =>
+    within(screen.getByRole('article', { name: '第 1 題' })).getAllByRole('listitem');
+
+  it('搶答中收到新送出時該列滑入；重新整理後同一筆直接顯示', () => {
+    const { socket } = renderDashboard(false);
+    socket.sendState(teacherView({ status: 'OPEN', groupOverview: overview() }));
+    socket.sendState(
+      teacherView({ status: 'OPEN', groupOverview: overview(), submissions: [sub(1, 1)] }),
+    );
+    expect(rowsOfQ1()[0]?.className).toContain('animate-slide-in');
+    cleanupAndRender();
+    expect(rowsOfQ1()[0]?.className ?? '').not.toContain('animate-slide-in');
+
+    function cleanupAndRender() {
+      cleanup();
+      render(<TeacherDashboard token="teacher-token" onLogout={() => undefined} />);
+      const again = currentSocket();
+      again.serverConnect();
+      again.sendState(
+        teacherView({ status: 'OPEN', groupOverview: overview(), submissions: [sub(1, 1)] }),
+      );
+    }
   });
 });

@@ -1,8 +1,10 @@
+import { useEffect, useState } from 'react';
 import { QuestionList } from '../../components/QuestionList';
 import { StatusBadge } from '../../components/StatusBadge';
 import { useSessionState } from '../../hooks/useSessionState';
 import { useWideLayout } from '../../hooks/useWideLayout';
 import { PhaseTransitionToast } from '../../ui/PhaseTransitionToast';
+import { PHASE_TOAST_MS } from '../../ui/timing';
 import { usePhaseTransition } from '../../ui/usePhaseTransition';
 import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/icons';
@@ -13,6 +15,7 @@ import { ExportPanel } from './ExportPanel';
 import { GroupOverviewPanel } from './GroupOverviewPanel';
 import { GroupOverviewToggle } from './GroupOverviewToggle';
 import { ImportPanel } from './ImportPanel';
+import { ResultReveal } from './ResultReveal';
 import { SessionControls } from './SessionControls';
 import { SubmissionBoard } from './SubmissionBoard';
 
@@ -27,11 +30,34 @@ export function TeacherDashboard({ token, onLogout }: { token: string; onLogout:
   const wide = useWideLayout();
   const teacherView = view?.viewer === 'teacher' ? view : null;
   // 老師端也顯示「搶答開始！」「搶答結束」（007 US3 驗收情境 4）
-  const transition = usePhaseTransition(view?.status ?? null, connected);
+  const transition = usePhaseTransition(view, connected);
+
+  // 結果揭曉（007 FR-029）：本分頁當場看到「搶答進行中 → 已結束」時，在切換提示消失後開啟一次。
+  // 之後的變化（例如另一個老師分頁重新匯入、回到待開始）會換掉 revealKey，effect 清除時一併關閉。
+  const revealKey = transition?.to === 'CLOSED' ? transition.key : null;
+  const [revealOpen, setRevealOpen] = useState(false);
+  useEffect(() => {
+    if (revealKey === null) return undefined;
+    const timer = setTimeout(() => {
+      setRevealOpen(true);
+    }, PHASE_TOAST_MS);
+    return () => {
+      clearTimeout(timer);
+      setRevealOpen(false);
+    };
+  }, [revealKey]);
 
   const main = (
     <div className="mx-auto max-w-5xl space-y-6 p-6">
       <PhaseTransitionToast transition={transition} />
+      {revealOpen && teacherView?.status === 'CLOSED' && (
+        <ResultReveal
+          view={teacherView}
+          onClose={() => {
+            setRevealOpen(false);
+          }}
+        />
+      )}
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-3">
           <span className="grid size-11 place-items-center rounded-2xl bg-gradient-to-br from-violet-600 to-fuchsia-700 text-white shadow-card">
@@ -55,7 +81,7 @@ export function TeacherDashboard({ token, onLogout }: { token: string; onLogout:
             <QuestionList key={teacherView.activityId ?? 'none'} view={teacherView} />
           </section>
           <SessionControls view={teacherView} />
-          <SubmissionBoard view={teacherView} />
+          <SubmissionBoard view={teacherView} connected={connected} />
           <ExportPanel view={teacherView} />
           <CsvExportPanel view={teacherView} />
         </>

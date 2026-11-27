@@ -1,9 +1,9 @@
-import type { ButtonHTMLAttributes } from 'react';
+import type { ComponentPropsWithRef } from 'react';
 import { Icon } from './icons';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'danger';
 
-export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+export interface ButtonProps extends ComponentPropsWithRef<'button'> {
   variant: ButtonVariant;
   size?: 'sm' | 'md' | 'lg';
   /** 處理中：顯示旋轉圖示、aria-busy，並停用按鈕避免重複送出 */

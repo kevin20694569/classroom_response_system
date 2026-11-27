@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ApiError } from '../../api/http';
 import { SessionTimer } from '../../components/SessionTimer';
 import { useSessionState } from '../../hooks/useSessionState';
@@ -9,7 +9,10 @@ import { AnswerSheet } from './AnswerSheet';
 import { GroupMemberList } from './GroupMemberList';
 import { JoinGroupPanel } from './JoinGroupPanel';
 import { NicknamePanel } from './NicknamePanel';
+import { groupOutcomes, wonCount } from '../../student/groupOutcomes';
+import { Celebration } from '../../ui/Celebration';
 import { PhaseTransitionToast } from '../../ui/PhaseTransitionToast';
+import { CELEBRATION_MS, PHASE_TOAST_MS } from '../../ui/timing';
 import { usePhaseTransition } from '../../ui/usePhaseTransition';
 import { PhaseBanner } from './PhaseBanner';
 import { StudentResultBoard } from './StudentResultBoard';
@@ -30,8 +33,32 @@ export function StudentPage() {
   // 身分剛改變（加入、離開、失效）時，舊連線的資料還沒換掉，先顯示連線中
   const stale = view !== null && (auth.token === null) !== (view.viewer === 'public');
   // 切換提示只用在已加入組別的作答／結果畫面（007 contracts/ui-effects.md §1）；其他畫面傳 null，重新建立 baseline
-  const joinedStatus = view !== null && !stale && view.viewer === 'student' ? view.status : null;
-  const transition = usePhaseTransition(joinedStatus, connected);
+  const joinedView = view !== null && !stale && view.viewer === 'student' ? view : null;
+  const transition = usePhaseTransition(joinedView, connected);
+
+  // 慶祝效果（007 FR-019）：當場看到「搶答進行中 → 已結束」且本組至少搶到一題，
+  // 在切換提示消失後播放 CELEBRATION_MS；重新整理、重連都不會產生 transition，所以不會重播
+  const celebrateKey =
+    transition?.to === 'CLOSED' &&
+    view?.viewer === 'student' &&
+    wonCount(groupOutcomes(view.results ?? [], view.ownSubmissions, view.groupId)) > 0
+      ? transition.key
+      : null;
+  const [celebrating, setCelebrating] = useState(false);
+  useEffect(() => {
+    if (celebrateKey === null) return undefined;
+    const start = setTimeout(() => {
+      setCelebrating(true);
+    }, PHASE_TOAST_MS);
+    const stop = setTimeout(() => {
+      setCelebrating(false);
+    }, PHASE_TOAST_MS + CELEBRATION_MS);
+    return () => {
+      clearTimeout(start);
+      clearTimeout(stop);
+      setCelebrating(false);
+    };
+  }, [celebrateKey]);
 
   /** 離開組別失敗時留在組內並說明原因（004 contracts/student-ui.md §3）。 */
   async function leaveGroup() {
@@ -105,6 +132,7 @@ export function StudentPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-4 p-4 sm:p-6">
       <PhaseTransitionToast transition={transition} />
+      <Celebration active={celebrating} />
       <PhaseBanner
         groupId={view.groupId}
         nickname={identity.nickname}

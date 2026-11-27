@@ -9,6 +9,7 @@ import {
 import { QuestionContent } from '../../components/QuestionContent';
 import { GroupBadge } from '../../ui/GroupBadge';
 import { groupIdentity } from '../../ui/groupIdentity';
+import { Icon } from '../../ui/icons';
 import { CARD } from '../../ui/styles';
 import { groupOutcomes, wonCount, type OutcomeKind } from '../../student/groupOutcomes';
 import { blankLabelOf } from '../../student/validateDraft';
@@ -119,6 +120,7 @@ export function StudentResultBoard({
               <div className="space-y-1">
                 <div className="flex items-center gap-2 text-sm font-bold text-ink">
                   {/* 組別識別：顏色＋圖示的標記，組名在旁邊的文字中（007 FR-009） */}
+                  <Icon name="winner" size={18} className="text-amber-600" />
                   <GroupBadge groupId={outcome.winnerGroupId} size="sm" showName={false} />
                   <p>
                     搶答成功：{groupName(outcome.winnerGroupId)}

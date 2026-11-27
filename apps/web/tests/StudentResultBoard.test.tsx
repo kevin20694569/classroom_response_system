@@ -152,4 +152,14 @@ describe('StudentResultBoard — 004 送出者（FR-025）', () => {
     expect(within(card(3)).getByText('搶答成功：第 1 組')).toBeTruthy();
     expect(within(card(3)).getByText('本組答案')).toBeTruthy();
   });
+
+  it('每題搶答成功答案前有獎盃圖示（007 FR-018）', () => {
+    renderBoard();
+    const first = within(screen.getByRole('region', { name: '第 1 題結果' }));
+    const line = first.getByText('搶答成功：第 2 組');
+    const icon = line.parentElement?.querySelector('svg[data-icon="winner"]');
+    expect(icon?.getAttribute('aria-hidden')).toBe('true');
+    const none = within(screen.getByRole('region', { name: '第 4 題結果' }));
+    expect(none.queryByText(/搶答成功：/)).toBeNull();
+  });
 });
