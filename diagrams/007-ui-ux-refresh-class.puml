@@ -1,0 +1,148 @@
+@startuml 007-ui-ux-refresh-class
+' 子功能 007：介面視覺與互動體驗改版 — 類別圖（只列出本子功能新增的前端呈現模組；契約與伺服器端不變）
+skinparam defaultFontName "PingFang TC"
+hide empty members
+title 007 介面視覺與互動體驗改版 — 類別圖 (Class Diagram)
+
+package "shared（契約，不變）" #EEEEEE {
+  enum SessionStatus {
+    NOT_IMPORTED
+    READY
+    OPEN
+    CLOSED
+  }
+  class "GroupId" as GroupId <<2～20>>
+}
+
+package "ui（新增）" {
+  class GroupIdentity <<value>> {
+    +groupId: GroupId
+    +color: GroupColor
+    +icon: IconName
+    +name: string（沿用 groupName，「第 N 組」）
+  }
+  class groupIdentity <<function>> {
+    +groupIdentity(groupId): GroupIdentity
+    ' 依組別編號固定指派；2～20 組的 (color, icon) 兩兩不同（FR-007、FR-008）
+  }
+  enum GroupColor {
+    10 種鮮豔顏色（GROUP_COLORS[(n − 1) mod 10]；白字對比 ≥ 4.5:1）
+  }
+  enum IconName {
+    組別圖示 × 20
+    階段圖示（等待、進行中、結束、未匯入）
+    回饋圖示（送出成功、獎盃、金銀銅、連線中斷）
+  }
+
+  class PhaseStyle <<value>> {
+    +status: SessionStatus
+    +label: string（沿用 SESSION_STATUS_LABEL）
+    +color: hex（階段強調色，對白底 ≥ 4.5:1）
+    +icon: IconName
+  }
+  class phaseStyle <<function>> {
+    +phaseStyle(status): PhaseStyle
+  }
+
+  class usePhaseTransition <<hook>> {
+    +usePhaseTransition(status: SessionStatus | null, connected: boolean): PhaseTransition | null
+    -needsBaseline: boolean（status 為 null 或 connected 變為 false 時設為 true）
+    -previous: SessionStatus | null（本分頁上一次看到的階段；首次為 null）
+    ' previous 為 null（首次載入、重整、重連後第一份資料）時不觸發（FR-014）
+    ' 新的切換取代尚未消失的舊提示，不排隊
+  }
+  class PhaseTransition <<value>> {
+    +from: SessionStatus
+    +to: SessionStatus
+    +text: 「搶答開始！」 | 「搶答結束」 | null
+    +key: number（每次切換遞增，用於重新播放）
+  }
+
+  class PhaseTransitionToast <<component>> {
+    +transition: PhaseTransition | null
+    -durationMs: ≤ 2000
+    ' 不攔截點擊（pointer-events 不擋）；減少動態時改靜態顯示（FR-013、FR-023）
+  }
+
+  class RankMedal <<component>> {
+    +rank: number
+    ' 1 金、2 銀、3 銅、4 以後不顯示（FR-017）
+  }
+
+  class Celebration <<component>> {
+    +transition: PhaseTransition | null（to = CLOSED 才可能播放）
+    +shouldCelebrate: boolean（本組搶到 ≥ 1 題）
+    -durationMs: ≤ 3000（疊在上方、不攔截點擊或捲動）
+    ' 只在本分頁當場看到 OPEN → CLOSED 時、提示消失後播放一次；首次載入 / 重整 / 重連不播（FR-019）
+  }
+  class ResultReveal <<component>> {
+    +results: 每題搶答成功的送出（組別、暱稱、各子題答案）
+    +onClose(): void
+    ' 只在本分頁看到 OPEN → CLOSED 時顯示一次；無人送出的題目顯示「本題無人搶答」（FR-029）
+  }
+  class useNewSubmissionHighlight <<hook>> {
+    +useNewSubmissionHighlight(submissionIds, connected: boolean): Set<submissionId>
+    -seen: Set<submissionId>（首次收到的資料全部視為已看過）
+    ' 新到的送出亮起 ≤ 1 秒；同時到達的一起亮起（FR-030）
+  }
+
+  class theme <<module>> {
+    +GROUP_COLORS: 10 個 hex
+    +PHASE_COLORS: Record<SessionStatus, hex>
+    +MEDAL_COLORS: 金 / 銀 / 銅 hex
+  }
+  class timing <<module>> {
+    +PHASE_TOAST_MS = 1800
+    +CELEBRATION_MS = 2800
+    +NEW_SUBMISSION_HIGHLIGHT_MS = 900
+    +RECONNECTED_NOTICE_MS = 2000
+  }
+  class Icon <<component>> {
+    +name: IconName
+    ' 包裝 lucide-react；一律 aria-hidden（FR-007）
+  }
+  class useReducedMotion <<hook>> {
+    +useReducedMotion(): boolean
+  }
+
+  class Button <<component>> {
+    +variant: primary | secondary | danger
+    +pending: boolean
+    +disabled: boolean
+  }
+  class EmptyState <<component>> {
+    +icon: IconName
+    +message: string（沿用既有說明文字）
+    +animated: boolean
+  }
+  class ConnectionBanner <<component>> {
+    +connected: boolean
+    +disconnectedText?: string（老師端「連線中…」；學生端未加入組別時傳「連線中斷，正在重新連線」，加入後不傳，改由 PhaseBanner 顯示）
+    ' 中斷：既有「連線中斷，正在重新連線」；恢復：短暫「已重新連線」（FR-021）
+  }
+}
+
+groupIdentity ..> GroupIdentity : 產生
+groupIdentity ..> theme
+phaseStyle ..> theme
+Icon --> IconName
+PhaseTransitionToast ..> timing
+Celebration ..> timing
+ResultReveal ..> timing
+groupIdentity ..> GroupId
+GroupIdentity --> GroupColor
+GroupIdentity --> IconName
+phaseStyle ..> PhaseStyle : 產生
+PhaseStyle --> SessionStatus
+PhaseStyle --> IconName
+usePhaseTransition ..> PhaseTransition : 產生
+PhaseTransitionToast --> PhaseTransition
+PhaseTransitionToast ..> useReducedMotion
+Celebration ..> usePhaseTransition : 只在 to = CLOSED 時播放
+Celebration ..> useReducedMotion
+EmptyState --> IconName
+ResultReveal ..> usePhaseTransition : 只在 to = CLOSED 時開啟
+ResultReveal ..> groupIdentity
+useNewSubmissionHighlight ..> useReducedMotion
+EmptyState ..> useReducedMotion
+@enduml
