@@ -115,7 +115,10 @@ export function StudentResultBoard({
               />
             )}
             {outcome.winnerGroupId === null || outcome.winnerAnswers === null ? (
-              <p className="text-ink-muted">無人搶答</p>
+              <p className="flex items-center gap-1.5 text-ink-muted">
+                <Icon name="noWinner" size={16} />
+                無人搶答
+              </p>
             ) : (
               <div className="space-y-1">
                 <div className="flex items-center gap-2 text-sm font-bold text-ink">

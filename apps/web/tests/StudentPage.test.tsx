@@ -437,3 +437,25 @@ describe('StudentPage — 007 切換提示（FR-012～FR-014）', () => {
     expect(screen.queryByText('搶答結束')).toBeNull();
   });
 });
+
+describe('StudentPage — 007 連線狀態（FR-021）', () => {
+  it('尚未加入組別時斷線，頂端出現「連線中斷，正在重新連線」', () => {
+    render(<StudentPage />);
+    const socket = currentSocket();
+    socket.serverConnect();
+    socket.sendState(publicView());
+    socket.serverDisconnect();
+    const notice = screen.getByText('連線中斷，正在重新連線');
+    expect(notice.closest('[role="status"]')).not.toBeNull();
+  });
+
+  it('加入組別後斷線，中斷文字只出現一次（在頂端列）', () => {
+    joinedTab();
+    render(<StudentPage />);
+    const socket = currentSocket();
+    socket.serverConnect();
+    socket.sendState(studentView({ status: 'OPEN' }));
+    socket.serverDisconnect();
+    expect(screen.getAllByText('連線中斷，正在重新連線')).toHaveLength(1);
+  });
+});

@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { ApiError } from '../../api/http';
 import { Button } from '../../ui/Button';
 import { groupIdentity } from '../../ui/groupIdentity';
+import { EmptyState } from '../../ui/EmptyState';
 import { Icon } from '../../ui/icons';
 import { ON_COLOR } from '../../ui/theme';
 
@@ -64,7 +65,7 @@ export function JoinGroupPanel({
         </p>
       )}
       {status === 'NOT_IMPORTED' ? (
-        <p className="rounded-md bg-slate-100 p-4 text-slate-600">老師尚未匯入題目，請稍候</p>
+        <EmptyState icon="notImported" message="老師尚未匯入題目，請稍候" animated />
       ) : (
         <section aria-label="選擇組別" className="space-y-3">
           <p className="font-semibold text-ink-muted">請選擇你的組別</p>

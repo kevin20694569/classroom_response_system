@@ -352,4 +352,15 @@ describe('SubmissionBoard — 004 送出列表版面（FR-037）', () => {
     const winnerTag = within(items[0] as HTMLElement).getByText('搶答成功');
     expect(winnerTag.querySelector('svg[data-icon="winner"]')).not.toBeNull();
   });
+
+  it('尚無送出、尚無組別作答、無人搶答都有圖示（007 FR-020）', () => {
+    const { unmount } = render(<SubmissionBoard view={teacherView({ status: 'READY' })} />);
+    const before = screen.getByText('開啟搶答後，這裡會即時顯示各組送出的答案。').parentElement;
+    expect(before?.querySelector('svg[data-icon]')).not.toBeNull();
+    unmount();
+    render(<SubmissionBoard view={teacherView({ status: 'CLOSED' })} />);
+    for (const none of screen.getAllByText('無人搶答')) {
+      expect(none.parentElement?.querySelector('svg[data-icon="noWinner"]')).not.toBeNull();
+    }
+  });
 });

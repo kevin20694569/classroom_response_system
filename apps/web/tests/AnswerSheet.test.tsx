@@ -90,6 +90,10 @@ describe('AnswerSheet（003 FR-011～FR-013、Clarifications Q4）', () => {
   it('待開始時輸入停用並提示等待老師開啟搶答', () => {
     renderSheet('READY');
     expect(screen.getByText('等待老師開啟搶答')).toBeTruthy();
+    // 007 FR-020：等待開始的圖示與循環動態
+    const waiting = screen.getByText('等待老師開啟搶答').parentElement as HTMLElement;
+    expect(waiting.querySelector('svg[data-icon="waiting"]')).not.toBeNull();
+    expect(waiting.querySelector('.ui-anim')).not.toBeNull();
     for (const input of screen.getAllByRole<HTMLInputElement>('textbox')) {
       expect(input.disabled).toBe(true);
     }

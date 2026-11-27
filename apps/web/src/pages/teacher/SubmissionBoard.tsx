@@ -1,11 +1,12 @@
 import type { TeacherView } from '@crs/shared';
 import { AnswerLines } from '../../components/AnswerLines';
 import { TimeHint } from '../../components/TimeHint';
+import { EmptyState } from '../../ui/EmptyState';
 import { GroupBadge } from '../../ui/GroupBadge';
 import { Icon } from '../../ui/icons';
 import { RankMedal } from '../../ui/RankMedal';
 import { SectionHeading } from '../../ui/SectionHeading';
-import { CARD, MUTED } from '../../ui/styles';
+import { CARD } from '../../ui/styles';
 import { useNewSubmissionHighlight } from '../../ui/useNewSubmissionHighlight';
 
 /**
@@ -30,7 +31,7 @@ export function SubmissionBoard({
     return (
       <section aria-label="作答狀況" className={`space-y-2 ${CARD}`}>
         <SectionHeading icon="submissions">作答狀況</SectionHeading>
-        <p className={MUTED}>開啟搶答後，這裡會即時顯示各組送出的答案。</p>
+        <EmptyState icon="waiting" message="開啟搶答後，這裡會即時顯示各組送出的答案。" />
       </section>
     );
   }
@@ -63,7 +64,8 @@ export function SubmissionBoard({
                 )}
               </h3>
               {records.length === 0 ? (
-                <p className="mt-2 text-sm text-ink-muted">
+                <p className="mt-2 flex items-center gap-1.5 text-sm text-ink-muted">
+                  <Icon name={closed ? 'noWinner' : 'empty'} size={16} />
                   {closed ? '無人搶答' : '尚無組別作答'}
                 </p>
               ) : (

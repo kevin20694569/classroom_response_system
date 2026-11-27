@@ -222,18 +222,19 @@ FR-028～FR-030）
 
 ### Tests for User Story 5
 
-- [ ] T071 [P] [US5] 新增 `apps/web/tests/EmptyState.test.tsx`：顯示傳入的說明文字與圖示（`aria-hidden`）；`animated` 時圖示帶 `ui-anim`；`LoadingState` 顯示「連線中…」
-- [ ] T072 [P] [US5] 新增 `apps/web/tests/ConnectionBanner.test.tsx`（假時鐘）：第一次連線前與第一次連線後都不顯示任何內容；`connected` 由 true 變 false 時，有傳 `disconnectedText` 則以 `role="status"` 顯示該文字，沒傳則不顯示；再變回 true 時顯示「已重新連線」，`RECONNECTED_NOTICE_MS` 後消失；橫幅外層 `pointer-events-none`（FR-021）
-- [ ] T073 [P] [US5] 修改 `apps/web/tests/PhaseBanner.test.tsx`：`connected={false}` 時「連線中斷，正在重新連線」仍在（既有斷言不變），且帶 `role="status"` 與 WifiOff 圖示（`aria-hidden`）的醒目樣式（FR-021）
-- [ ] T074 [P] [US5] 修改 `apps/web/tests/JoinGroupPanel.test.tsx`、`apps/web/tests/AnswerSheet.test.tsx`、`apps/web/tests/SubmissionBoard.test.tsx`：尚未匯入、待開始、尚無送出、無人搶答的既有文字仍在，且旁邊有圖示（`aria-hidden`）；既有斷言不變（FR-020）；另修改 `apps/web/tests/StudentPage.test.tsx`：在選組畫面（public view）先 `connect` 再 `disconnect` → 出現 `role="status"` 的「連線中斷，正在重新連線」；加入組別後斷線 → 該文字只出現一次（在頂端列）（FR-021）
+- [X] T071 [P] [US5] 新增 `apps/web/tests/EmptyState.test.tsx`：顯示傳入的說明文字與圖示（`aria-hidden`）；`animated` 時圖示帶 `ui-anim`；`LoadingState` 顯示「連線中…」
+- [X] T072 [P] [US5] 新增 `apps/web/tests/ConnectionBanner.test.tsx`（假時鐘）：第一次連線前與第一次連線後都不顯示任何內容；`connected` 由 true 變 false 時，有傳 `disconnectedText` 則以 `role="status"` 顯示該文字，沒傳則不顯示；再變回 true 時顯示「已重新連線」，`RECONNECTED_NOTICE_MS` 後消失；橫幅外層 `pointer-events-none`（FR-021）
+- [X] T073 [P] [US5] 修改 `apps/web/tests/PhaseBanner.test.tsx`：`connected={false}` 時「連線中斷，正在重新連線」仍在（既有斷言不變），且帶 `role="status"` 與 WifiOff 圖示（`aria-hidden`）的醒目樣式（FR-021）
+- [X] T074 [P] [US5] 修改 `apps/web/tests/JoinGroupPanel.test.tsx`、`apps/web/tests/AnswerSheet.test.tsx`、`apps/web/tests/SubmissionBoard.test.tsx`：尚未匯入、待開始、尚無送出、無人搶答的既有文字仍在，且旁邊有圖示（`aria-hidden`）；既有斷言不變（FR-020）；另修改 `apps/web/tests/StudentPage.test.tsx`：在選組畫面（public view）先 `connect` 再 `disconnect` → 出現 `role="status"` 的「連線中斷，正在重新連線」；加入組別後斷線 → 該文字只出現一次（在頂端列）（FR-021）
 
 ### Implementation for User Story 5
 
-- [ ] T075 [US5] 新增 `apps/web/src/ui/EmptyState.tsx`：`EmptyState({ icon, message, animated? })`（插圖風格的大圖示＋說明，`animated` 時 `float` 動畫加 `ui-anim`）與 `LoadingState()`（彈跳指示＋「連線中…」）（讓 T071 通過，contracts/ui-visual.md §5）
-- [ ] T076 [US5] 新增 `apps/web/src/ui/ConnectionBanner.tsx`：`ConnectionBanner({ connected, disconnectedText? })`，頂端固定、醒目、外層不攔截點擊；曾經連線後斷線且有 `disconnectedText` 時才顯示中斷文字，恢復後顯示「已重新連線」`RECONNECTED_NOTICE_MS`（讓 T072 通過）
-- [ ] T077 [US5] 套用等待與空白狀態：`apps/web/src/pages/student/JoinGroupPanel.tsx`（尚未匯入：`EmptyState` + 「老師尚未匯入題目，請稍候」+ `animated`）、`apps/web/src/pages/student/AnswerSheet.tsx`（待開始：`EmptyState` + 「等待老師開啟搶答」+ `animated`）、`apps/web/src/pages/teacher/SubmissionBoard.tsx`（「開啟搶答後，這裡會即時顯示各組送出的答案。」「尚無組別作答」「無人搶答」加圖示）、`apps/web/src/pages/student/StudentResultBoard.tsx`（無人搶答加圖示）；文字不變（讓 T074 通過）
-- [ ] T078 [US5] 套用載入與連線狀態：`apps/web/src/App.tsx` 與 `apps/web/src/pages/student/StudentPage.tsx` 的整頁「連線中…」改用 `LoadingState`（`StudentPage.test.tsx` 的「連線中…」查詢仍須通過）；`apps/web/src/pages/student/PhaseBanner.tsx` **保留**「連線中斷，正在重新連線」與 `role="status"`，改為紅底膠囊＋`disconnected` 圖示（讓 T073 通過）；`StudentPage.tsx` 另掛 `ConnectionBanner`：尚未加入組別（暱稱頁、選組頁）時傳 `disconnectedText="連線中斷，正在重新連線"`，加入組別後不傳（只負責「已重新連線」，中斷文字由頂端列顯示），同一時間畫面上只有一處中斷文字（FR-021）；`apps/web/src/pages/teacher/TeacherDashboard.tsx` 第一次連上前維持標題旁的「連線中…」（改用小尺寸 `LoadingState` 樣式），曾經連上後斷線改由 `ConnectionBanner`（`disconnectedText="連線中…"`）顯示，恢復時顯示「已重新連線」（contracts/ui-visual.md §5）
-- [ ] T079 [US5] 品質關卡：`npm run typecheck`、`npm run lint`、`npm run format:check`、`npm test` 全部通過，回報指令與結果；在瀏覽器關閉再啟動伺服器，確認中斷橫幅與「已重新連線」
+- [X] T075 [US5] 新增 `apps/web/src/ui/EmptyState.tsx`：`EmptyState({ icon, message, animated? })`（插圖風格的大圖示＋說明，`animated` 時 `float` 動畫加 `ui-anim`）與 `LoadingState()`（彈跳指示＋「連線中…」）（讓 T071 通過，contracts/ui-visual.md §5）
+- [X] T076 [US5] 新增 `apps/web/src/ui/ConnectionBanner.tsx`：`ConnectionBanner({ connected, disconnectedText? })`，頂端固定、醒目、外層不攔截點擊；曾經連線後斷線且有 `disconnectedText` 時才顯示中斷文字，恢復後顯示「已重新連線」`RECONNECTED_NOTICE_MS`（讓 T072 通過）
+- [X] T077 [US5] 套用等待與空白狀態：`apps/web/src/pages/student/JoinGroupPanel.tsx`（尚未匯入：`EmptyState` + 「老師尚未匯入題目，請稍候」+ `animated`）、`apps/web/src/pages/student/AnswerSheet.tsx`（待開始：`EmptyState` + 「等待老師開啟搶答」+ `animated`）、`apps/web/src/pages/teacher/SubmissionBoard.tsx`（「開啟搶答後，這裡會即時顯示各組送出的答案。」「尚無組別作答」「無人搶答」加圖示）、`apps/web/src/pages/student/StudentResultBoard.tsx`（無人搶答加圖示）；文字不變（讓 T074 通過）
+- [X] T078 [US5] 套用載入與連線狀態：`apps/web/src/App.tsx` 與 `apps/web/src/pages/student/StudentPage.tsx` 的整頁「連線中…」改用 `LoadingState`（`StudentPage.test.tsx` 的「連線中…」查詢仍須通過）；`apps/web/src/pages/student/PhaseBanner.tsx` **保留**「連線中斷，正在重新連線」與 `role="status"`，改為紅底膠囊＋`disconnected` 圖示（讓 T073 通過）；`StudentPage.tsx` 另掛 `ConnectionBanner`：尚未加入組別（暱稱頁、選組頁）時傳 `disconnectedText="連線中斷，正在重新連線"`，加入組別後不傳（只負責「已重新連線」，中斷文字由頂端列顯示），同一時間畫面上只有一處中斷文字（FR-021）；`apps/web/src/pages/teacher/TeacherDashboard.tsx` 第一次連上前維持標題旁的「連線中…」（改用小尺寸 `LoadingState` 樣式），曾經連上後斷線改由 `ConnectionBanner`（`disconnectedText="連線中…"`）顯示，恢復時顯示「已重新連線」（contracts/ui-visual.md §5）
+- [X] T079 [US5] 品質關卡：`npm run typecheck`、`npm run lint`、`npm run format:check`、`npm test` 全部通過，回報指令與結果；在瀏覽器關閉再啟動伺服器，確認中斷橫幅與「已重新連線」
+  - 實作備註：typecheck、lint、format:check 通過，web 47 個測試檔 318 個測試全過。`StudentPage` 的各畫面包進同一個外層，`ConnectionBanner` 只掛一次，才能跨畫面記得「是否曾經連上」。瀏覽器（3901 埠）實測：學生已加入組別時關閉伺服器，頂端列出現紅底「連線中斷，正在重新連線」；重新啟動後以 MutationObserver 記錄到「連線中斷」→「已重新連線」→ 約 2 秒後消失。
 
 **Checkpoint**: 所有 user story 完成
 

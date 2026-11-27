@@ -54,4 +54,15 @@ describe('PhaseBanner（003 FR-004、FR-005、FR-009、FR-010）', () => {
     expect(banner.style.backgroundColor).toBe(rgbOf(groupIdentity(7).color));
     expect(banner.querySelector(`svg[data-icon="${groupIdentity(7).icon}"]`)).not.toBeNull();
   });
+
+  it('斷線提示為醒目的紅底膠囊，帶連線中斷圖示（007 FR-021）', () => {
+    render(
+      <PhaseBanner groupId={1} nickname="Milo" status="OPEN" connected={false} onLeave={vi.fn()} />,
+    );
+    const notice = screen.getByRole('status');
+    expect(notice.textContent).toBe('連線中斷，正在重新連線');
+    expect(notice.querySelector('svg[data-icon="disconnected"]')?.getAttribute('aria-hidden')).toBe(
+      'true',
+    );
+  });
 });
