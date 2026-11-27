@@ -58,9 +58,9 @@
 | fuchsia | `#a21caf` | 6.32 |
 
 組別圖示（lucide 圖示名稱，依組別編號）：Rocket、Star、Flame、Zap、Leaf、Fish、Bird、Cat、Dog、Rabbit、Sun、Moon、
-Cloud、Anchor、Crown、Gem、Heart、Music、Flower2、Snowflake。刻意避開 R7 保留給「意義」的圖示（獎盃、獎牌、勾勾、
+Cloud、Anchor、Crown、Gem、Heart、Guitar、Flower2、Snowflake。刻意避開 R7 保留給「意義」的圖示（獎盃、獎牌、勾勾、
 時鐘、警告），避免「第 N 組的圖示」和「搶答成功」混淆（FR-006）。實作時若某個名稱在選定的圖示套件版本中不存在，
-以同類圖示替換並更新本表。
+以同類圖示替換並更新本表（lucide-react 1.82.0 沒有 Music 與 CircleAlert，已分別換成 Guitar 與 CircleExclamationPoint）。
 
 **Rationale**：所有組別色都以白字達到 4.5:1（上表以 WCAG 相對亮度公式計算），頂端列（FR-009a）、選組按鈕、徽章都可以
 用「組別色底＋白字」。10 種色相彼此差異明顯；超過 10 組時由圖示區分，符合「顏色不是唯一辨識方式」（FR-008）。
@@ -92,7 +92,7 @@ lucide。所有圖示 `aria-hidden="true"`（FR-007：螢幕閱讀器不朗讀�
 
 - 中文：使用系統字型堆疊 `"PingFang TC", "Microsoft JhengHei", "Noto Sans TC", system-ui, sans-serif`，不打包中文字型。
 - 英數字（標題、數字、計時、英文暱稱）：新增 `@fontsource-variable/nunito`（`5.3.0`，OFL-1.1，2026-07 仍有發布），
-  只匯入 `wght` 的 CSS；Vite 會把 woff2 打包成本機資源，各語系子集以 `unicode-range` 分開，瀏覽器只下載用到的子集。
+  匯入套件預設的 CSS（即 wght 可變字型）；Vite 會把 woff2 打包成本機資源，各語系子集以 `unicode-range` 分開，瀏覽器只下載用到的子集。
 - 字型堆疊為 `"Nunito Variable", <中文系統字型堆疊>`：英數字用 Nunito，中文自動落到系統字型。
 
 **Rationale**：圓體英數字（Nunito）明顯帶出「活潑遊戲感」（FR-002），尤其是計時與名次數字；latin 子集只有數十 kB。
@@ -160,7 +160,7 @@ baseline，正好符合 clarify 的統一規則「只有當場看到階段改變
 | 第 1～3 名 | Medal（金 `#a16207`、銀 `#64748b`、銅 `#9a3412`，對白底皆 ≥ 4.5:1） |
 | 等待中 | Hourglass |
 | 連線中斷 | WifiOff；已重新連線 Wifi |
-| 錯誤 | CircleAlert |
+| 錯誤 | CircleExclamationPoint |
 
 階段強調色（對白底皆 ≥ 4.5:1）：尚未匯入 `#475569`（7.58）、待開始 `#b45309`（5.02）、搶答進行中 `#15803d`（5.02）、
 已結束 `#4338ca`（7.90）。四個階段顏色與圖示兩兩不同（SC-002）。學生端頂端列為組別色底時，階段標籤是「白底＋階段色字
