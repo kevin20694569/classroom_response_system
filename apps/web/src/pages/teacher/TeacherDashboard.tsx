@@ -2,6 +2,8 @@ import { QuestionList } from '../../components/QuestionList';
 import { StatusBadge } from '../../components/StatusBadge';
 import { useSessionState } from '../../hooks/useSessionState';
 import { useWideLayout } from '../../hooks/useWideLayout';
+import { PhaseTransitionToast } from '../../ui/PhaseTransitionToast';
+import { usePhaseTransition } from '../../ui/usePhaseTransition';
 import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/icons';
 import { SectionHeading } from '../../ui/SectionHeading';
@@ -24,9 +26,12 @@ export function TeacherDashboard({ token, onLogout }: { token: string; onLogout:
   const { view, connected } = useSessionState(token, onLogout);
   const wide = useWideLayout();
   const teacherView = view?.viewer === 'teacher' ? view : null;
+  // 老師端也顯示「搶答開始！」「搶答結束」（007 US3 驗收情境 4）
+  const transition = usePhaseTransition(view?.status ?? null, connected);
 
   const main = (
     <div className="mx-auto max-w-5xl space-y-6 p-6">
+      <PhaseTransitionToast transition={transition} />
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-3">
           <span className="grid size-11 place-items-center rounded-2xl bg-gradient-to-br from-violet-600 to-fuchsia-700 text-white shadow-card">

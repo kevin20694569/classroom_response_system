@@ -1,8 +1,9 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { getToken, setStudentIdentity, setToken } from '../src/api/identity';
 import { StudentPage } from '../src/pages/student/StudentPage';
+import { PHASE_TOAST_MS } from '../src/ui/timing';
 import { currentSocket, resetSockets } from './fakeSocket';
 import { bodyOf, mockFetch } from './helpers';
 import { publicView, studentView, teacherView } from './viewBuilders';
@@ -382,5 +383,57 @@ describe('StudentPage — 004 搶答計時（FR-029）', () => {
       }),
     );
     expect(screen.getByLabelText('搶答計時').textContent).toBe('01:05.25');
+  });
+});
+
+describe('StudentPage — 007 切換提示（FR-012～FR-014）', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('當場看到待開始 → 搶答進行中時出現「搶答開始！」，之後自動消失', () => {
+    joinedTab();
+    render(<StudentPage />);
+    const socket = currentSocket();
+    socket.sendState(studentView({ status: 'READY' }));
+    expect(screen.queryByText('搶答開始！')).toBeNull();
+    socket.sendState(studentView({ status: 'OPEN' }));
+    expect(screen.getByText('搶答開始！')).toBeTruthy();
+    act(() => {
+      vi.advanceTimersByTime(PHASE_TOAST_MS);
+    });
+    expect(screen.queryByText('搶答開始！')).toBeNull();
+  });
+
+  it('第一次收到的就是搶答進行中（重新整理）時不出現提示', () => {
+    joinedTab();
+    render(<StudentPage />);
+    currentSocket().sendState(studentView({ status: 'OPEN' }));
+    expect(screen.queryByText('搶答開始！')).toBeNull();
+  });
+
+  it('當場看到結束時結果畫面立刻出現，「搶答結束」疊在上方', () => {
+    joinedTab();
+    render(<StudentPage />);
+    const socket = currentSocket();
+    socket.sendState(studentView({ status: 'OPEN' }));
+    socket.sendState(studentView({ status: 'CLOSED', results: [] }));
+    expect(screen.getByText('搶答結束')).toBeTruthy();
+    expect(screen.getByText('本組搶答成功 0 題')).toBeTruthy();
+  });
+
+  it('斷線期間結束、重連後才收到已結束時，直接顯示結果、不出現「搶答結束」', () => {
+    joinedTab();
+    render(<StudentPage />);
+    const socket = currentSocket();
+    socket.sendState(studentView({ status: 'OPEN' }));
+    socket.serverDisconnect();
+    socket.serverConnect();
+    socket.sendState(studentView({ status: 'CLOSED', results: [] }));
+    expect(screen.getByText('本組搶答成功 0 題')).toBeTruthy();
+    expect(screen.queryByText('搶答結束')).toBeNull();
   });
 });

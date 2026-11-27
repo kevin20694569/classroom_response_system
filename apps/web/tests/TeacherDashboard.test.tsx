@@ -1,7 +1,8 @@
 import type { GroupOverview } from '@crs/shared';
-import { fireEvent, render, screen, within } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TeacherDashboard } from '../src/pages/teacher/TeacherDashboard';
+import { PHASE_TOAST_MS } from '../src/ui/timing';
 import { installMatchMedia } from './fakeMatchMedia';
 import { currentSocket, resetSockets } from './fakeSocket';
 import { teacherView } from './viewBuilders';
@@ -140,5 +141,33 @@ describe('TeacherDashboard 跨過 1600 px（006 FR-014）', () => {
     expect(screen.queryByRole('complementary', { name: '分組情況' })).toBeNull();
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(toggle()).toBeTruthy();
+  });
+});
+
+describe('TeacherDashboard 切換提示（007 FR-012、US3 驗收情境 4）', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('老師分頁看到待開始 → 搶答進行中時出現「搶答開始！」，之後自動消失', () => {
+    const { socket } = renderDashboard(false);
+    socket.sendState(teacherView({ status: 'OPEN', groupOverview: overview() }));
+    expect(screen.getByText('搶答開始！')).toBeTruthy();
+    act(() => {
+      vi.advanceTimersByTime(PHASE_TOAST_MS);
+    });
+    expect(screen.queryByText('搶答開始！')).toBeNull();
+  });
+
+  it('第一次載入就是搶答進行中時不出現提示', () => {
+    installMatchMedia(false);
+    render(<TeacherDashboard token="teacher-token" onLogout={() => undefined} />);
+    const socket = currentSocket();
+    socket.serverConnect();
+    socket.sendState(teacherView({ status: 'OPEN', groupOverview: overview() }));
+    expect(screen.queryByText('搶答開始！')).toBeNull();
   });
 });

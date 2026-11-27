@@ -2,6 +2,8 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { GROUP_ICON_NAMES, MEANING_ICON_NAMES, iconComponent } from '../src/ui/icons';
+import { SESSION_STATUS_LABEL, type SessionStatus } from '@crs/shared';
+import { phaseStyle } from '../src/ui/phaseStyle';
 import { GROUP_COLORS, MEDAL_COLORS, ON_COLOR, PHASE_COLORS } from '../src/ui/theme';
 import { contrastRatio } from './contrast';
 
@@ -75,6 +77,21 @@ describe('圖示（FR-006、FR-008）', () => {
     const meaning = new Set(MEANING_ICON_NAMES.map(iconComponent));
     for (const name of GROUP_ICON_NAMES) {
       expect(meaning.has(iconComponent(name)), name).toBe(false);
+    }
+  });
+});
+
+describe('階段樣式（007 data-model §2，FR-010、SC-002）', () => {
+  const STATUSES: SessionStatus[] = ['NOT_IMPORTED', 'READY', 'OPEN', 'CLOSED'];
+
+  it('四個階段的顏色與圖示兩兩不同，文字沿用既有階段文字', () => {
+    const styles = STATUSES.map(phaseStyle);
+    expect(new Set(styles.map((s) => s.color)).size).toBe(4);
+    expect(new Set(styles.map((s) => s.icon)).size).toBe(4);
+    for (const [i, status] of STATUSES.entries()) {
+      expect(styles[i]?.label).toBe(SESSION_STATUS_LABEL[status]);
+      expect(styles[i]?.color).toBe(PHASE_COLORS[status]);
+      expect(styles[i]?.status).toBe(status);
     }
   });
 });

@@ -1,20 +1,21 @@
-import { SESSION_STATUS_LABEL, type SessionStatus } from '@crs/shared';
+import type { SessionStatus } from '@crs/shared';
+import { Icon } from '../ui/icons';
+import { phaseStyle } from '../ui/phaseStyle';
 
-const STYLE: Readonly<Record<SessionStatus, string>> = {
-  NOT_IMPORTED: 'bg-slate-200 text-slate-700',
-  READY: 'bg-amber-100 text-amber-800',
-  OPEN: 'bg-green-100 text-green-800',
-  CLOSED: 'bg-indigo-100 text-indigo-800',
-};
-
-/** 顯示活動階段：尚未匯入／待開始／搶答進行中／已結束。 */
+/**
+ * 顯示活動階段：尚未匯入／待開始／搶答進行中／已結束。
+ * 007：白底膠囊、階段強調色的文字、外框與圖示（FR-010、FR-011）；白底讓它放在組別色頂端列上也維持對比。
+ */
 export function StatusBadge({ status }: { status: SessionStatus }) {
+  const { label, color, icon } = phaseStyle(status);
   return (
     <span
       data-testid="status-badge"
-      className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold ${STYLE[status]}`}
+      style={{ color, borderColor: color }}
+      className="inline-flex items-center gap-1.5 rounded-full border-2 bg-white px-3 py-1 text-sm font-extrabold"
     >
-      {SESSION_STATUS_LABEL[status]}
+      <Icon name={icon} size={16} />
+      {label}
     </span>
   );
 }
