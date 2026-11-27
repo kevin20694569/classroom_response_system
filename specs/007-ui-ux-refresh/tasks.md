@@ -150,22 +150,23 @@ description: "子功能 007：介面視覺與互動體驗改版 — 實作任務
 
 ### Tests for User Story 3
 
-- [ ] T038 [P] [US3] 修改 `apps/web/tests/theme.test.ts`：`phaseStyle(status)` 對四個階段回傳的 `color` 兩兩不同、`icon` 兩兩不同，`label` 等於 `SESSION_STATUS_LABEL[status]`（data-model §2，FR-010、SC-002）
-- [ ] T039 [P] [US3] 新增 `apps/web/tests/StatusBadge.test.tsx`：`data-testid="status-badge"` 不變、文字為既有階段文字、含該階段的圖示（`aria-hidden`）、文字顏色為該階段強調色、白底（FR-011）
-- [ ] T040 [P] [US3] 新增 `apps/web/tests/usePhaseTransition.test.tsx`（以 `renderHook`）：(1) 第一份非 null 的 status 只建立 baseline，回傳 `null`；(2) READY→OPEN 回傳 `{ from: 'READY', to: 'OPEN', text: '搶答開始！' }`；(3) OPEN→CLOSED 回傳 `text: '搶答結束'`；(4) CLOSED→READY（重新匯入）回傳 `text: null`；(5) `connected` 變為 `false` 後，下一份不同的 status（如 OPEN→CLOSED）只建立 baseline、不回傳變化；(6) status 變為 `null` 後同 (5)；(7) 連續兩次變化的 `key` 遞增（data-model §3，FR-014）
-- [ ] T041 [P] [US3] 新增 `apps/web/tests/PhaseTransitionToast.test.tsx`（假時鐘）：收到 `text` 後顯示該文字，`role="status"`、`aria-live="polite"`、外層含 `pointer-events-none`；經過 `PHASE_TOAST_MS` 後移除（≤ 2000 ms）；提示顯示期間點擊下層按鈕仍會觸發；新的 `key` 取代舊提示且計時重新開始；`text` 為 `null` 時不顯示（FR-012、FR-013）
-- [ ] T042 [P] [US3] 修改 `apps/web/tests/StudentPage.test.tsx`：以 `FakeSocket` 依序推 READY、OPEN 的 `session:state` → 出現「搶答開始！」並在 `PHASE_TOAST_MS` 後消失；首次推 OPEN（模擬重新整理）不出現提示；推 OPEN 後觸發 `disconnect`、`connect`，再推 CLOSED → 直接顯示結果畫面、不出現「搶答結束」（FR-014）
-- [ ] T043 [P] [US3] 修改 `apps/web/tests/TeacherDashboard.test.tsx`：老師分頁看到 READY→OPEN 時出現「搶答開始！」；首次載入為 OPEN 時不出現；既有版面斷言不變
+- [X] T038 [P] [US3] 修改 `apps/web/tests/theme.test.ts`：`phaseStyle(status)` 對四個階段回傳的 `color` 兩兩不同、`icon` 兩兩不同，`label` 等於 `SESSION_STATUS_LABEL[status]`（data-model §2，FR-010、SC-002）
+- [X] T039 [P] [US3] 新增 `apps/web/tests/StatusBadge.test.tsx`：`data-testid="status-badge"` 不變、文字為既有階段文字、含該階段的圖示（`aria-hidden`）、文字顏色為該階段強調色、白底（FR-011）
+- [X] T040 [P] [US3] 新增 `apps/web/tests/usePhaseTransition.test.tsx`（以 `renderHook`）：(1) 第一份非 null 的 status 只建立 baseline，回傳 `null`；(2) READY→OPEN 回傳 `{ from: 'READY', to: 'OPEN', text: '搶答開始！' }`；(3) OPEN→CLOSED 回傳 `text: '搶答結束'`；(4) CLOSED→READY（重新匯入）回傳 `text: null`；(5) `connected` 變為 `false` 後，下一份不同的 status（如 OPEN→CLOSED）只建立 baseline、不回傳變化；(6) status 變為 `null` 後同 (5)；(7) 連續兩次變化的 `key` 遞增（data-model §3，FR-014）
+- [X] T041 [P] [US3] 新增 `apps/web/tests/PhaseTransitionToast.test.tsx`（假時鐘）：收到 `text` 後顯示該文字，`role="status"`、`aria-live="polite"`、外層含 `pointer-events-none`；經過 `PHASE_TOAST_MS` 後移除（≤ 2000 ms）；提示顯示期間點擊下層按鈕仍會觸發；新的 `key` 取代舊提示且計時重新開始；`text` 為 `null` 時不顯示（FR-012、FR-013）
+- [X] T042 [P] [US3] 修改 `apps/web/tests/StudentPage.test.tsx`：以 `FakeSocket` 依序推 READY、OPEN 的 `session:state` → 出現「搶答開始！」並在 `PHASE_TOAST_MS` 後消失；首次推 OPEN（模擬重新整理）不出現提示；推 OPEN 後觸發 `disconnect`、`connect`，再推 CLOSED → 直接顯示結果畫面、不出現「搶答結束」（FR-014）
+- [X] T043 [P] [US3] 修改 `apps/web/tests/TeacherDashboard.test.tsx`：老師分頁看到 READY→OPEN 時出現「搶答開始！」；首次載入為 OPEN 時不出現；既有版面斷言不變
 
 ### Implementation for User Story 3
 
-- [ ] T044 [US3] 新增 `apps/web/src/ui/phaseStyle.ts`：`phaseStyle(status): PhaseStyle`，`color` 取自 `PHASE_COLORS`，`icon` 依 research R7（尚未匯入 `notImported`、待開始 `waiting`、搶答進行中 `open`、已結束 `closed`），`label` 取自 `SESSION_STATUS_LABEL`（讓 T038 通過）
-- [ ] T045 [US3] 修改 `apps/web/src/components/StatusBadge.tsx`：白底膠囊、階段色文字與外框、左側階段圖示；`data-testid` 與文字不變（讓 T039 通過，contracts/ui-visual.md §4）；修改 `apps/web/src/pages/student/PhaseBanner.tsx` 讓階段標籤在組別色頂端列上維持白底（FR-011）
-- [ ] T046 [US3] 新增 `apps/web/src/ui/usePhaseTransition.ts`：`usePhaseTransition(status: SessionStatus | null, connected: boolean): PhaseTransition | null`，以 `useRef` 保存 baseline 與 `needsBaseline`，規則照 data-model §3；只有 READY→OPEN、OPEN→CLOSED 有提示文字；不讀寫任何 storage（讓 T040 通過）
-- [ ] T047 [US3] 新增 `apps/web/src/ui/PhaseTransitionToast.tsx`：接收 `transition`，顯示 `transition.text`，`PHASE_TOAST_MS` 後自行隱藏；畫面上方中央、`fixed`、外層 `pointer-events-none`；彈出動畫加 `ui-anim`（減少動態時直接出現）（讓 T041 通過，contracts/ui-effects.md §1）
-- [ ] T048 [US3] 修改 `apps/web/src/pages/student/StudentPage.tsx`：以目前顯示中的 view 呼叫 `usePhaseTransition`（顯示「連線中…」或 stale 時傳 `null`），在作答與結果畫面上方掛 `PhaseTransitionToast`；結果畫面不等提示、立即切換（讓 T042 通過，FR-012）
-- [ ] T049 [US3] 修改 `apps/web/src/pages/teacher/TeacherDashboard.tsx`：以 `view?.status ?? null` 與 `connected` 呼叫 `usePhaseTransition`，掛 `PhaseTransitionToast`；寬窄兩種版面都要掛（讓 T043 通過）
-- [ ] T050 [US3] 品質關卡：`npm run typecheck`、`npm run lint`、`npm run format:check`、`npm test` 全部通過，回報指令與結果；在瀏覽器以老師＋兩個學生分頁確認老師按下後 1 秒內兩個學生分頁都出現提示（SC-004）、2 秒內消失、提示期間可輸入、重新整理不重播
+- [X] T044 [US3] 新增 `apps/web/src/ui/phaseStyle.ts`：`phaseStyle(status): PhaseStyle`，`color` 取自 `PHASE_COLORS`，`icon` 依 research R7（尚未匯入 `notImported`、待開始 `waiting`、搶答進行中 `open`、已結束 `closed`），`label` 取自 `SESSION_STATUS_LABEL`（讓 T038 通過）
+- [X] T045 [US3] 修改 `apps/web/src/components/StatusBadge.tsx`：白底膠囊、階段色文字與外框、左側階段圖示；`data-testid` 與文字不變（讓 T039 通過，contracts/ui-visual.md §4）；修改 `apps/web/src/pages/student/PhaseBanner.tsx` 讓階段標籤在組別色頂端列上維持白底（FR-011）
+- [X] T046 [US3] 新增 `apps/web/src/ui/usePhaseTransition.ts`：`usePhaseTransition(status: SessionStatus | null, connected: boolean): PhaseTransition | null`，以 `useRef` 保存 baseline 與 `needsBaseline`，規則照 data-model §3；只有 READY→OPEN、OPEN→CLOSED 有提示文字；不讀寫任何 storage（讓 T040 通過）
+- [X] T047 [US3] 新增 `apps/web/src/ui/PhaseTransitionToast.tsx`：接收 `transition`，顯示 `transition.text`，`PHASE_TOAST_MS` 後自行隱藏；畫面上方中央、`fixed`、外層 `pointer-events-none`；彈出動畫加 `ui-anim`（減少動態時直接出現）（讓 T041 通過，contracts/ui-effects.md §1）
+- [X] T048 [US3] 修改 `apps/web/src/pages/student/StudentPage.tsx`：以目前顯示中的 view 呼叫 `usePhaseTransition`（顯示「連線中…」或 stale 時傳 `null`），在作答與結果畫面上方掛 `PhaseTransitionToast`；結果畫面不等提示、立即切換（讓 T042 通過，FR-012）
+- [X] T049 [US3] 修改 `apps/web/src/pages/teacher/TeacherDashboard.tsx`：以 `view?.status ?? null` 與 `connected` 呼叫 `usePhaseTransition`，掛 `PhaseTransitionToast`；寬窄兩種版面都要掛（讓 T043 通過）
+- [X] T050 [US3] 品質關卡：`npm run typecheck`、`npm run lint`、`npm run format:check`、`npm test` 全部通過，回報指令與結果；在瀏覽器以老師＋兩個學生分頁確認老師按下後 1 秒內兩個學生分頁都出現提示（SC-004）、2 秒內消失、提示期間可輸入、重新整理不重播
+  - 實作備註：typecheck、lint、format:check 通過，web 42 個測試檔 287 個測試全過。瀏覽器（3901 埠、種子資料）以學生分頁加入第 1 組，從老師 API 開啟搶答後立即截圖：「搶答開始！」出現在畫面上方、計時已開始；2 秒後消失；重新整理後不再出現。`usePhaseTransition` 在 status 變為 null 或斷線時同時清除上一筆變化，避免切換畫面後重新掛載的提示重播。
 
 **Checkpoint**: 階段標示與切換提示完成
 

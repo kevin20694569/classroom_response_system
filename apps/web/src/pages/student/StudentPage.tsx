@@ -9,6 +9,8 @@ import { AnswerSheet } from './AnswerSheet';
 import { GroupMemberList } from './GroupMemberList';
 import { JoinGroupPanel } from './JoinGroupPanel';
 import { NicknamePanel } from './NicknamePanel';
+import { PhaseTransitionToast } from '../../ui/PhaseTransitionToast';
+import { usePhaseTransition } from '../../ui/usePhaseTransition';
 import { PhaseBanner } from './PhaseBanner';
 import { StudentResultBoard } from './StudentResultBoard';
 
@@ -24,6 +26,12 @@ export function StudentPage() {
   const [nickname, setNickname] = useState<string | null>(NicknameStore.load);
   const [editingNickname, setEditingNickname] = useState(false);
   const [leaveError, setLeaveError] = useState<string | null>(null);
+
+  // 身分剛改變（加入、離開、失效）時，舊連線的資料還沒換掉，先顯示連線中
+  const stale = view !== null && (auth.token === null) !== (view.viewer === 'public');
+  // 切換提示只用在已加入組別的作答／結果畫面（007 contracts/ui-effects.md §1）；其他畫面傳 null，重新建立 baseline
+  const joinedStatus = view !== null && !stale && view.viewer === 'student' ? view.status : null;
+  const transition = usePhaseTransition(joinedStatus, connected);
 
   /** 離開組別失敗時留在組內並說明原因（004 contracts/student-ui.md §3）。 */
   async function leaveGroup() {
@@ -45,8 +53,6 @@ export function StudentPage() {
     setEditingNickname(false);
   }
 
-  // 身分剛改變（加入、離開、失效）時，舊連線的資料還沒換掉，先顯示連線中
-  const stale = view !== null && (auth.token === null) !== (view.viewer === 'public');
   if (view === null || stale) {
     return <p className="p-6 text-center text-slate-500">連線中…</p>;
   }
@@ -97,7 +103,8 @@ export function StudentPage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-4 p-6">
+    <div className="mx-auto max-w-3xl space-y-4 p-4 sm:p-6">
+      <PhaseTransitionToast transition={transition} />
       <PhaseBanner
         groupId={view.groupId}
         nickname={identity.nickname}
