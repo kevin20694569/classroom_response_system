@@ -121,7 +121,11 @@ export function StudentPage() {
           {leaveError}
         </p>
       )}
-      <GroupMemberList members={view.members} selfMemberId={identity.memberId} />
+      <GroupMemberList
+        groupId={view.groupId}
+        members={view.members}
+        selfMemberId={identity.memberId}
+      />
       {view.status === 'CLOSED' ? (
         <StudentResultBoard
           questions={view.questions}

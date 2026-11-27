@@ -2,6 +2,7 @@ import type { GroupOverview, OverviewMember } from '@crs/shared';
 import { render, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { GroupOverviewPanel } from '../src/pages/teacher/GroupOverviewPanel';
+import { groupIdentity } from '../src/ui/groupIdentity';
 import { teacherView } from './viewBuilders';
 
 const id = (n: number): string => `a1b2c3d4-0000-4000-8000-${String(n).padStart(12, '0')}`;
@@ -122,7 +123,8 @@ describe('GroupOverviewPanel：回答標註與不在組內（006 US2、FR-009）
       .filter((li) => li.dataset.member !== undefined);
     expect(members.map((li) => li.dataset.member)).toEqual(['Milo', 'Ava']);
     expect(within(members[1] as HTMLElement).getByText('不在組內')).toBeTruthy();
-    expect((members[1] as HTMLElement).className).toContain('text-slate-400');
+    // 007：灰色改為 text-slate-500，讓「不在組內」的文字對比也達 4.5:1（FR-024），語意不變
+    expect((members[1] as HTMLElement).className).toContain('text-slate-500');
     expect(within(members[0] as HTMLElement).queryByText('不在組內')).toBeNull();
   });
 
@@ -132,5 +134,17 @@ describe('GroupOverviewPanel：回答標註與不在組內（006 US2、FR-009）
     expect(within(second).getByText('0 人')).toBeTruthy();
     expect(within(second).queryByText('尚無組員')).toBeNull();
     expect(within(second).getByText('Leo')).toBeTruthy();
+  });
+
+  it('每組標題以該組的組別徽章顯示（007 FR-009）', () => {
+    render(<GroupOverviewPanel view={teacherView({ groupOverview: sampleOverview })} />);
+    for (const groupId of [1, 2]) {
+      const region = screen.getByRole('region', { name: `第 ${String(groupId)} 組` });
+      const badge = region.querySelector(`[data-group="${String(groupId)}"]`);
+      expect(badge?.textContent).toBe(`第 ${String(groupId)} 組`);
+      expect(
+        badge?.querySelector(`svg[data-icon="${groupIdentity(groupId).icon}"]`),
+      ).not.toBeNull();
+    }
   });
 });

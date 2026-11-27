@@ -1,4 +1,6 @@
 import { groupName, type GroupOverview, type OverviewMember, type TeacherView } from '@crs/shared';
+import { GroupBadge } from '../../ui/GroupBadge';
+import { groupIdentity } from '../../ui/groupIdentity';
 import { MemberAnswerTags } from './MemberAnswerTags';
 
 /** 長暱稱在面板寬度內換行，不撐寬面板（006 FR-015）。 */
@@ -10,12 +12,13 @@ const WRAP = 'break-words [overflow-wrap:anywhere]';
  */
 function MemberRow({ member }: { member: OverviewMember }) {
   return (
-    <li data-member={member.nickname} className={`py-1 ${member.inGroup ? '' : 'text-slate-400'}`}>
-      <span className={`${WRAP} text-sm ${member.inGroup ? 'text-slate-800' : ''}`}>
+    // 007：不在組內改為 slate-500（對比 ≥ 4.5:1，FR-024），並以「不在組內」文字標示，不只靠顏色
+    <li data-member={member.nickname} className={`py-1 ${member.inGroup ? '' : 'text-slate-500'}`}>
+      <span className={`${WRAP} text-sm ${member.inGroup ? 'font-semibold text-ink' : ''}`}>
         {member.nickname}
       </span>
       {member.disconnected && (
-        <span className="ml-2 text-xs font-medium text-orange-600">連線中斷</span>
+        <span className="ml-2 text-xs font-bold text-orange-700">連線中斷</span>
       )}
       {!member.inGroup && <span className="ml-2 text-xs">不在組內</span>}
       <MemberAnswerTags tags={member.answered} />
@@ -28,14 +31,17 @@ function GroupCard({ group }: { group: GroupOverview }) {
   return (
     <section
       aria-label={label}
-      className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm"
+      style={{ borderLeftColor: groupIdentity(group.groupId).color }}
+      className="rounded-xl border border-l-8 border-slate-200 bg-white p-3 shadow-sm"
     >
-      <div className="flex items-baseline justify-between">
-        <h3 className="font-medium">{label}</h3>
-        <span className="text-xs text-slate-500">{group.memberCount} 人</span>
+      <div className="flex items-center justify-between gap-2">
+        <h3>
+          <GroupBadge groupId={group.groupId} size="sm" />
+        </h3>
+        <span className="text-xs font-bold text-ink-muted">{group.memberCount} 人</span>
       </div>
       {group.members.length === 0 ? (
-        <p className="mt-1 text-sm text-slate-400">尚無組員</p>
+        <p className="mt-1 text-sm text-ink-muted">尚無組員</p>
       ) : (
         <ul className="mt-1 divide-y divide-slate-100">
           {group.members.map((member) => (
@@ -55,9 +61,9 @@ function GroupCard({ group }: { group: GroupOverview }) {
 export function GroupOverviewPanel({ view }: { view: TeacherView }) {
   return (
     <div className="space-y-3">
-      <h2 className="text-lg font-semibold">分組情況</h2>
+      <h2 className="text-lg font-extrabold text-ink">分組情況</h2>
       {view.groups.length === 0 ? (
-        <p className="text-sm text-slate-500">匯入 Guided Notes 後會在這裡顯示各組組員。</p>
+        <p className="text-sm text-ink-muted">匯入 Guided Notes 後會在這裡顯示各組組員。</p>
       ) : (
         view.groupOverview.map((group) => <GroupCard key={group.groupId} group={group} />)
       )}

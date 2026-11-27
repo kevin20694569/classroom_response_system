@@ -16,7 +16,7 @@ export function MemberAnswerTags({ tags }: { tags: readonly MemberAnswerTag[] })
           <li
             key={tag.questionNumber}
             title="搶答成功"
-            className={`${PILL} gap-1 bg-amber-100 font-medium text-amber-800`}
+            className={`${PILL} gap-1 bg-amber-100 font-bold text-amber-900`}
           >
             {/* 星號與文字之間固定間距（gap-1），不貼字 */}
             <span aria-hidden="true" className="leading-none">
@@ -26,7 +26,7 @@ export function MemberAnswerTags({ tags }: { tags: readonly MemberAnswerTag[] })
             <span className="sr-only">（搶答成功）</span>
           </li>
         ) : (
-          <li key={tag.questionNumber} className={`${PILL} bg-slate-100 text-slate-600`}>
+          <li key={tag.questionNumber} className={`${PILL} bg-violet-50 text-violet-900`}>
             第 {tag.questionNumber} 題
           </li>
         ),
