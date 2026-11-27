@@ -1,1 +1,139 @@
 @import 'tailwindcss';
+
+/*
+ * 007 全站共用主題（research R1、R4、R5；contracts/ui-visual.md §2）。
+ * 靜態語意色一律寫成 6 位 hex：tests/theme.test.ts 會解析這些值並檢查對比（FR-024、SC-006）。
+ * 依資料切換的顏色（組別、階段、金銀銅）在 src/ui/theme.ts。
+ * 不得引用任何外部網址（FR-026，tests/offlineAssets.test.ts）。
+ */
+@theme {
+  --font-sans:
+    'Nunito Variable', 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', system-ui, sans-serif;
+
+  --color-page: #f5f3ff;
+  --color-card: #ffffff;
+  --color-ink: #1e1b4b;
+  --color-ink-muted: #4b5563;
+  --color-primary: #7c3aed;
+  --color-primary-deep: #5b21b6;
+  --color-secondary-ink: #6d28d9;
+  --color-danger: #dc2626;
+  --color-danger-deep: #991b1b;
+
+  --radius-card: 1.25rem;
+  --shadow-card: 0 10px 30px -12px rgb(76 29 149 / 0.25), 0 2px 6px -2px rgb(30 27 75 / 0.08);
+
+  --animate-pop-in: pop-in 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  --animate-slide-in: slide-in 0.9s ease-out both;
+  --animate-pulse-dot: pulse-dot 1.2s ease-in-out infinite;
+  --animate-float: float 3s ease-in-out infinite;
+  --animate-bounce-dot: bounce-dot 1s ease-in-out infinite;
+
+  @keyframes pop-in {
+    0% {
+      opacity: 0;
+      transform: scale(0.6);
+    }
+    70% {
+      opacity: 1;
+      transform: scale(1.08);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  /* 新送出：由上方滑入並短暫亮起，0.9 秒結束（FR-030，與 NEW_SUBMISSION_HIGHLIGHT_MS 一致） */
+  @keyframes slide-in {
+    0% {
+      opacity: 0;
+      transform: translateY(-10px);
+      background-color: #fef08a;
+    }
+    30% {
+      opacity: 1;
+      transform: translateY(0);
+      background-color: #fef08a;
+    }
+    100% {
+      background-color: transparent;
+    }
+  }
+
+  @keyframes pulse-dot {
+    0%,
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.35;
+      transform: scale(0.7);
+    }
+  }
+
+  @keyframes float {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-8px);
+    }
+  }
+
+  @keyframes bounce-dot {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-6px);
+    }
+  }
+
+  @keyframes confetti-fall {
+    0% {
+      opacity: 1;
+      transform: translate3d(0, -10vh, 0) rotate(0deg);
+    }
+    100% {
+      opacity: 0.9;
+      transform: translate3d(var(--confetti-drift, 0), 110vh, 0) rotate(720deg);
+    }
+  }
+}
+
+/* 頁面背景：帶色調的淺色＋三團柔和色塊＋淡點點圖樣（FR-003），純 CSS、不引用圖片 */
+body {
+  min-height: 100vh;
+  color: var(--color-ink);
+  background-color: var(--color-page);
+  background-image:
+    radial-gradient(circle at 10% 6%, rgb(244 114 182 / 0.2), transparent 30%),
+    radial-gradient(circle at 92% 10%, rgb(56 189 248 / 0.2), transparent 28%),
+    radial-gradient(circle at 50% 100%, rgb(250 204 21 / 0.16), transparent 38%),
+    radial-gradient(rgb(124 58 237 / 0.1) 1.2px, transparent 1.2px);
+  background-size:
+    100% 100%,
+    100% 100%,
+    100% 100%,
+    22px 22px;
+  background-attachment: fixed;
+}
+
+/* 內容卡片：白底、大圓角、柔和陰影，與背景明顯區分（FR-003） */
+@utility ui-card {
+  background-color: var(--color-card);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+
+/* 減少動態效果：所有會動的元素都帶 .ui-anim，在這裡統一停用（FR-023） */
+@media (prefers-reduced-motion: reduce) {
+  .ui-anim {
+    animation: none !important;
+    transition: none !important;
+  }
+}
