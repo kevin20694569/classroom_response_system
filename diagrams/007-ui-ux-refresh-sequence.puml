@@ -1,0 +1,70 @@
+@startuml 007-ui-ux-refresh-sequence
+' 子功能 007：介面視覺與互動體驗改版 — 時序圖（伺服器推播與 001～006 相同，只有前端呈現改變）
+skinparam defaultFontName "PingFang TC"
+title 007 介面視覺與互動體驗改版 — 時序圖 (Sequence Diagram)
+
+actor "老師" as T
+participant "老師分頁\nTeacherDashboard" as TD
+participant "RealtimeGateway\n（不變）" as RT
+participant "學生分頁（第 3 組）\nStudentPage" as SP
+participant "usePhaseTransition" as PH
+participant "PhaseTransitionToast" as Toast
+participant "AnswerSheet" as AS
+participant "StudentResultBoard\n＋Celebration" as RB
+
+== 學生加入組別（待開始） ==
+SP -> RT : 連線，收到 StudentView（READY）
+SP -> PH : usePhaseTransition(READY, connected = true)
+PH --> SP : null（本分頁第一次看到階段，不播提示）
+SP -> SP : 頂端列底色 = 第 3 組顏色 + 圖示；階段標籤套用「待開始」強調色\n組員卡片加第 3 組顏色邊條；作答區顯示等待開始的 EmptyState
+
+== 老師開始搶答 ==
+T -> TD : 按「開始搶答」
+TD -> RT : 既有開始搶答請求
+RT --> TD : TeacherView（OPEN）
+TD -> Toast : 「搶答開始！」（老師端同樣顯示）
+RT --> SP : StudentView（OPEN）
+SP -> PH : usePhaseTransition(OPEN, connected = true)
+PH --> SP : PhaseTransition(to = OPEN, 「搶答開始！」)
+SP -> Toast : 顯示提示（不攔截點擊）
+SP -> SP : 階段標籤改為「搶答進行中」強調色與圖示（底色仍為本組顏色）；計時開始脈動
+Toast -> Toast : ≤ 2 秒後自動消失\n（減少動態：靜態出現 / 消失）
+
+== 學生送出答案（提示仍在也可操作） ==
+SP -> AS : 按「送出」
+AS -> AS : 按鈕立即顯示處理中、不可重按
+AS -> RT : 既有送出請求（HTTP）
+RT --> AS : 送出成功
+AS -> AS : 該題顯示成功標記與短暫動畫
+RT --> TD : TeacherView（新的送出）
+TD -> TD : 送出列表該筆滑入並亮起（1 秒內結束；同時到達的一起出現）\n加第 3 組 GroupBadge；第 1～3 名加金 / 銀 / 銅 RankMedal
+
+== 學生重新整理（搶答進行中） ==
+SP -> RT : 重新連線，收到 StudentView（OPEN）
+SP -> PH : usePhaseTransition(OPEN, connected = true)
+PH --> SP : null（重整後第一份資料，不重播）
+
+== 老師結束搶答 ==
+T -> TD : 按「結束搶答」
+RT --> TD : TeacherView（CLOSED）
+TD -> Toast : 「搶答結束」
+TD -> TD : 提示消失後顯示一次 ResultReveal：每題搶答成功組別 + 暱稱 + 答案\n（無人送出：「本題無人搶答」；不播慶祝效果）
+T -> TD : 按「關閉」→ 回到主畫面（重整後不再顯示）
+RT --> SP : StudentView（CLOSED，含依既有規則可見的結果）
+SP -> PH : usePhaseTransition(CLOSED, connected = true)
+PH --> SP : PhaseTransition(to = CLOSED, 「搶答結束」)
+SP -> RB : 立刻進入結果畫面（不等提示）
+SP -> Toast : 「搶答結束」疊在結果畫面上方，≤ 2 秒後消失
+RB -> RB : 每題搶答成功答案加獎盃
+alt 本組搶到 ≥ 1 題（本分頁當場看到 OPEN → CLOSED）
+  RB -> RB : 提示消失後播放一次慶祝效果：疊在上方、不攔截點擊與捲動、3 秒內結束\n（減少動態：不播放）
+else 本組沒搶到
+  RB -> RB : 不播放慶祝效果
+end
+
+== 學生重新整理或斷線重連後進入結果畫面 ==
+SP -> RT : 重新連線，收到 StudentView（CLOSED）
+SP -> PH : usePhaseTransition(CLOSED, connected = true)
+PH --> SP : null（本分頁第一份資料，不算階段變化）
+SP -> RB : 直接顯示結果與獎盃；不顯示提示、不播慶祝效果
+@enduml
