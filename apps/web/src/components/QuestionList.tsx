@@ -18,14 +18,14 @@ export function QuestionList({ view }: { view: TeacherView }) {
   const [previewNumber, setPreviewNumber] = useState<number | null>(null);
 
   if (view.questions.length === 0) {
-    return <p className="text-sm text-slate-500">尚未匯入題目。</p>;
+    return <p className="text-sm text-ink-muted">尚未匯入題目。</p>;
   }
   // 預覽中的題號已不存在（例如題數變少）時視為沒有預覽
   const previewing = view.questions.find((q) => q.number === previewNumber) ?? null;
 
   return (
     <div className="space-y-3">
-      <p className="text-sm text-slate-600">
+      <p className="text-sm text-ink-muted">
         工作表「{view.source?.sheetTitle}」，共 {view.questions.length} 題、{view.groups.length}{' '}
         組；點題號可預覽題目
       </p>
@@ -42,19 +42,19 @@ export function QuestionList({ view }: { view: TeacherView }) {
                 }}
                 className={
                   active
-                    ? 'rounded-md border-2 border-indigo-600 bg-indigo-50 px-3 py-1 text-sm font-semibold text-indigo-900 shadow'
-                    : 'rounded-md border border-slate-200 bg-slate-50 px-3 py-1 text-sm hover:bg-slate-100'
+                    ? 'rounded-xl border-2 border-primary bg-violet-50 px-3 py-1.5 text-sm font-bold text-violet-900 shadow-card focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-200'
+                    : 'rounded-xl border-2 border-violet-100 bg-white px-3 py-1.5 text-sm font-semibold text-ink transition hover:-translate-y-0.5 hover:border-violet-300 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-200 motion-reduce:transform-none'
                 }
               >
                 第 {q.number} 題
                 {q.kind === 'group' && (
-                  <span className="ml-2 rounded bg-amber-100 px-1.5 text-xs text-amber-800">
+                  <span className="ml-2 rounded-md bg-amber-100 px-1.5 text-xs font-bold text-amber-900">
                     題組（{q.blankCount} 子題）
                   </span>
                 )}
                 {/* 不只靠顏色：預覽中另有文字標籤（FR-005） */}
                 {active && (
-                  <span className="ml-2 rounded bg-indigo-600 px-1.5 text-xs text-white">
+                  <span className="ml-2 rounded-md bg-primary px-1.5 text-xs text-white">
                     預覽中
                   </span>
                 )}
@@ -67,7 +67,7 @@ export function QuestionList({ view }: { view: TeacherView }) {
         {previewing !== null && (
           <section
             aria-label="題目預覽"
-            className="rounded-lg border border-indigo-200 bg-indigo-50/40 p-4"
+            className="rounded-2xl border-2 border-violet-200 bg-violet-50/60 p-4"
           >
             <QuestionPreview question={previewing} />
           </section>

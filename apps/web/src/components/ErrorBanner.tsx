@@ -1,4 +1,5 @@
 import type { ErrorDetail } from '@crs/shared';
+import { Icon } from '../ui/icons';
 
 export interface DisplayError {
   message: string;
@@ -21,16 +22,19 @@ export function ErrorBanner({ error }: { error: DisplayError | null }) {
   return (
     <div
       role="alert"
-      className="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-800"
+      className="rounded-xl border-2 border-red-300 bg-red-50 p-3 text-sm text-red-800"
     >
-      <p className="font-medium">{error.message}</p>
+      <p className="flex items-start gap-2 font-bold">
+        <Icon name="error" size={18} className="mt-0.5 shrink-0" />
+        {error.message}
+      </p>
       {error.details !== undefined && error.details.length > 0 && (
-        <ul className="mt-2 list-disc space-y-1 pl-5">
+        <ul className="mt-2 list-disc space-y-1 pl-11">
           {error.details.map((detail, i) => {
             const where = location(detail);
             return (
               <li key={i}>
-                {where !== '' && <span className="font-medium">{where}：</span>}
+                {where !== '' && <span className="font-bold">{where}：</span>}
                 {detail.message}
               </li>
             );

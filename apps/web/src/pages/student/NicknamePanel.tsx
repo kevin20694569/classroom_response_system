@@ -6,6 +6,9 @@ import {
 } from '@crs/shared';
 import { useId, useState, type SyntheticEvent } from 'react';
 import { randomNickname } from '../../student/randomNickname';
+import { Button } from '../../ui/Button';
+import { Icon } from '../../ui/icons';
+import { INPUT, MUTED } from '../../ui/styles';
 
 export interface NicknamePanelProps {
   /** 目前的暱稱；第一次進入時為 null（預填隨機名字），修改暱稱時為目前的暱稱 */
@@ -37,10 +40,15 @@ export function NicknamePanel({ initial, onConfirm, onCancel }: NicknamePanelPro
 
   return (
     <main className="mx-auto mt-16 max-w-md space-y-4 p-6">
-      <h1 className="text-center text-2xl font-bold">輸入你的暱稱</h1>
-      <p className="text-center text-slate-600">暱稱會顯示給同組同學與老師。</p>
-      <form onSubmit={confirm} className="space-y-3 rounded-xl bg-white p-4 shadow">
-        <label htmlFor={inputId} className="block text-sm font-medium text-slate-700">
+      <div className="flex flex-col items-center gap-2 text-center">
+        <span className="ui-anim grid size-14 animate-float place-items-center rounded-2xl bg-gradient-to-br from-emerald-700 to-teal-700 text-white shadow-card">
+          <Icon name="nickname" size={30} />
+        </span>
+        <h1 className="text-3xl font-black text-ink">輸入你的暱稱</h1>
+        <p className="text-ink-muted">暱稱會顯示給同組同學與老師。</p>
+      </div>
+      <form onSubmit={confirm} className="ui-card space-y-3 p-5">
+        <label htmlFor={inputId} className="block text-sm font-bold text-ink">
           暱稱
         </label>
         <div className="flex items-center gap-2">
@@ -51,45 +59,38 @@ export function NicknamePanel({ initial, onConfirm, onCancel }: NicknamePanelPro
               setValue(event.target.value);
               setError(null);
             }}
-            className="min-w-0 flex-1 rounded-md border border-slate-300 px-3 py-2"
+            className={`${INPUT} mt-0 min-w-0 flex-1 text-lg font-bold`}
             autoComplete="off"
             aria-invalid={error !== null}
           />
-          <button
-            type="button"
+          <Button
+            variant="secondary"
             onClick={() => {
               setValue(randomNickname(value));
               setError(null);
             }}
-            className="rounded-md border border-slate-300 px-3 py-2 text-slate-700"
           >
+            <Icon name="shuffle" size={16} />
             換一個
-          </button>
+          </Button>
         </div>
-        <p className="text-right text-xs text-slate-500">
+        <p className={`text-right ${MUTED}`}>
           {unicodeLength(value.trim())} / {NICKNAME_MAX_LENGTH}
         </p>
         {error !== null && (
-          <p role="alert" className="rounded-md bg-red-50 p-2 text-sm text-red-800">
+          <p role="alert" className="rounded-xl bg-red-50 p-2 text-sm font-semibold text-red-800">
             {error}
           </p>
         )}
         <div className="flex justify-end gap-2">
           {onCancel !== undefined && (
-            <button
-              type="button"
-              onClick={onCancel}
-              className="rounded-md px-4 py-2 text-slate-600"
-            >
+            <Button variant="secondary" onClick={onCancel}>
               取消
-            </button>
+            </Button>
           )}
-          <button
-            type="submit"
-            className="rounded-md bg-indigo-600 px-4 py-2 font-medium text-white"
-          >
+          <Button variant="primary" size="lg" type="submit">
             確認
-          </button>
+          </Button>
         </div>
       </form>
     </main>

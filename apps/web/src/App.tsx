@@ -1,4 +1,5 @@
 import { lazy, Suspense } from 'react';
+import { HomePage } from './pages/HomePage';
 import { TeacherPage } from './pages/teacher/TeacherPage';
 
 /**
@@ -9,26 +10,6 @@ const StudentPage = lazy(async () => {
   const module = await import('./pages/student/StudentPage');
   return { default: module.StudentPage };
 });
-
-function HomePage() {
-  return (
-    <main className="mx-auto mt-24 max-w-md space-y-4 text-center">
-      <h1 className="text-2xl font-bold">課堂搶答系統</h1>
-      <a
-        href="/teacher"
-        className="block rounded-md bg-indigo-600 px-4 py-3 font-medium text-white"
-      >
-        老師端
-      </a>
-      <a
-        href="/student"
-        className="block rounded-md bg-emerald-600 px-4 py-3 font-medium text-white"
-      >
-        學生端
-      </a>
-    </main>
-  );
-}
 
 /** 依路徑切換頁面：/teacher 為老師端（001、002），/student 為學生端（003）。 */
 export function App() {

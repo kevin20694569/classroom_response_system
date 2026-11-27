@@ -27,7 +27,7 @@ export interface QuestionContentProps {
 
 function PromptText({ text }: { text: string | null }) {
   return text === null ? (
-    <span className="text-slate-400">{NO_PROMPT_TEXT}</span>
+    <span className="text-ink-muted italic">{NO_PROMPT_TEXT}</span>
   ) : (
     // 完整顯示並保留原有換行，不截斷（002 FR-006、004 FR-017）
     <span className="whitespace-pre-wrap">{text}</span>
@@ -53,9 +53,11 @@ export function QuestionContent({
   return (
     <div className="space-y-2">
       {!hideTitle && (
-        <Title className={titleAs === 'h2' ? 'text-lg font-semibold' : 'font-medium'}>
+        <Title
+          className={titleAs === 'h2' ? 'text-lg font-extrabold text-ink' : 'font-bold text-ink'}
+        >
           第 {number} 題
-          <span className="ml-2 text-sm font-normal text-slate-600">
+          <span className="ml-2 rounded-md bg-violet-100 px-1.5 py-0.5 text-xs font-bold text-violet-800">
             {isGroup ? `題組（${String(blankCount)} 子題）` : '單題'}
           </span>
         </Title>
@@ -80,7 +82,7 @@ export function QuestionContent({
               return (
                 <li key={index} className="space-y-1">
                   <div className="flex gap-1">
-                    <span className="shrink-0 font-medium">
+                    <span className="shrink-0 font-bold text-primary">
                       {blank.label ?? `（${String(index)}）`}
                     </span>
                     <PromptText text={blank.prompt} />

@@ -91,18 +91,19 @@ description: "子功能 007：介面視覺與互動體驗改版 — 實作任務
 
 ### Tests for User Story 1
 
-- [ ] T016 [P] [US1] 新增 `apps/web/tests/HomePage.test.tsx`：顯示標題「課堂搶答系統」與說明「用 Guided Notes 進行分組搶答的課堂互動」；兩個連結的可存取名稱分別以「老師端」「學生端」開頭，`href` 為 `/teacher`、`/student`；分別含說明「匯入題目、控制搶答」「輸入暱稱、選組作答」；入口內的圖示 `aria-hidden="true"`（FR-005）
+- [X] T016 [P] [US1] 新增 `apps/web/tests/HomePage.test.tsx`：顯示標題「課堂搶答系統」與說明「用 Guided Notes 進行分組搶答的課堂互動」；兩個連結的可存取名稱分別以「老師端」「學生端」開頭，`href` 為 `/teacher`、`/student`；分別含說明「匯入題目、控制搶答」「輸入暱稱、選組作答」；入口內的圖示 `aria-hidden="true"`（FR-005）
 
 ### Implementation for User Story 1
 
-- [ ] T017 [US1] 新增 `apps/web/src/pages/HomePage.tsx`（自 `apps/web/src/App.tsx` 抽出並改版：標題、說明、兩張入口卡片，各含 `Icon`（`home.teacher`／`home.student`）與用途說明），修改 `App.tsx` 改用它；路由行為不變（讓 T016 通過，contracts/ui-visual.md §1）
-- [ ] T018 [P] [US1] 老師端換樣式：`apps/web/src/pages/teacher/TeacherLoginPage.tsx`、`TeacherPage.tsx`、`ImportPanel.tsx`、`ExportPanel.tsx`、`CsvExportPanel.tsx` 的卡片改用主題卡片樣式，按鈕改用 `Button`（匯入、匯出為 `primary`；確認重新匯入的危險確認為 `danger`；取消為 `secondary`），文字與 `aria-label` 不變
-- [ ] T019 [P] [US1] 修改 `apps/web/src/pages/teacher/SessionControls.tsx`：「開始搶答」為 `primary`（`size="lg"`）、「結束搶答」為 `danger`（`size="lg"`），處理中時 `pending`；文字與既有停用條件不變
-- [ ] T020 [US1] 修改 `apps/web/src/pages/teacher/TeacherDashboard.tsx` 的標題列與各區塊卡片樣式：「登出」改為 `Button variant="secondary"`（contracts/ui-visual.md §2，登出不屬於危險操作）；**保留** `mx-auto`、`max-w-5xl`、`p-6`、寬版 `aside` 與框架內卡片的所有版面 class（006 測試）
-- [ ] T021 [P] [US1] 修改 `apps/web/src/components/QuestionList.tsx`、`QuestionPreview.tsx`、`QuestionContent.tsx`、`ErrorBanner.tsx`、`TimeHint.tsx`：套用主題字級、圓角與語意色（錯誤用 `error` 意義圖示＋紅色系）；保留 `whitespace-pre-wrap`、`break-words` 等換行 class
-- [ ] T022 [P] [US1] 修改 `apps/web/src/pages/student/NicknamePanel.tsx`：卡片樣式；「確認」為 `primary`、「換一個」「取消」為 `secondary`；輸入欄有 `focus-visible` 外框；文字、字數提示與錯誤訊息不變
-- [ ] T023 [P] [US1] 修改 `apps/web/src/pages/student/AnswerSheet.tsx` 與 `QuestionAnswerForm.tsx` 的卡片與按鈕樣式：「送出」改用 `Button variant="primary"`，`submitting` 時傳入 `pending`（文字仍為「送出中…」）；保留 `whitespace-pre-wrap` 等 class；「修改暱稱」（`JoinGroupPanel.tsx`）改為 `Button variant="secondary"`
-- [ ] T024 [US1] 品質關卡：`npm run typecheck`、`npm run lint`、`npm run format:check`、`npm test` 全部通過（既有文字與 role 查詢未修改），回報指令與結果；在瀏覽器（使用者開發伺服器以外的埠，見 quickstart §2）看一次首頁與老師、學生各畫面
+- [X] T017 [US1] 新增 `apps/web/src/pages/HomePage.tsx`（自 `apps/web/src/App.tsx` 抽出並改版：標題、說明、兩張入口卡片，各含 `Icon`（`home.teacher`／`home.student`）與用途說明），修改 `App.tsx` 改用它；路由行為不變（讓 T016 通過，contracts/ui-visual.md §1）
+- [X] T018 [P] [US1] 老師端換樣式：`apps/web/src/pages/teacher/TeacherLoginPage.tsx`、`TeacherPage.tsx`、`ImportPanel.tsx`、`ExportPanel.tsx`、`CsvExportPanel.tsx` 的卡片改用主題卡片樣式，按鈕改用 `Button`（匯入、匯出為 `primary`；確認重新匯入的危險確認為 `danger`；取消為 `secondary`），文字與 `aria-label` 不變
+- [X] T019 [P] [US1] 修改 `apps/web/src/pages/teacher/SessionControls.tsx`：「開始搶答」為 `primary`（`size="lg"`）、「結束搶答」為 `danger`（`size="lg"`），處理中時 `pending`；文字與既有停用條件不變
+- [X] T020 [US1] 修改 `apps/web/src/pages/teacher/TeacherDashboard.tsx` 的標題列與各區塊卡片樣式：「登出」改為 `Button variant="secondary"`（contracts/ui-visual.md §2，登出不屬於危險操作）；**保留** `mx-auto`、`max-w-5xl`、`p-6`、寬版 `aside` 與框架內卡片的所有版面 class（006 測試）
+- [X] T021 [P] [US1] 修改 `apps/web/src/components/QuestionList.tsx`、`QuestionPreview.tsx`、`QuestionContent.tsx`、`ErrorBanner.tsx`、`TimeHint.tsx`：套用主題字級、圓角與語意色（錯誤用 `error` 意義圖示＋紅色系）；保留 `whitespace-pre-wrap`、`break-words` 等換行 class
+- [X] T022 [P] [US1] 修改 `apps/web/src/pages/student/NicknamePanel.tsx`：卡片樣式；「確認」為 `primary`、「換一個」「取消」為 `secondary`；輸入欄有 `focus-visible` 外框；文字、字數提示與錯誤訊息不變
+- [X] T023 [P] [US1] 修改 `apps/web/src/pages/student/AnswerSheet.tsx` 與 `QuestionAnswerForm.tsx` 的卡片與按鈕樣式：「送出」改用 `Button variant="primary"`，`submitting` 時傳入 `pending`（文字仍為「送出中…」）；保留 `whitespace-pre-wrap` 等 class；「修改暱稱」（`JoinGroupPanel.tsx`）改為 `Button variant="secondary"`
+- [X] T024 [US1] 品質關卡：`npm run typecheck`、`npm run lint`、`npm run format:check`、`npm test` 全部通過（既有文字與 role 查詢未修改），回報指令與結果；在瀏覽器（使用者開發伺服器以外的埠，見 quickstart §2）看一次首頁與老師、學生各畫面
+  - 實作備註：typecheck、lint、format:check 通過，web 37 個測試檔全過。另以種好的本機活動資料（測試建構器產生、暫存資料夾、3901 埠、本次產生的測試密碼）啟動正式建置，在瀏覽器確認首頁、老師登入頁、老師主畫面的新樣式。為共用 class 與區塊標題另外新增 `apps/web/src/ui/styles.ts`、`apps/web/src/ui/SectionHeading.tsx`，`icons.tsx` 加入區塊用的意義圖示（questions、export、csv、submissions、login、logout、nickname、shuffle、sparkles），於 T080 圖表比對時一併記錄。
 
 **Checkpoint**: 全站風格一致，可先展示（MVP）
 

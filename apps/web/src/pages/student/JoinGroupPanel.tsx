@@ -1,6 +1,7 @@
 import type { Group, GroupHeadcount, SessionStatus } from '@crs/shared';
 import { useState } from 'react';
 import { ApiError } from '../../api/http';
+import { Button } from '../../ui/Button';
 
 export interface JoinGroupPanelProps {
   status: SessionStatus;
@@ -45,14 +46,9 @@ export function JoinGroupPanel({
       <h1 className="text-2xl font-bold">課堂搶答 — 學生端</h1>
       <p className="flex items-center justify-center gap-3 text-slate-700">
         <span>暱稱：{nickname}</span>
-        <button
-          type="button"
-          onClick={onEditNickname}
-          disabled={pending}
-          className="text-sm text-indigo-700 underline disabled:opacity-50"
-        >
+        <Button variant="secondary" size="sm" onClick={onEditNickname} disabled={pending}>
           修改暱稱
-        </button>
+        </Button>
       </p>
       {notice !== null && (
         <p role="status" className="rounded-md bg-amber-50 p-3 text-amber-800">

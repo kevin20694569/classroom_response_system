@@ -14,6 +14,8 @@ import type { StudentIdentity } from '../../api/identity';
 import type { InvalidationReason } from '../../hooks/useSessionState';
 import * as AnswerDraftStore from '../../student/answerDraftStore';
 import { blankLabelOf, validateDraft, type SubmitOutcome } from '../../student/validateDraft';
+import { Button } from '../../ui/Button';
+import { INPUT, MUTED } from '../../ui/styles';
 
 export interface QuestionAnswerFormProps {
   /** content 不為 null（搶答進行中）時以老師端預覽相同的版面顯示題目敘述（004 FR-016、FR-017） */
@@ -166,7 +168,7 @@ export function QuestionAnswerForm({
     const submitter = submitted === null ? identity.nickname : submitted.submitterNickname;
     const byIndex = new Map(answers.map((a) => [a.blankIndex, a.text]));
     const badge = (
-      <p className="inline-block rounded-full bg-green-100 px-3 py-1 text-sm font-semibold text-green-800">
+      <p className="inline-flex items-center gap-1.5 rounded-full bg-green-100 px-3 py-1 text-sm font-bold text-green-800">
         {submitter === null ? '已送出' : `已送出（${submitter}）`}
       </p>
     );
@@ -182,14 +184,14 @@ export function QuestionAnswerForm({
             const label = showLabels ? blankLabelOf(question, index) : null;
             return (
               <p key={index} className="flex gap-2 text-base">
-                {label !== null && <span className="text-slate-500">{label}</span>}
+                {label !== null && <span className="font-bold text-primary">{label}</span>}
                 <span>{text}</span>
               </p>
             );
           }}
         />
         {!showLabels && badge}
-        {message !== null && <p className="text-sm text-slate-600">{message}</p>}
+        {message !== null && <p className={MUTED}>{message}</p>}
       </div>
     );
   }
@@ -211,7 +213,9 @@ export function QuestionAnswerForm({
           return (
             <div key={index} className="space-y-1 text-base">
               <div className="flex items-center gap-2">
-                {label !== null && <span className="w-10 shrink-0 text-slate-500">{label}</span>}
+                {label !== null && (
+                  <span className="w-10 shrink-0 font-bold text-primary">{label}</span>
+                )}
                 <input
                   type="text"
                   aria-label={inputLabel(question, index)}
@@ -221,29 +225,31 @@ export function QuestionAnswerForm({
                   onChange={(event) => {
                     change(index, event.target.value);
                   }}
-                  className="w-full rounded-md border border-slate-300 px-3 py-2 disabled:bg-slate-100"
+                  className={`${INPUT} mt-0`}
                 />
-                <span className="w-16 shrink-0 text-right text-xs text-slate-500">
+                <span className="w-16 shrink-0 text-right text-xs text-ink-muted">
                   {unicodeLength(text.trim())}／{ANSWER_MAX_LENGTH}
                 </span>
               </div>
-              {issue !== undefined && <p className="text-sm text-red-700">{issue}</p>}
+              {issue !== undefined && <p className="text-sm font-semibold text-red-700">{issue}</p>}
             </div>
           );
         }}
       />
       {message !== null && (
-        <p role="alert" className="text-sm text-red-700">
+        <p role="alert" className="text-sm font-semibold text-red-700">
           {message}
         </p>
       )}
-      <button
+      <Button
+        variant="primary"
+        size="lg"
         type="submit"
-        disabled={!editable || !canSubmit || submitting}
-        className="rounded-md bg-indigo-600 px-4 py-2 font-medium text-white disabled:opacity-50"
+        pending={submitting}
+        disabled={!editable || !canSubmit}
       >
         {submitting ? '送出中…' : '送出'}
-      </button>
+      </Button>
     </form>
   );
 }
