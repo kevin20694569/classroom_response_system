@@ -10,6 +10,9 @@ import {
 import { useState } from 'react';
 import { ApiError, apiRequest } from '../../api/http';
 import { ErrorBanner, type DisplayError } from '../../components/ErrorBanner';
+import { Button } from '../../ui/Button';
+import { SectionHeading } from '../../ui/SectionHeading';
+import { CARD, MUTED, SUCCESS_TEXT } from '../../ui/styles';
 
 function formatTime(iso: string): string {
   return new Date(iso).toLocaleString('zh-TW', { hour12: false });
@@ -55,12 +58,15 @@ export function ExportPanel({ view }: { view: TeacherView }) {
   };
 
   return (
-    <section aria-label="匯出" className="space-y-3 rounded-xl bg-white p-5 shadow">
-      <h2 className="text-lg font-semibold">匯出至原 Guided Notes</h2>
+    <section aria-label="匯出" className={`space-y-3 ${CARD}`}>
+      <SectionHeading icon="export">匯出至原 Guided Notes</SectionHeading>
       <fieldset className="space-y-2" disabled={!canExport || busy}>
-        <legend className="text-sm font-medium text-slate-700">匯出模式</legend>
+        <legend className="text-sm font-bold text-ink">匯出模式</legend>
         {MODES.map((value) => (
-          <label key={value} className="flex items-start gap-2 text-sm">
+          <label
+            key={value}
+            className="flex items-start gap-2 rounded-xl border-2 border-transparent p-2 text-sm has-[:checked]:border-violet-300 has-[:checked]:bg-violet-50"
+          >
             <input
               type="radio"
               name="export-mode"
@@ -69,33 +75,33 @@ export function ExportPanel({ view }: { view: TeacherView }) {
               onChange={() => {
                 setMode(value);
               }}
-              className="mt-1"
+              className="mt-1 accent-primary"
             />
             <span>
-              <span className="font-medium">{EXPORT_MODE_LABEL[value]}</span>
-              <span className="block text-slate-500">{EXPORT_MODE_DESCRIPTION[value]}</span>
+              <span className="font-bold text-ink">{EXPORT_MODE_LABEL[value]}</span>
+              <span className="block text-ink-muted">{EXPORT_MODE_DESCRIPTION[value]}</span>
             </span>
           </label>
         ))}
       </fieldset>
       <div className="flex flex-wrap items-center gap-3">
-        <button
-          type="button"
-          disabled={!canExport || busy}
+        <Button
+          variant="primary"
+          pending={busy}
+          disabled={!canExport}
           onClick={() => void handleExport()}
-          className="rounded-md bg-indigo-600 px-4 py-2 font-medium text-white disabled:opacity-40"
         >
           {busy ? '匯出中…' : '匯出答案'}
-        </button>
-        {!canExport && <span className="text-sm text-slate-500">結束搶答後才能匯出。</span>}
+        </Button>
+        {!canExport && <span className={MUTED}>結束搶答後才能匯出。</span>}
         {view.lastExport !== null && (
-          <span className="text-sm text-slate-600">
+          <span className={MUTED}>
             上次匯出：{formatTime(view.lastExport.exportedAt)}（
             {view.lastExport.writtenQuestionCount} 題，{EXPORT_MODE_LABEL[view.lastExport.mode]}）
           </span>
         )}
       </div>
-      {message !== null && <p className="text-sm text-green-700">{message}</p>}
+      {message !== null && <p className={SUCCESS_TEXT}>{message}</p>}
       <ErrorBanner error={error} />
     </section>
   );

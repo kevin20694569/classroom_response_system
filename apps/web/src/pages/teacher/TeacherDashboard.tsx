@@ -2,6 +2,10 @@ import { QuestionList } from '../../components/QuestionList';
 import { StatusBadge } from '../../components/StatusBadge';
 import { useSessionState } from '../../hooks/useSessionState';
 import { useWideLayout } from '../../hooks/useWideLayout';
+import { Button } from '../../ui/Button';
+import { Icon } from '../../ui/icons';
+import { SectionHeading } from '../../ui/SectionHeading';
+import { CARD } from '../../ui/styles';
 import { CsvExportPanel } from './CsvExportPanel';
 import { ExportPanel } from './ExportPanel';
 import { GroupOverviewPanel } from './GroupOverviewPanel';
@@ -23,21 +27,25 @@ export function TeacherDashboard({ token, onLogout }: { token: string; onLogout:
 
   const main = (
     <div className="mx-auto max-w-5xl space-y-6 p-6">
-      <header className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold">課堂搶答 — 老師端</h1>
+      <header className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="grid size-11 place-items-center rounded-2xl bg-gradient-to-br from-violet-600 to-fuchsia-700 text-white shadow-card">
+            <Icon name="home.teacher" size={24} />
+          </span>
+          <h1 className="text-2xl font-black text-ink">課堂搶答 — 老師端</h1>
           {view !== null && <StatusBadge status={view.status} />}
-          {!connected && <span className="text-sm text-slate-500">連線中…</span>}
+          {!connected && <span className="text-sm text-ink-muted">連線中…</span>}
         </div>
-        <button type="button" className="text-sm text-slate-600 underline" onClick={onLogout}>
+        <Button variant="secondary" size="sm" onClick={onLogout}>
+          <Icon name="logout" size={16} />
           登出
-        </button>
+        </Button>
       </header>
       {teacherView !== null && (
         <>
           <ImportPanel view={teacherView} />
-          <section aria-label="題目" className="rounded-xl bg-white p-5 shadow">
-            <h2 className="mb-3 text-lg font-semibold">題目</h2>
+          <section aria-label="題目" className={`space-y-3 ${CARD}`}>
+            <SectionHeading icon="questions">題目</SectionHeading>
             {/* 重新匯入（activityId 改變）時重新掛載，預覽自動清除（002 FR-008） */}
             <QuestionList key={teacherView.activityId ?? 'none'} view={teacherView} />
           </section>

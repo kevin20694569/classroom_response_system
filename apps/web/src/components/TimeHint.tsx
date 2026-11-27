@@ -90,7 +90,7 @@ export function TimeHint({
         onKeyDown={(event) => {
           if (event.key === 'Escape') hide();
         }}
-        className="ml-1 inline-flex h-5 w-5 items-center justify-center rounded-full align-middle text-slate-400 hover:bg-slate-100 hover:text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+        className="ml-1 inline-flex h-5 w-5 items-center justify-center rounded-full align-middle text-ink-muted hover:bg-violet-100 hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
       >
         <ClockIcon />
       </button>
@@ -101,7 +101,7 @@ export function TimeHint({
             id={id}
             role="tooltip"
             style={{ position: 'fixed', top: position.top, left: position.left }}
-            className="pointer-events-none z-50 rounded-md bg-slate-800 px-2.5 py-1.5 text-xs whitespace-nowrap text-white shadow-lg"
+            className="pointer-events-none z-50 rounded-lg bg-ink px-2.5 py-1.5 text-xs whitespace-nowrap text-white shadow-lg"
           >
             <div>提交時間 {formatClock(receivedAt)}</div>
             {elapsed !== null && <div>開始後 {formatElapsed(elapsed)}</div>}

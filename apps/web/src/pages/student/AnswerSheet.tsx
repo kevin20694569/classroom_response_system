@@ -4,6 +4,7 @@ import type { StudentIdentity } from '../../api/identity';
 import type { InvalidationReason } from '../../hooks/useSessionState';
 import * as AnswerDraftStore from '../../student/answerDraftStore';
 import { QuestionAnswerForm } from './QuestionAnswerForm';
+import { CARD } from '../../ui/styles';
 
 export interface AnswerSheetProps {
   questions: readonly StudentQuestionView[];
@@ -59,8 +60,10 @@ export function AnswerSheet({
               onClick={() => {
                 jumpTo(q.number);
               }}
-              className={`rounded-md border px-3 py-1 text-sm ${
-                done ? 'border-green-300 bg-green-50 text-green-800' : 'border-slate-300 bg-white'
+              className={`rounded-xl border-2 px-3 py-1.5 text-sm font-bold transition hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-200 motion-reduce:transform-none ${
+                done
+                  ? 'border-green-300 bg-green-50 text-green-800'
+                  : 'border-violet-200 bg-white text-ink hover:border-violet-400'
               }`}
             >
               第 {q.number} 題 {done ? '已送出' : '未作答'}
@@ -73,13 +76,13 @@ export function AnswerSheet({
           key={q.number}
           id={sectionId(q.number)}
           aria-label={`第 ${q.number} 題`}
-          className="space-y-3 rounded-xl bg-white p-4 shadow"
+          className={`space-y-3 ${CARD}`}
         >
           {q.content === null && (
             // 「待開始」沒有題目敘述，只顯示題號與題型；有敘述時由 QuestionContent 顯示（004 FR-016）
-            <h2 className="flex items-center gap-2 text-lg font-semibold">
+            <h2 className="flex items-center gap-2 text-lg font-extrabold text-ink">
               第 {q.number} 題
-              <span className="text-sm font-normal text-slate-500">
+              <span className="rounded-md bg-violet-100 px-1.5 py-0.5 text-xs font-bold text-violet-800">
                 {q.kind === 'group' ? `題組（${q.blankCount} 子題）` : '單題'}
               </span>
             </h2>
