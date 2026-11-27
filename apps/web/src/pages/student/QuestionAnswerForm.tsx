@@ -15,6 +15,7 @@ import type { InvalidationReason } from '../../hooks/useSessionState';
 import * as AnswerDraftStore from '../../student/answerDraftStore';
 import { blankLabelOf, validateDraft, type SubmitOutcome } from '../../student/validateDraft';
 import { Button } from '../../ui/Button';
+import { Icon } from '../../ui/icons';
 import { INPUT, MUTED } from '../../ui/styles';
 
 export interface QuestionAnswerFormProps {
@@ -168,7 +169,9 @@ export function QuestionAnswerForm({
     const submitter = submitted === null ? identity.nickname : submitted.submitterNickname;
     const byIndex = new Map(answers.map((a) => [a.blankIndex, a.text]));
     const badge = (
-      <p className="inline-flex items-center gap-1.5 rounded-full bg-green-100 px-3 py-1 text-sm font-bold text-green-800">
+      // 送出成功標記以 pop-in 出現一次（007 FR-015）
+      <p className="ui-anim inline-flex animate-pop-in items-center gap-1.5 rounded-full bg-green-100 px-3 py-1 text-sm font-bold text-green-800">
+        <Icon name="submitted" size={16} />
         {submitter === null ? '已送出' : `已送出（${submitter}）`}
       </p>
     );

@@ -23,3 +23,9 @@ export function mockFetch(responses: { status: number; body: unknown }[]) {
 export function bodyOf(init: RequestInit | undefined): unknown {
   return typeof init?.body === 'string' ? JSON.parse(init.body) : undefined;
 }
+
+/** jsdom 會把 inline style 的顏色轉成 rgb()，比對色票前先轉換（007）。 */
+export function rgbOf(hex: string): string {
+  const n = Number.parseInt(hex.slice(1), 16);
+  return `rgb(${String((n >> 16) & 255)}, ${String((n >> 8) & 255)}, ${String(n & 255)})`;
+}

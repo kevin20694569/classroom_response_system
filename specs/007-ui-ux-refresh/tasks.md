@@ -161,7 +161,7 @@ description: "子功能 007：介面視覺與互動體驗改版 — 實作任務
 
 - [X] T044 [US3] 新增 `apps/web/src/ui/phaseStyle.ts`：`phaseStyle(status): PhaseStyle`，`color` 取自 `PHASE_COLORS`，`icon` 依 research R7（尚未匯入 `notImported`、待開始 `waiting`、搶答進行中 `open`、已結束 `closed`），`label` 取自 `SESSION_STATUS_LABEL`（讓 T038 通過）
 - [X] T045 [US3] 修改 `apps/web/src/components/StatusBadge.tsx`：白底膠囊、階段色文字與外框、左側階段圖示；`data-testid` 與文字不變（讓 T039 通過，contracts/ui-visual.md §4）；修改 `apps/web/src/pages/student/PhaseBanner.tsx` 讓階段標籤在組別色頂端列上維持白底（FR-011）
-- [X] T046 [US3] 新增 `apps/web/src/ui/usePhaseTransition.ts`：`usePhaseTransition(status: SessionStatus | null, connected: boolean): PhaseTransition | null`，以 `useRef` 保存 baseline 與 `needsBaseline`，規則照 data-model §3；只有 READY→OPEN、OPEN→CLOSED 有提示文字；不讀寫任何 storage（讓 T040 通過）
+- [X] T046 [US3] 新增 `apps/web/src/ui/usePhaseTransition.ts`：`usePhaseTransition(view: { status: SessionStatus } | null, connected: boolean): PhaseTransition | null`（實作時由 status 參數改為 view 物件，以伺服器每次推來的資料為單位判斷，見 research R6），以 `useRef` 保存 baseline 與 `needsBaseline`，規則照 data-model §3；只有 READY→OPEN、OPEN→CLOSED 有提示文字；不讀寫任何 storage（讓 T040 通過）
 - [X] T047 [US3] 新增 `apps/web/src/ui/PhaseTransitionToast.tsx`：接收 `transition`，顯示 `transition.text`，`PHASE_TOAST_MS` 後自行隱藏；畫面上方中央、`fixed`、外層 `pointer-events-none`；彈出動畫加 `ui-anim`（減少動態時直接出現）（讓 T041 通過，contracts/ui-effects.md §1）
 - [X] T048 [US3] 修改 `apps/web/src/pages/student/StudentPage.tsx`：以目前顯示中的 view 呼叫 `usePhaseTransition`（顯示「連線中…」或 stale 時傳 `null`），在作答與結果畫面上方掛 `PhaseTransitionToast`；結果畫面不等提示、立即切換（讓 T042 通過，FR-012）
 - [X] T049 [US3] 修改 `apps/web/src/pages/teacher/TeacherDashboard.tsx`：以 `view?.status ?? null` 與 `connected` 呼叫 `usePhaseTransition`，掛 `PhaseTransitionToast`；寬窄兩種版面都要掛（讓 T043 通過）
@@ -184,29 +184,30 @@ FR-028～FR-030）
 
 ### Tests for User Story 4
 
-- [ ] T051 [P] [US4] 修改 `apps/web/tests/QuestionAnswerForm.test.tsx`：按下「送出」後、伺服器回應前，按鈕同步顯示「送出中…」且 `aria-busy="true"`、不可再次送出（FR-015、FR-028）；送出成功後顯示送出成功圖示（`aria-hidden`）與既有文字「已送出」／「已送出（暱稱）」
-- [ ] T052 [P] [US4] 修改 `apps/web/tests/SessionTimer.test.tsx`：OPEN 時有脈動圓點（帶 `ui-anim`）且數字為 `PHASE_COLORS.OPEN`；CLOSED 時沒有脈動點、數字為 `PHASE_COLORS.CLOSED`；`aria-label="搶答計時"` 與計算結果不變（FR-016）
-- [ ] T053 [P] [US4] 修改 `apps/web/tests/SubmissionBoard.test.tsx`：某題有 4 筆送出時，第 1、2、3 名分別有金、銀、銅 `RankMedal`（以顏色與「第 N 名」判斷），第 4 名沒有；「搶答成功」標籤仍在、含獎盃圖示（FR-017）
-- [ ] T054 [P] [US4] 新增 `apps/web/tests/useNewSubmissionHighlight.test.tsx`（以 `renderHook`）：第一份 id 清單全部不標記；之後新增的 id 標記為新送出，同一次新增多筆全部標記；`connected` 變為 `false` 後的下一份清單全部視為已看過（data-model §5，FR-030）
-- [ ] T055 [P] [US4] 修改 `apps/web/tests/TeacherDashboard.test.tsx`：OPEN 中推送新增一筆送出的 `session:state` → 該列帶滑入動畫 class；重新掛載（模擬重新整理）後同一筆不帶動畫 class
-- [ ] T056 [P] [US4] 新增 `apps/web/tests/Celebration.test.tsx`（StudentPage 整合，假時鐘）：(1) 當場 OPEN→CLOSED 且 `results` 中本組搶到 ≥ 1 題 → `PHASE_TOAST_MS` 前沒有紙片、之後出現紙片容器（`aria-hidden="true"`、`pointer-events-none`），再過 `CELEBRATION_MS` 後移除；播放期間結果畫面的元素可被點擊；(2) 本組沒搶到 → 不出現；(3) 首次載入即為 CLOSED → 不出現；(4) 斷線重連後才收到 CLOSED → 不出現；(5) `installMatchMedia(true)`（減少動態）→ 不出現（FR-019、FR-023）
-- [ ] T057 [P] [US4] 修改 `apps/web/tests/StudentResultBoard.test.tsx`：每題搶答成功答案前有獎盃圖示（`aria-hidden`）；結果只使用 `results` 與 `ownSubmissions`，既有斷言不變（FR-018）
-- [ ] T058 [P] [US4] 新增 `apps/web/tests/ResultReveal.test.tsx`（TeacherDashboard 整合，假時鐘）：(1) 當場 OPEN→CLOSED → `PHASE_TOAST_MS` 後出現 `role="dialog"`、`aria-modal="true"`、標題「結果揭曉」，依題號列出「第 N 題」、組別 `GroupBadge`、送出者暱稱與答案（題組每個子題一行「（n）答案」）；無人送出的題目顯示「本題無人搶答」；開啟時焦點在「關閉」；(2) 按「關閉」或 Esc 後對話框消失；(3) 首次載入即為 CLOSED → 不出現；(4) 對話框開著時推送 `activityId` 不同或 status 為 READY 的 view → 自動關閉；(5) 老師端沒有紙片（FR-029）
+- [X] T051 [P] [US4] 修改 `apps/web/tests/QuestionAnswerForm.test.tsx`：按下「送出」後、伺服器回應前，按鈕同步顯示「送出中…」且 `aria-busy="true"`、不可再次送出（FR-015、FR-028）；送出成功後顯示送出成功圖示（`aria-hidden`）與既有文字「已送出」／「已送出（暱稱）」
+- [X] T052 [P] [US4] 修改 `apps/web/tests/SessionTimer.test.tsx`：OPEN 時有脈動圓點（帶 `ui-anim`）且數字為 `PHASE_COLORS.OPEN`；CLOSED 時沒有脈動點、數字為 `PHASE_COLORS.CLOSED`；`aria-label="搶答計時"` 與計算結果不變（FR-016）
+- [X] T053 [P] [US4] 修改 `apps/web/tests/SubmissionBoard.test.tsx`：某題有 4 筆送出時，第 1、2、3 名分別有金、銀、銅 `RankMedal`（以顏色與「第 N 名」判斷），第 4 名沒有；「搶答成功」標籤仍在、含獎盃圖示（FR-017）
+- [X] T054 [P] [US4] 新增 `apps/web/tests/useNewSubmissionHighlight.test.tsx`（以 `renderHook`）：第一份 id 清單全部不標記；之後新增的 id 標記為新送出，同一次新增多筆全部標記；`connected` 變為 `false` 後的下一份清單全部視為已看過（data-model §5，FR-030）
+- [X] T055 [P] [US4] 修改 `apps/web/tests/TeacherDashboard.test.tsx`：OPEN 中推送新增一筆送出的 `session:state` → 該列帶滑入動畫 class；重新掛載（模擬重新整理）後同一筆不帶動畫 class
+- [X] T056 [P] [US4] 新增 `apps/web/tests/Celebration.test.tsx`（StudentPage 整合，假時鐘）：(1) 當場 OPEN→CLOSED 且 `results` 中本組搶到 ≥ 1 題 → `PHASE_TOAST_MS` 前沒有紙片、之後出現紙片容器（`aria-hidden="true"`、`pointer-events-none`），再過 `CELEBRATION_MS` 後移除；播放期間結果畫面的元素可被點擊；(2) 本組沒搶到 → 不出現；(3) 首次載入即為 CLOSED → 不出現；(4) 斷線重連後才收到 CLOSED → 不出現；(5) `installMatchMedia(true)`（減少動態）→ 不出現（FR-019、FR-023）
+- [X] T057 [P] [US4] 修改 `apps/web/tests/StudentResultBoard.test.tsx`：每題搶答成功答案前有獎盃圖示（`aria-hidden`）；結果只使用 `results` 與 `ownSubmissions`，既有斷言不變（FR-018）
+- [X] T058 [P] [US4] 新增 `apps/web/tests/ResultReveal.test.tsx`（TeacherDashboard 整合，假時鐘）：(1) 當場 OPEN→CLOSED → `PHASE_TOAST_MS` 後出現 `role="dialog"`、`aria-modal="true"`、標題「結果揭曉」，依題號列出「第 N 題」、組別 `GroupBadge`、送出者暱稱與答案（題組每個子題一行「（n）答案」）；無人送出的題目顯示「本題無人搶答」；開啟時焦點在「關閉」；(2) 按「關閉」或 Esc 後對話框消失；(3) 首次載入即為 CLOSED → 不出現；(4) 對話框開著時推送 `activityId` 不同或 status 為 READY 的 view → 自動關閉；(5) 老師端沒有紙片（FR-029）
 
 ### Implementation for User Story 4
 
-- [ ] T059 [US4] 修改 `apps/web/src/pages/student/QuestionAnswerForm.tsx`：送出成功標記加 `submitted` 意義圖示與 `pop-in` 動畫（`ui-anim`）；處理中沿用 T023 的 `pending`（讓 T051 通過，contracts/ui-effects.md §2）
-- [ ] T060 [P] [US4] 修改 `apps/web/src/components/SessionTimer.tsx`：OPEN 時數字為 `PHASE_COLORS.OPEN` 並加脈動圓點（`pulse-dot`、`ui-anim`、`aria-hidden`），CLOSED 時定格為 `PHASE_COLORS.CLOSED`；計時計算不變（讓 T052 通過）
-- [ ] T061 [P] [US4] 新增 `apps/web/src/ui/RankMedal.tsx`：`rank` 為 1、2、3 時顯示 `medal` 圖示與 `MEDAL_COLORS` 金、銀、銅，其他名次回傳 `null`（contracts/ui-effects.md §4）
-- [ ] T062 [P] [US4] 新增 `apps/web/src/components/AnswerLines.tsx`：自 `SubmissionBoard.tsx` 抽出 `AnswerLines`（題組每個子題一行「（n）答案」、單題一行，保留 `whitespace-pre-wrap break-words [overflow-wrap:anywhere]`），行為不變
-- [ ] T063 [P] [US4] 新增 `apps/web/src/ui/useNewSubmissionHighlight.ts`：`useNewSubmissionHighlight(submissionIds: readonly string[], connected: boolean): ReadonlySet<string>`，baseline 規則同 data-model §5（讓 T054 通過）
-- [ ] T064 [US4] 修改 `apps/web/src/pages/teacher/SubmissionBoard.tsx`：改用 `AnswerLines`；每列首加 `RankMedal`；「搶答成功」標籤加 `winner` 圖示；以 `useNewSubmissionHighlight` 標記新送出的 `<li>` 加 `ui-anim` 與 `slide-in` 動畫（`NEW_SUBMISSION_HIGHLIGHT_MS` 內結束）；新增選填屬性 `connected?: boolean`（預設 `true`，既有測試不需傳入），由 `TeacherDashboard.tsx` 傳入（讓 T053、T055 通過，FR-030）
-- [ ] T065 [P] [US4] 修改 `apps/web/src/pages/student/StudentResultBoard.tsx`：每題搶答成功答案前加 `winner` 圖示（讓 T057 通過）
-- [ ] T066 [US4] 新增 `apps/web/src/ui/Celebration.tsx`：`active` 為 true 時渲染約 40 片紙片（顏色輪流取自 `GROUP_COLORS`，各自不同的水平位置與延遲），外層 `fixed inset-0 pointer-events-none`、`aria-hidden="true"`，每片 `ui-anim` 套 `confetti-fall`；`useReducedMotion()` 為 true 時回傳 `null`（contracts/ui-effects.md §6）
-- [ ] T067 [US4] 修改 `apps/web/src/pages/student/StudentPage.tsx`：當 `usePhaseTransition` 回傳 `to === 'CLOSED'` 且 `wonCount(groupOutcomes(results, ownSubmissions, groupId)) > 0` 時，`PHASE_TOAST_MS` 後啟動 `Celebration`、`CELEBRATION_MS` 後停止；新的 transition 或卸載時清除計時器（讓 T056 通過，FR-019）
-- [ ] T068 [US4] 新增 `apps/web/src/pages/teacher/ResultReveal.tsx`：`role="dialog"`、`aria-modal="true"`、`aria-labelledby` 指向標題「結果揭曉」；依題號列出 `view.questions` 每題的 `GroupBadge`、`submitterNickname`、`AnswerLines`（取自 `view.results`），`winnerGroupId` 為 `null` 時顯示「本題無人搶答」；內容區可捲動；「關閉」為 `Button variant="secondary"`，開啟時取得焦點，Esc 關閉；彈出動畫加 `ui-anim`（contracts/ui-effects.md §7）
-- [ ] T069 [US4] 修改 `apps/web/src/pages/teacher/TeacherDashboard.tsx`：`to === 'CLOSED'` 時 `PHASE_TOAST_MS` 後開啟 `ResultReveal`；`status !== 'CLOSED'` 或 `activityId` 改變時自動關閉；新的 transition 或卸載時清除計時器（讓 T058 通過，FR-029）
-- [ ] T070 [US4] 品質關卡：`npm run typecheck`、`npm run lint`、`npm run format:check`、`npm test` 全部通過，回報指令與結果；在瀏覽器確認金銀銅、新送出滑入、紙片不擋捲動、結果揭曉內容與關閉
+- [X] T059 [US4] 修改 `apps/web/src/pages/student/QuestionAnswerForm.tsx`：送出成功標記加 `submitted` 意義圖示與 `pop-in` 動畫（`ui-anim`）；處理中沿用 T023 的 `pending`（讓 T051 通過，contracts/ui-effects.md §2）
+- [X] T060 [P] [US4] 修改 `apps/web/src/components/SessionTimer.tsx`：OPEN 時數字為 `PHASE_COLORS.OPEN` 並加脈動圓點（`pulse-dot`、`ui-anim`、`aria-hidden`），CLOSED 時定格為 `PHASE_COLORS.CLOSED`；計時計算不變（讓 T052 通過）
+- [X] T061 [P] [US4] 新增 `apps/web/src/ui/RankMedal.tsx`：`rank` 為 1、2、3 時顯示 `medal` 圖示與 `MEDAL_COLORS` 金、銀、銅，其他名次回傳 `null`（contracts/ui-effects.md §4）
+- [X] T062 [P] [US4] 新增 `apps/web/src/components/AnswerLines.tsx`：自 `SubmissionBoard.tsx` 抽出 `AnswerLines`（題組每個子題一行「（n）答案」、單題一行，保留 `whitespace-pre-wrap break-words [overflow-wrap:anywhere]`），行為不變
+- [X] T063 [P] [US4] 新增 `apps/web/src/ui/useNewSubmissionHighlight.ts`：`useNewSubmissionHighlight(submissions: readonly { id: string }[], connected: boolean): ReadonlySet<string>`，baseline 規則同 data-model §5（讓 T054 通過）
+- [X] T064 [US4] 修改 `apps/web/src/pages/teacher/SubmissionBoard.tsx`：改用 `AnswerLines`；每列首加 `RankMedal`；「搶答成功」標籤加 `winner` 圖示；以 `useNewSubmissionHighlight` 標記新送出的 `<li>` 加 `ui-anim` 與 `slide-in` 動畫（`NEW_SUBMISSION_HIGHLIGHT_MS` 內結束）；新增選填屬性 `connected?: boolean`（預設 `true`，既有測試不需傳入），由 `TeacherDashboard.tsx` 傳入（讓 T053、T055 通過，FR-030）
+- [X] T065 [P] [US4] 修改 `apps/web/src/pages/student/StudentResultBoard.tsx`：每題搶答成功答案前加 `winner` 圖示（讓 T057 通過）
+- [X] T066 [US4] 新增 `apps/web/src/ui/Celebration.tsx`：`active` 為 true 時渲染約 40 片紙片（顏色輪流取自 `GROUP_COLORS`，各自不同的水平位置與延遲），外層 `fixed inset-0 pointer-events-none`、`aria-hidden="true"`，每片 `ui-anim` 套 `confetti-fall`；`useReducedMotion()` 為 true 時回傳 `null`（contracts/ui-effects.md §6）
+- [X] T067 [US4] 修改 `apps/web/src/pages/student/StudentPage.tsx`：當 `usePhaseTransition` 回傳 `to === 'CLOSED'` 且 `wonCount(groupOutcomes(results, ownSubmissions, groupId)) > 0` 時，`PHASE_TOAST_MS` 後啟動 `Celebration`、`CELEBRATION_MS` 後停止；新的 transition 或卸載時清除計時器（讓 T056 通過，FR-019）
+- [X] T068 [US4] 新增 `apps/web/src/pages/teacher/ResultReveal.tsx`：`role="dialog"`、`aria-modal="true"`、`aria-labelledby` 指向標題「結果揭曉」；依題號列出 `view.questions` 每題的 `GroupBadge`、`submitterNickname`、`AnswerLines`（取自 `view.results`），`winnerGroupId` 為 `null` 時顯示「本題無人搶答」；內容區可捲動；「關閉」為 `Button variant="secondary"`，開啟時取得焦點，Esc 關閉；彈出動畫加 `ui-anim`（contracts/ui-effects.md §7）
+- [X] T069 [US4] 修改 `apps/web/src/pages/teacher/TeacherDashboard.tsx`：`to === 'CLOSED'` 時 `PHASE_TOAST_MS` 後開啟 `ResultReveal`；`status !== 'CLOSED'` 或 `activityId` 改變時自動關閉；新的 transition 或卸載時清除計時器（讓 T058 通過，FR-029）
+- [X] T070 [US4] 品質關卡：`npm run typecheck`、`npm run lint`、`npm run format:check`、`npm test` 全部通過，回報指令與結果；在瀏覽器確認金銀銅、新送出滑入、紙片不擋捲動、結果揭曉內容與關閉
+  - 實作備註：typecheck、lint、format:check 通過，web 45 個測試檔 308 個測試全過。實作中發現原設計的漏洞：重新連線時 `connect` 事件只把 connected 改回 true，畫面上仍是斷線前的 view；若只看 status，重連後階段沒變時 baseline 建立不起來，下一次真正的變化會被吞掉。已先更新類別圖、時序圖、data-model、research R6，再把 `usePhaseTransition` 改為以 view 物件為單位、`useNewSubmissionHighlight` 改為以送出陣列為單位，並新增「重連後階段沒變，下一次變化仍會出現」的測試。瀏覽器（3901 埠）實測：學生送出後出現打勾標記與脈動計時；模擬第 2、3 組送出後老師端出現金、銀、銅；即時新送出的列帶 `animate-slide-in`；結束後老師端先出現「搶答結束」，約 2 秒後出現結果揭曉（組別、送出者、答案、本題無人搶答）；學生端結果有獎盃與本組邊條。慶祝紙片在背景分頁播放，未拍到畫面，由 `Celebration.test.tsx` 涵蓋，並列入人工驗證。
 
 **Checkpoint**: 回饋效果完成
 

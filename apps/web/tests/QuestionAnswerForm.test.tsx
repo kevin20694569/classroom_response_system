@@ -339,3 +339,30 @@ describe('QuestionAnswerForm — 004 送出者（FR-024）', () => {
     expect(screen.getByText('已送出')).toBeTruthy();
   });
 });
+
+describe('QuestionAnswerForm — 007 送出回饋（FR-015、FR-028）', () => {
+  it('按下送出後、伺服器回應前，按鈕立即顯示「送出中…」與處理中狀態，不能再按', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => new Promise<Response>(() => undefined)),
+    );
+    renderForm();
+    await userEvent.type(screen.getByRole('textbox'), 'CPU');
+    await userEvent.click(submitButton());
+    const button = submitButton();
+    expect(button.textContent).toContain('送出中…');
+    expect(button.getAttribute('aria-busy')).toBe('true');
+    expect(button.disabled).toBe(true);
+  });
+
+  it('送出成功後顯示送出成功圖示與既有文字', async () => {
+    mockFetch([{ status: 200, body: OK }]);
+    renderForm();
+    await userEvent.type(screen.getByRole('textbox'), 'CPU');
+    await userEvent.click(submitButton());
+    const badge = await screen.findByText('已送出（Milo）');
+    const icon = badge.querySelector('svg[data-icon="submitted"]');
+    expect(icon?.getAttribute('aria-hidden')).toBe('true');
+    expect(badge.className).toContain('ui-anim');
+  });
+});

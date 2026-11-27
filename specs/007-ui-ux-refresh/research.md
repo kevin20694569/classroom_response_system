@@ -127,16 +127,16 @@ lucide。所有圖示 `aria-hidden="true"`（FR-007：螢幕閱讀器不朗讀�
 
 ## R6 階段變化的判斷（切換提示、慶祝效果、結果揭曉共用）
 
-**Decision**：新增 `usePhaseTransition(status, connected)`，回傳 `PhaseTransition | null`：
+**Decision**：新增 `usePhaseTransition(view, connected)`，回傳 `PhaseTransition | null`（以伺服器推來的 view 物件為單位，實作時由原本的 `status` 參數調整而來，見下方 Rationale）：
 
 - 以 `useRef` 保存「本分頁上一次看到的階段」（baseline）與「是否需要重新建立 baseline」。
 - `status` 為 `null`（尚未連線、身分剛改變而顯示「連線中…」）或 `connected` 變為 `false` 時，標記需要重新建立 baseline。
-- 收到新的 `status` 時：若需要重新建立 baseline，只記下 baseline、不觸發（FR-014、FR-019、FR-029）；否則若與 baseline
+- 收到新的 view（物件不同）時：若需要重新建立 baseline，只記下 baseline、不觸發（FR-014、FR-019、FR-029）；否則若與 baseline
   不同，產生 `{ from, to, text, key }` 並更新 baseline。`key` 每次遞增，讓新的提示取代尚未消失的舊提示（不排隊）。
 - 只有 `READY → OPEN`（「搶答開始！」）與 `OPEN → CLOSED`（「搶答結束」）會產生提示文字；其他變化（如重新匯入的
   `CLOSED → READY`）只更新 baseline。
 
-**Rationale**：`useSessionState` 在重新連線時會保留舊的 view，直到伺服器送來新的完整狀態（`session:state`）。如果只比較
+**Rationale**：`useSessionState` 在重新連線時會保留舊的 view，直到伺服器送來新的完整狀態（`session:state`）；`connect` 事件只把 `connected` 改回 true，view 物件不變。若只看 status，重連後階段沒變時 baseline 永遠建立不起來，下一次真正的變化會被吞掉；以 view 物件為單位就沒有這個問題。如果只比較
 「前後兩份 view 的階段」，斷線期間老師結束搶答的情況會在重連後被誤判為「當場看到結束」。以 `connected` 標記重新建立
 baseline，正好符合 clarify 的統一規則「只有當場看到階段改變才出現」，而且不需要任何儲存（Key Entities「階段變化」）。
 
@@ -173,7 +173,7 @@ baseline，正好符合 clarify 的統一規則「只有當場看到階段改變
 
 **Decision**：
 
-- `useNewSubmissionHighlight(submissionIds, connected)`：與 R6 相同的 baseline 規則，第一份資料（首次載入、重新整理、
+- `useNewSubmissionHighlight(submissions, connected)`：與 R6 相同的 baseline 規則，第一份資料（首次載入、重新整理、
   重連）中的送出全部視為「已看過」；之後新出現的 id 標記為新送出，該 `<li>` 掛上 `ui-anim animate-slide-in` 與短暫亮起
   的背景（CSS 動畫 0.9 秒，FR-030「1 秒內結束」）。同一次推播帶來的多筆一起標記，不排隊。
 - `ResultReveal`（老師端）：當 `usePhaseTransition` 回傳 `to = CLOSED` 時，等切換提示消失（`PHASE_TOAST_MS`）後開啟。

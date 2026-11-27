@@ -323,4 +323,33 @@ describe('SubmissionBoard — 004 送出列表版面（FR-037）', () => {
       ).not.toBeNull();
     }
   });
+
+  it('第 1～3 名有金、銀、銅獎牌，第 4 名以後沒有；搶答成功標籤含獎盃圖示（007 FR-017）', () => {
+    const view = teacherView({
+      status: 'OPEN',
+      submissions: [
+        record(3, 1, 1, ['0']),
+        record(3, 2, 2, ['1']),
+        record(3, 1, 3, ['2']),
+        record(3, 2, 4, ['3']),
+      ],
+      results: [
+        {
+          questionNumber: 3,
+          winnerGroupId: 1,
+          answers: [],
+          receivedAt: null,
+          submitterNickname: null,
+        },
+      ],
+    });
+    render(<SubmissionBoard view={view} />);
+    const items = within(screen.getByRole('article', { name: '第 3 題' })).getAllByRole('listitem');
+    const medalOf = (li: HTMLElement | undefined) =>
+      li?.firstElementChild?.querySelector('[data-medal]')?.getAttribute('data-medal') ?? null;
+    expect(items.map(medalOf)).toEqual(['gold', 'silver', 'bronze', null]);
+    expect(headerOf(items[0])).toMatch(/^第 1 名・第 1 組：/);
+    const winnerTag = within(items[0] as HTMLElement).getByText('搶答成功');
+    expect(winnerTag.querySelector('svg[data-icon="winner"]')).not.toBeNull();
+  });
 });

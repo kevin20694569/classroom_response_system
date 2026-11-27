@@ -45,8 +45,9 @@ package "ui（新增）" {
   }
 
   class usePhaseTransition <<hook>> {
-    +usePhaseTransition(status: SessionStatus | null, connected: boolean): PhaseTransition | null
-    -needsBaseline: boolean（status 為 null 或 connected 變為 false 時設為 true）
+    +usePhaseTransition(view: { status } | null, connected: boolean): PhaseTransition | null
+    -needsBaseline: boolean（view 為 null 或 connected 變為 false 時設為 true）
+    ' 以伺服器推來的 view 物件為單位判斷：重連時舊 view 還在畫面上，下一份「新的」view 才是 baseline
     -previous: SessionStatus | null（本分頁上一次看到的階段；首次為 null）
     ' previous 為 null（首次載入、重整、重連後第一份資料）時不觸發（FR-014）
     ' 新的切換取代尚未消失的舊提示，不排隊
@@ -81,7 +82,7 @@ package "ui（新增）" {
     ' 只在本分頁看到 OPEN → CLOSED 時顯示一次；無人送出的題目顯示「本題無人搶答」（FR-029）
   }
   class useNewSubmissionHighlight <<hook>> {
-    +useNewSubmissionHighlight(submissionIds, connected: boolean): Set<submissionId>
+    +useNewSubmissionHighlight(submissions: { id }[], connected: boolean): Set<submissionId>
     -seen: Set<submissionId>（首次收到的資料全部視為已看過）
     ' 新到的送出亮起 ≤ 1 秒；同時到達的一起亮起（FR-030）
   }
