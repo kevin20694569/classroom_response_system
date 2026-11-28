@@ -95,16 +95,20 @@
       transform: translateY(-6px);
     }
   }
+}
 
-  @keyframes confetti-fall {
-    0% {
-      opacity: 1;
-      transform: translate3d(0, -10vh, 0) rotate(0deg);
-    }
-    100% {
-      opacity: 0.9;
-      transform: translate3d(var(--confetti-drift, 0), 110vh, 0) rotate(720deg);
-    }
+/*
+ * 慶祝紙片（007 FR-019）：Celebration.tsx 以行內 style 指定 animation，沒有對應的 --animate-* 工具類別；
+ * 寫在 @theme 裡的 keyframes 只有被工具類別用到才會輸出，所以放在最外層，正式建置才會保留。
+ */
+@keyframes confetti-fall {
+  0% {
+    opacity: 1;
+    transform: translate3d(0, -10vh, 0) rotate(0deg);
+  }
+  100% {
+    opacity: 0.9;
+    transform: translate3d(var(--confetti-drift, 0), 110vh, 0) rotate(720deg);
   }
 }
 
