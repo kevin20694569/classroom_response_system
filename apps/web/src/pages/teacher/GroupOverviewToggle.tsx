@@ -1,5 +1,6 @@
 import type { TeacherView } from '@crs/shared';
 import { useEffect, useRef, useState } from 'react';
+import { Button } from '../../ui/Button';
 import { GroupOverviewPanel } from './GroupOverviewPanel';
 
 /**
@@ -33,23 +34,25 @@ export function GroupOverviewToggle({ view }: { view: TeacherView }) {
 
   return (
     <>
-      <button
+      {/* 007：改用共用按鈕樣式（FR-004、FR-024）；位置與寬度沿用 006 */}
+      <Button
         ref={toggleRef}
-        type="button"
+        variant="primary"
+        size="sm"
         aria-expanded={open}
-        className="fixed top-4 right-4 z-30 w-20 rounded-lg bg-indigo-600 px-2 py-2 text-sm font-medium text-white shadow-lg hover:bg-indigo-700"
+        className="fixed top-4 right-4 z-30 w-20"
         onClick={() => {
           setOpen(true);
         }}
       >
         分組情況
-      </button>
+      </Button>
       {open && (
         <>
           <div
             data-testid="group-overview-backdrop"
             aria-hidden="true"
-            className="fixed inset-0 z-40 bg-slate-900/30"
+            className="fixed inset-0 z-40 bg-ink/40"
             onClick={() => {
               setOpen(false);
             }}
@@ -58,19 +61,19 @@ export function GroupOverviewToggle({ view }: { view: TeacherView }) {
             role="dialog"
             aria-modal="true"
             aria-label="分組情況"
-            className="fixed inset-y-0 right-0 z-50 w-[min(22rem,100vw)] overflow-y-auto overscroll-contain bg-white p-5 shadow-xl"
+            className="fixed inset-y-0 right-0 z-50 w-[min(22rem,100vw)] overflow-y-auto overscroll-contain bg-card p-5 shadow-card"
           >
             <div className="mb-2 flex justify-end">
-              <button
+              <Button
                 ref={closeRef}
-                type="button"
-                className="rounded px-2 py-1 text-sm text-slate-600 hover:bg-slate-100"
+                variant="secondary"
+                size="sm"
                 onClick={() => {
                   setOpen(false);
                 }}
               >
                 關閉
-              </button>
+              </Button>
             </div>
             <GroupOverviewPanel view={view} />
           </div>

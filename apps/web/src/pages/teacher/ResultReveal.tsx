@@ -5,6 +5,9 @@ import { Button } from '../../ui/Button';
 import { GroupBadge } from '../../ui/GroupBadge';
 import { Icon } from '../../ui/icons';
 
+/** 對話框內可以取得焦點的元素 */
+const FOCUSABLE = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+
 /**
  * 老師端「結果揭曉」（007 FR-029、contracts/ui-effects.md §7）：搶答結束時投影給全班看。
  * 依題號列出每題搶答成功的組別、送出者暱稱與答案（排版沿用送出列表）；無人送出顯示「本題無人搶答」。
@@ -12,21 +15,48 @@ import { Icon } from '../../ui/icons';
  */
 export function ResultReveal({ view, onClose }: { view: TeacherView; onClose: () => void }) {
   const titleId = useId();
+  const dialogRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     closeRef.current?.focus();
   }, []);
 
+  // 鍵盤（FR-024、contracts/ui-effects.md §7）：Esc 在整個頁面都能關閉（焦點不在對話框內也一樣）；
+  // Tab／Shift+Tab 只在對話框內循環，不會跑到被遮住的主畫面
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent): void => {
+      if (event.key === 'Escape') {
+        onClose();
+        return;
+      }
+      if (event.key !== 'Tab' || dialogRef.current === null) return;
+      const focusable = Array.from(
+        dialogRef.current.querySelectorAll<HTMLElement>(FOCUSABLE),
+      ).filter((el) => !el.hasAttribute('disabled'));
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (first === undefined || last === undefined) return;
+      const active = document.activeElement;
+      const inside = active instanceof Node && dialogRef.current.contains(active);
+      if (!inside || (event.shiftKey ? active === first : active === last)) {
+        event.preventDefault();
+        (event.shiftKey ? last : first).focus();
+      }
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [onClose]);
+
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-ink/55 p-4">
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        onKeyDown={(event) => {
-          if (event.key === 'Escape') onClose();
-        }}
         className="ui-card ui-anim flex max-h-[88vh] w-full max-w-2xl animate-pop-in flex-col p-6"
       >
         <div className="flex items-center justify-between gap-3">

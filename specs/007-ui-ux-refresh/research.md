@@ -25,6 +25,11 @@
    `@media (prefers-reduced-motion: reduce)` 規則停用所有 `.ui-anim` 動畫。
 2. **TypeScript 色票（`apps/web/src/ui/theme.ts`）**：組別色、階段色、金銀銅色等「會依資料切換」的顏色以 hex 字串
    定義，元件以 inline style（CSS 變數 `--group-color`、`--phase-color`）套用。
+3. **Tailwind 預設調色盤 class（允許範圍，實作時補充）**：提示訊息、標籤、淺色底塊等**不依資料切換**的語意顏色，
+   可以直接使用 Tailwind 預設調色盤 class（例如 `text-green-800`、`bg-amber-50`、`text-red-800`、`bg-red-700`）。
+   條件：每一組「文字色／背景色」組合都要列在 `apps/web/tests/theme.test.ts` 的 `PALETTE_TEXT_PAIRS`（文字 ≥ 4.5:1）
+   或 `PALETTE_ICON_PAIRS`（只有圖示，≥ 3:1），測試直接讀取 `tailwindcss/theme.css` 的 oklch 值換算對比；
+   原始碼中不得出現 `#hex` 色碼（`ui/theme.ts` 除外，同一支測試會檢查），需要固定色值時加到 `index.css` 的 `@theme`。
 
 **Rationale**：依組別編號、活動階段動態切換的顏色若寫成 Tailwind class，需要在原始碼中列出所有可能 class 才會被產生；
 用 TS 常數＋CSS 變數則沒有這個問題。更重要的是 FR-024 的對比要求可以在單元測試中直接用這份色票計算（R9），

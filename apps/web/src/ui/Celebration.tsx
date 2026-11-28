@@ -19,7 +19,7 @@ const PIECES: readonly Piece[] = Array.from({ length: 40 }, (_, i) => ({
   delay: (i % 6) * 0.1,
   duration: 1.6 + (i % 4) * 0.2,
   drift: ((i % 7) - 3) * 18,
-  color: GROUP_COLORS[i % GROUP_COLORS.length] ?? '#7c3aed',
+  color: GROUP_COLORS[i % GROUP_COLORS.length] ?? GROUP_COLORS[0],
   round: i % 3 === 0,
 }));
 

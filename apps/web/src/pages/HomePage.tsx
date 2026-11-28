@@ -15,14 +15,14 @@ const ENTRIES: readonly Entry[] = [
     title: '老師端',
     description: '匯入題目、控制搶答',
     icon: 'home.teacher',
-    tone: 'from-violet-600 to-fuchsia-700 shadow-[0_6px_0_0_#581c87]',
+    tone: 'from-violet-600 to-fuchsia-700 shadow-[0_6px_0_0_var(--color-entry-teacher-deep)]',
   },
   {
     href: '/student',
     title: '學生端',
     description: '輸入暱稱、選組作答',
     icon: 'home.student',
-    tone: 'from-emerald-700 to-teal-700 shadow-[0_6px_0_0_#134e4a]',
+    tone: 'from-emerald-700 to-teal-700 shadow-[0_6px_0_0_var(--color-entry-student-deep)]',
   },
 ];
 
