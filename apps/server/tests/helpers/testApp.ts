@@ -202,8 +202,10 @@ export function connectSocket(url: string, token?: string): Promise<TestSocket> 
     });
     const nextState: TestSocket['nextState'] = (predicate = () => true, timeoutMs = 2000) =>
       new Promise((res, rej) => {
+        // 在呼叫時建立錯誤，逾時的堆疊才會指向測試中是哪一個等待
+        const timeout = new Error(`等待 session:state 逾時（${timeoutMs} ms）`);
         const timer = setTimeout(() => {
-          rej(new Error('等待 session:state 逾時'));
+          rej(timeout);
         }, timeoutMs);
         waiters.push({
           predicate,
