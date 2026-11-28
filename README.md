@@ -1,6 +1,7 @@
 # 課堂搶答系統（Classroom Response System）
 
-**線上版：<http://kevin20694569.diskstation.me:3000/>**，不用安裝就能直接使用。老師端是 `/teacher`（老師密碼：`teacherteacher`），
+**線上版：<http://kevin20694569.diskstation.me:3000/>**，使用Docker部署在家中的NAS上，
+不用安裝就能直接使用。老師端是 `/teacher`（老師密碼：`teacherteacher`），
 學生端是 `/student`。要匯入自己的 Guided Notes，請先把那份 Google Sheets 分享給系統的服務帳號
 `crs-sheets@friendly-retina-515604-u0.iam.gserviceaccount.com`，權限選**編輯者**（匯出時要把答案寫回文件），
 並取消勾選「通知使用者」；沒有分享時，匯入會顯示「無法存取這份文件」。
