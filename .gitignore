@@ -24,6 +24,9 @@ coverage/
 .vite/
 
 # ── log 與系統檔 ──
+# AI 對話紀錄（繳交用 session log，不進 repo）
+logs_*/
+logs_*.zip
 *.log
 npm-debug.log*
 .DS_Store
