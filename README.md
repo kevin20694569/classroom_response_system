@@ -1,8 +1,13 @@
 # 課堂搶答系統（Classroom Response System）
 
+**線上版：<http://kevin20694569.diskstation.me:3000/>**，不用安裝就能直接使用。老師端是 `/teacher`（老師密碼：`teacherteacher`），
+學生端是 `/student`。要匯入自己的 Guided Notes，請先把那份 Google Sheets 分享給系統的服務帳號
+`crs-sheets@friendly-retina-515604-u0.iam.gserviceaccount.com`，權限選**編輯者**（匯出時要把答案寫回文件），
+並取消勾選「通知使用者」；沒有分享時，匯入會顯示「無法存取這份文件」。
+
 軟體工程期末專題（SpecKit 組）。把課堂上以填空式學習單（Guided Notes，Google Sheets）進行的搶答活動搬到線上：
 老師匯入 Guided Notes、開啟與結束搶答、即時檢視各組作答，最後把搶答成功的答案寫回原本的 Google Sheets。
-系統只在本機執行，同一台電腦以多個瀏覽器分頁同時扮演老師與不同組別的學生。
+也可以依下方步驟在自己的電腦執行，同一台電腦以多個瀏覽器分頁同時扮演老師與不同組別的學生。
 
 ## 啟動（單一指令）
 
