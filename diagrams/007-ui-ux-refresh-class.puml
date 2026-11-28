@@ -81,6 +81,7 @@ package "ui（新增）" {
     +onClose(): void
     ' TeacherDashboard 在 transition.to = CLOSED 後 PHASE_TOAST_MS 開啟；之後的變化會關閉
     ' 只在本分頁看到 OPEN → CLOSED 時顯示一次；無人送出的題目顯示「本題無人搶答」（FR-029）
+    -onKeyDown(document)：Esc 關閉（焦點不在對話框內也可）；Tab／Shift+Tab 只在對話框內循環（FR-024）
   }
   class useNewSubmissionHighlight <<hook>> {
     +useNewSubmissionHighlight(submissions: { id }[], connected: boolean): Set<submissionId>

@@ -107,6 +107,29 @@ describe('結果揭曉（007 FR-029、contracts/ui-effects.md §7）', () => {
     expect(dialog()).toBeNull();
   });
 
+  it('焦點不在對話框內（例如點了背景）時按 Esc 仍會關閉', () => {
+    openThenClose();
+    advance(PHASE_TOAST_MS);
+    (document.activeElement as HTMLElement).blur();
+    expect(document.activeElement).toBe(document.body);
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(dialog()).toBeNull();
+  });
+
+  it('Tab／Shift+Tab 的焦點留在對話框內，不會跑到被遮住的主畫面', () => {
+    openThenClose();
+    advance(PHASE_TOAST_MS);
+    const close = within(dialog() as HTMLElement).getByRole('button', { name: '關閉' });
+    fireEvent.keyDown(document, { key: 'Tab' });
+    expect(document.activeElement).toBe(close);
+    fireEvent.keyDown(document, { key: 'Tab', shiftKey: true });
+    expect(document.activeElement).toBe(close);
+    // 焦點被移到主畫面的按鈕後按 Tab，會回到對話框內
+    screen.getByRole('button', { name: '登出' }).focus();
+    fireEvent.keyDown(document, { key: 'Tab' });
+    expect(document.activeElement).toBe(close);
+  });
+
   it('第一次載入就是已結束（重新整理）時不出現', () => {
     installMatchMedia(false);
     render(<TeacherDashboard token="teacher-token" onLogout={() => undefined} />);

@@ -93,6 +93,19 @@ describe('TeacherDashboard 窄螢幕（006 US3、FR-012）', () => {
     expect(screen.queryByText('Milo')).toBeNull();
   });
 
+  it('浮動按鈕與抽屜的「關閉」套用共用按鈕樣式，位置不變（007 FR-004、FR-024）', () => {
+    renderDashboard(false);
+    const classes = toggle().className.split(' ');
+    for (const cls of ['fixed', 'top-4', 'right-4', 'z-30', 'w-20', 'bg-primary']) {
+      expect(classes).toContain(cls);
+    }
+    expect(toggle().className).toContain('focus-visible:ring-4');
+    fireEvent.click(toggle());
+    const close = within(screen.getByRole('dialog')).getByRole('button', { name: '關閉' });
+    expect(close.className.split(' ')).toContain('text-secondary-ink');
+    expect(close.className).toContain('focus-visible:ring-4');
+  });
+
   it('按下按鈕展開抽屜，內容相同，焦點移到「關閉」；按「關閉」收合並把焦點還給按鈕', () => {
     renderDashboard(false);
     fireEvent.click(toggle());

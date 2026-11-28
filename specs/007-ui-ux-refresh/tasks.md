@@ -338,3 +338,16 @@ Task: "T065 StudentResultBoard.tsx 獎盃"
 
 - 本清單完成後先執行 `/speckit-analyze`，確認 spec、plan、tasks 之間沒有衝突或缺漏，再進入 `/speckit-implement`。
 - implement 完成後執行 `/speckit-converge` 補齊遺漏，最後由組員依 `checklists/manual-verification.md` 人工驗證。
+
+---
+
+## Phase 9: Convergence
+
+- [X] T086 修改 `apps/web/src/pages/teacher/GroupOverviewToggle.tsx` 套用共用風格：浮動「分組情況」按鈕改用 `Button`（`variant="primary"`，保留 `ref`、`aria-expanded`、文字與 `fixed top-4 right-4 z-30 w-20` 版面 class）、抽屜內「關閉」改用 `Button variant="secondary"`（保留 `ref` 與文字），抽屜外觀改用主題卡片色與陰影；006 的開關、焦點與 Esc 行為不變，並在 `apps/web/tests/TeacherDashboard.test.tsx` 新增「兩顆按鈕都套用 `Button` 的 primary／secondary 樣式」的斷言 per FR-001、FR-004、FR-024、plan: GroupOverviewToggle 換樣式 (partial)
+  - 實作備註：浮動按鈕改為 `Button variant="primary" size="sm"`（保留 `fixed top-4 right-4 z-30 w-20`、`ref`、`aria-expanded`），「關閉」改為 `Button variant="secondary" size="sm"`，抽屜底色與陰影改用 `bg-card`、`shadow-card`，背景遮罩改用 `bg-ink/40`；006 的開關、焦點與 Esc 測試不變並通過。
+- [X] T087 修改 `apps/web/src/pages/teacher/ResultReveal.tsx`：Esc 改為在 `document` 上監聽（焦點移到對話框外、例如點了背景後仍可關閉），並讓 Tab／Shift+Tab 的焦點留在對話框內，不跑到被遮住的主畫面；在 `apps/web/tests/ResultReveal.test.tsx` 新增「焦點不在對話框內時按 Esc 仍會關閉」與「Tab 不會移出對話框」的案例 per FR-029、FR-024、contracts/ui-effects.md §7 (partial)
+  - 實作備註：Esc 與 Tab 改在 `document` 上監聽；對話框目前只有「關閉」一個可聚焦元素，Tab／Shift+Tab 都停在它上面，焦點在對話框外時按 Tab 會回到對話框內。已先在類別圖補上這項行為並重新產生 PNG。
+- [X] T088 移除頁面寫死的色碼：`apps/web/src/pages/HomePage.tsx` 入口卡片陰影的 `#581c87`、`#134e4a` 改用 `index.css` 的 `@theme` token（必要時新增 6 位 hex token，供 `theme.test.ts` 解析），`apps/web/src/ui/Celebration.tsx` 的後備色 `#7c3aed` 改為取自 `theme.ts`；完成後在 `apps/web/src` 搜尋 `#[0-9a-fA-F]{3,6}`，除了 `ui/theme.ts` 與 `index.css` 之外沒有結果 per plan: 頁面不寫死色碼、tasks 共同約定 (contradicts)
+  - 實作備註：`index.css` 新增 `--color-entry-teacher-deep`、`--color-entry-student-deep`，首頁陰影改用 `var(...)`；紙片的後備色改為 `GROUP_COLORS[0]`。`theme.test.ts` 新增「除了 `ui/theme.ts` 之外原始碼沒有 `#hex`」的檢查，並以暫時加入違規檔確認會失敗。
+- [X] T089 檢查頁面直接使用的 Tailwind 調色盤文字與底色組合（例如 `text-amber-800`、`text-green-800`、`text-red-800`、`text-slate-500`、`bg-red-700`／`bg-green-700` 上的白字）：在 `apps/web/tests/theme.test.ts` 為這些「文字色／背景色」組合加入對比 ≥ 4.5:1 的檢查（色值寫在測試中並註明對應的 Tailwind class），或改用 `@theme` token；並在 `specs/007-ui-ux-refresh/research.md` R1 記錄允許直接使用調色盤 class 的範圍 per SC-006、FR-024、T013 (contradicts)
+  - 實作備註：`tests/contrast.ts` 新增 `oklchToHex`（換算結果與 Tailwind 公布的 hex 一致，如 green-800 = #016630），`theme.test.ts` 直接讀取 `tailwindcss/theme.css`，檢查 23 組文字組合（≥ 4.5:1，含新送出亮起時的 #fef08a 底色）與 2 組圖示組合（≥ 3:1），全部通過，沒有需要改色的地方；research R1 第 3 點記錄允許範圍。品質關卡：typecheck、lint、format:check 通過，`npm test` 89 個測試檔 802 個測試全過；`vite build` 主程式 gzip 132.26 kB、學生端 163.99 kB。
