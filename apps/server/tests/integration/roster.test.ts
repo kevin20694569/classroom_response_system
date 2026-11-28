@@ -253,8 +253,12 @@ describe('006：老師端分組情況推播（FR-005、FR-016、FR-021、SC-002�
     expect((await call(app, 'POST', '/api/auth/student/leave', avaToken, {})).statusCode).toBe(204);
     await avaLeft;
 
-    await open(await joinStudent(app, 1, 'Leo'));
-    await teacher.nextState((p) => names(p, 1).join() === 'Leo', 1000);
+    // 先開始等待再連線：伺服器在送出 Leo 自己的第一份資料之前就推播老師，
+    // 連線完成後才等待，老師的那份推播可能已經先到而錯過
+    const leoToken = await joinStudent(app, 1, 'Leo');
+    const leoJoined = teacher.nextState((p) => names(p, 1).join() === 'Leo', 1000);
+    await open(leoToken);
+    await leoJoined;
     const cleared = teacher.nextState(
       (p) => overviewOf(p).length === 2 && overviewOf(p).every((g) => g.memberCount === 0),
       1000,
